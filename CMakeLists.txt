@@ -1,0 +1,117 @@
+cmake_minimum_required(VERSION 3.1.0)
+
+set(PROJECT "ClusterDifferentialExpressionPlugin")
+
+PROJECT(${PROJECT})
+
+
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DWIN32 /EHsc /MP")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG /NODEFAULTLIB:LIBCMT")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+endif(MSVC)
+
+#find_package(OpenGL REQUIRED)
+
+
+find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
+
+
+
+set(PLUGIN
+    src/ClusterDifferentialExpressionPlugin.h
+    src/ClusterDifferentialExpressionPlugin.cpp
+   
+)
+
+set(MODEL
+    src/QTableItemModel.h
+    src/QTableItemModel.cpp
+)
+
+set(ACTIONS
+   
+    src/SettingsAction.h
+    src/SettingsAction.cpp
+  
+)
+
+set(WIDGETS
+    src/ClusterDifferentialExpressionWidget.h
+    src/ClusterDifferentialExpressionWidget.cpp
+)
+
+
+
+set(AUX
+    
+    src/ClusterDifferentialExpressionPlugin.json
+)
+
+set(SOURCES ${PLUGIN} ${ACTIONS} ${MODEL} ${WIDGETS})
+
+source_group(Plugin FILES ${SOURCES})
+source_group(Actions FILES ${ACTIONS})
+source_group(Model FILES ${MODEL})
+source_group(Widget FILES ${WIDGETS})
+
+source_group(Aux FILES ${AUX})
+
+include_directories("$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/include/")
+
+add_library(${PROJECT} SHARED ${SOURCES} ${WEB} ${AUX} ${WIDGETS})
+
+target_compile_features(${PROJECT} PRIVATE cxx_std_17)
+
+
+
+target_link_libraries(${PROJECT} Qt6::Widgets)
+target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
+
+
+if(MSVC)
+	set(LIB_SUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+else()
+	set(LIB_SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+endif()
+
+target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}HDPS_Public${LIB_SUFFIX}")
+target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}PointData${LIB_SUFFIX}")
+
+install(TARGETS ${PROJECT}
+   RUNTIME DESTINATION Plugins COMPONENT SHAREDLIB
+   LIBRARY DESTINATION Plugins COMPONENT LINKLIB
+   ARCHIVE DESTINATION lib COMPONENT LINKLIB
+)
+
+add_custom_command(TARGET ${PROJECT} POST_BUILD
+    COMMAND "${CMAKE_COMMAND}"
+        --install ${CMAKE_CURRENT_BINARY_DIR}
+        --config $<CONFIGURATION>
+        --prefix $ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>
+)
+
+# Automatically set the debug environment (command + working directory) for MSVC in debug mode
+set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY $<IF:$<CONFIG:DEBUG>,$ENV{HDPS_INSTALL_DIR}/debug,$ENV{HDPS_INSTALL_DIR}/release>)
+set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_COMMAND $<IF:$<CONFIG:DEBUG>,$ENV{HDPS_INSTALL_DIR}/debug/HDPS.exe,$ENV{HDPS_INSTALL_DIR}/release/HDPS.exe>)
+
+set_target_properties(${PROJECT} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=%PATH%;${Qt6_DIR}/../../../bin;$<$<CONFIG:DEBUG>:$ENV{HDPS_INSTALL_DIR}/debug>; $<$<CONFIG:RELEASE>:$ENV{HDPS_INSTALL_DIR}/release>")
+
+
+ macro(print_all_variables)
+    message(STATUS "print_all_variables------------------------------------------{")
+    get_cmake_property(_variableNames VARIABLES)
+    foreach (_variableName ${_variableNames})
+        message(STATUS "${_variableName}=${${_variableName}}")
+    endforeach()
+    message(STATUS "print_all_variables------------------------------------------}")
+endmacro()
+
+#print_all_variables()   

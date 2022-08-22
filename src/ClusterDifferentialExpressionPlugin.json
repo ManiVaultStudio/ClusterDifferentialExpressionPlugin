@@ -1,0 +1,5 @@
+{
+    "name" : "Cluster Differential Expression",
+    "version" : "0.1.0",
+    "dependencies": ["Cluster"]
+}
