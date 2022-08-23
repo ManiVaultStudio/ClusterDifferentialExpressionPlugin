@@ -2,6 +2,8 @@
 #include <ViewPlugin.h>
 #include "widgets/DropWidget.h"
 
+#include "ProgressManager.h"
+
 using hdps::plugin::ViewPluginFactory;
 using hdps::plugin::ViewPlugin;
 using hdps::plugin::PluginFactory;
@@ -36,6 +38,7 @@ protected slots:
 
 public slots:
     void updateData();
+    void computeDE();
 
 public: // Action getters
 
@@ -50,9 +53,11 @@ private:
 
     hdps::gui::DropWidget*      _dropWidget;    /** Widget allowing users to drop in data */
     hdps::Dataset<Clusters>     _clusters1;     /** Currently loaded clusters dataset */
-    hdps::Dataset<Points>       _points1;       /** Currently loaded points dataset associated with _clusters1*/
+    
     QList<int>                  _clusters1_selection;
     QList<int>                  _clusters2_selection;
+
+    ProgressManager             _progressManager;
 };
     
 

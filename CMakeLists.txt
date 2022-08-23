@@ -48,25 +48,29 @@ set(WIDGETS
     src/ClusterDifferentialExpressionWidget.cpp
 )
 
+set(UTIL
+    src/ProgressManager.h
+    src/ProgressManager.cpp
 
+)
 
 set(AUX
     
     src/ClusterDifferentialExpressionPlugin.json
 )
 
-set(SOURCES ${PLUGIN} ${ACTIONS} ${MODEL} ${WIDGETS})
+set(SOURCES ${PLUGIN} ${ACTIONS} ${MODEL} ${WIDGETS} ${UTIL})
 
 source_group(Plugin FILES ${SOURCES})
 source_group(Actions FILES ${ACTIONS})
 source_group(Model FILES ${MODEL})
 source_group(Widget FILES ${WIDGETS})
-
+source_group(Util FILES ${UTIL})
 source_group(Aux FILES ${AUX})
 
 include_directories("$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/include/")
 
-add_library(${PROJECT} SHARED ${SOURCES} ${WEB} ${AUX} ${WIDGETS})
+add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
 
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
@@ -74,6 +78,7 @@ target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
 target_link_libraries(${PROJECT} Qt6::Widgets)
 target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
+target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/ClusterData.lib")
 
 
 if(MSVC)

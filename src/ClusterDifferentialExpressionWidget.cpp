@@ -6,27 +6,10 @@
 #include <QComboBox>
 #include <QTableView>
 #include <QPushButton>
-
+#include <QHeaderView>
 #include <QProgressBar>
 #include <QGraphicsColorizeEffect>
-
-namespace local
-{
-    void setClusters(const QStringList& clusters, QComboBox &clusterSelection, ClusterDifferentialExpressionWidget &deWidget)
-    {
-        clusterSelection.blockSignals(true);
-        clusterSelection.clear();
-        for (auto c : clusters)
-        {
-            clusterSelection.addItem(c,clusterSelection.count());
-        }
-        clusterSelection.setCurrentText(QString()); // make sure nothing is selected
-        clusterSelection.blockSignals(false);
-        deWidget.ShowOutOfDate();
-    }
-}
-
-
+#include <QSortFilterProxyModel>
 
 ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(ClusterDifferentialExpressionPlugin* differentialExpressionPlugin)
     :_differentialExpressionPlugin(differentialExpressionPlugin)
@@ -34,12 +17,17 @@ ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(Cluster
     , _clusters1Selection(nullptr)
     , _clusters2Selection(nullptr)
     , _tableView(nullptr)
+    , _differentialExpressionModel(nullptr)
+    , _sortFilterProxyModel(nullptr)
 {
     initGui();
+    
 }
 
 void ClusterDifferentialExpressionWidget::initGui()
 {
+
+    setAcceptDrops(true);
     const int NumberOfColums = 2;
 
     QGridLayout* layout = new QGridLayout;
@@ -50,19 +38,30 @@ void ClusterDifferentialExpressionWidget::initGui()
     { // cluster selection
         _clusters1Selection = new QComboBox;
         layout->addWidget(_clusters1Selection, currentRow, 0, 1, 1);
+        connect(_clusters1Selection, &QComboBox::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
 
         _clusters2Selection = new QComboBox;
         layout->addWidget(_clusters2Selection, currentRow++, 1, 1, 1);
+        connect(_clusters2Selection, &QComboBox::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
     }
     
-    _differentialExpressionModel = new QTableItemModel(this, false, 2);
     { // table view
+        _sortFilterProxyModel = new QSortFilterProxyModel;
         _tableView = new QTableView;
-        _tableView->setModel(_differentialExpressionModel);
+        _tableView->setModel(_sortFilterProxyModel);
         _tableView->setSortingEnabled(true);
         _tableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+        _tableView->setSortingEnabled(true);
+
+        QHeaderView* horizontalHeader = _tableView->horizontalHeader();
+        horizontalHeader->setStretchLastSection(true);
+        horizontalHeader->setSectionsMovable(true);
+        horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
+        horizontalHeader->setSortIndicator(0, Qt::SortOrder::AscendingOrder);
+        
+
         layout->addWidget(_tableView, currentRow++, 0, 1, NumberOfColums);
     }
 
@@ -81,61 +80,100 @@ void ClusterDifferentialExpressionWidget::initGui()
         layout->addWidget(_progressBar, currentRow, 0, 1, NumberOfColums);
         _progressBar->hide();
 
+        
+
         _updateStatisticsButton = new QPushButton("Calculate Differential Expression", this);
         layout->addWidget(_updateStatisticsButton, currentRow++, 0, 1, NumberOfColums);
-        QObject::connect(_updateStatisticsButton, &QPushButton::clicked, _differentialExpressionPlugin, &ClusterDifferentialExpressionPlugin::updateData);
+        QObject::connect(_updateStatisticsButton, &QPushButton::clicked, this, &ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed);
     }
     
 }
 
-void ClusterDifferentialExpressionWidget::setClusters1(const QStringList & clusters)
+void ClusterDifferentialExpressionWidget::setClusters1(QStringList clusters)
 {
-    local::setClusters(clusters, *_clusters1Selection, *this);
+    _clusters1Selection->clear();
+    if(clusters.size())
+    {
+        clusters.sort();
+        _clusters1Selection->addItems(clusters);
+        if (_clusters1Selection->count())
+            _clusters1Selection->setCurrentIndex(0);
+    }
 }
 
-void ClusterDifferentialExpressionWidget::setClusters2(const QStringList& clusters)
+void ClusterDifferentialExpressionWidget::setClusters2( QStringList clusters)
 {
-    local::setClusters(clusters, *_clusters2Selection, *this);
+    _clusters2Selection->clear();
+    if(clusters.size())
+    {
+        clusters.sort();
+        _clusters2Selection->addItems(clusters);
+        if (_clusters2Selection->count() > 1)
+            _clusters2Selection->setCurrentIndex(1);
+        else if (_clusters2Selection->count())
+            _clusters2Selection->setCurrentIndex(0);
+    }
 }
 
 void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
 {
-    auto *oldModel = _tableView->model();
+    auto* oldModel = _sortFilterProxyModel->sourceModel();
     _differentialExpressionModel = newModel;
-    _tableView->setModel(_differentialExpressionModel);
-    delete oldModel;
+    _sortFilterProxyModel->setSourceModel(_differentialExpressionModel);
+    if(oldModel)
+        delete oldModel;
+
+    
+    QHeaderView* horizontalHeader = _tableView->horizontalHeader();
+    for (auto c = 0; c < horizontalHeader->count(); ++c)
+        horizontalHeader->setSectionResizeMode(c, QHeaderView::ResizeToContents);
+
+    ShowUpToDate();
 }
 
 void ClusterDifferentialExpressionWidget::ShowUpToDate()
 {
-    _differentialExpressionModel->setOutDated(false);
     _updateStatisticsButton->hide();
     _progressBar->show();
-    if(_differentialExpressionModel->rowCount() != 0)
+    if(_differentialExpressionModel)
     {
-        _progressBar->setFormat("Results Up-to-Date");
+        _differentialExpressionModel->setOutDated(false);
+        if (_differentialExpressionModel->rowCount() != 0)
+        {
+            _progressBar->setFormat("Results Up-to-Date");
+        }
     }
 }
 
+QProgressBar* ClusterDifferentialExpressionWidget::getProgressBar()
+{
+    return _progressBar;
+}
+
+
 void ClusterDifferentialExpressionWidget::ShowOutOfDate()
 {
-    if (_differentialExpressionModel->rowCount()== 0)
-        return;
-    _differentialExpressionModel->setOutDated(true);
     _progressBar->hide();
-    const QString recomputeText = "Out-of-Date - Recalculate";
-    if(_updateStatisticsButton->text() != recomputeText)
-    {
-        QPalette pal = _updateStatisticsButton->palette();
-        // 			QBrush b(Qt::red);
-        // 			pal.setBrush(QPalette::Button, b);
-        pal.setColor(QPalette::Button, Qt::red);
-        pal.setColor(QPalette::ButtonText, Qt::red);
-        _updateStatisticsButton->setPalette(pal);
-        _updateStatisticsButton->setAutoFillBackground(true);
-        _updateStatisticsButton->setText(recomputeText);
-    }
     _updateStatisticsButton->show();
+    if (_differentialExpressionModel)
+    {
+        if (_differentialExpressionModel->rowCount() > 0)
+        {
+            _differentialExpressionModel->setOutDated(true);
+            const QString recomputeText = "Out-of-Date - Recalculate";
+            if (_updateStatisticsButton->text() != recomputeText)
+            {
+                QPalette pal = _updateStatisticsButton->palette();
+                // 			QBrush b(Qt::red);
+                // 			pal.setBrush(QPalette::Button, b);
+                pal.setColor(QPalette::Button, Qt::red);
+                pal.setColor(QPalette::ButtonText, Qt::red);
+                _updateStatisticsButton->setPalette(pal);
+                _updateStatisticsButton->setAutoFillBackground(true);
+                _updateStatisticsButton->setText(recomputeText);
+            }
+        }
+    }
 }
 
 void ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged(int index)
@@ -148,4 +186,10 @@ void ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged
 {
     QList<int> selection = { index };
     emit clusters2SelectionChanged(selection);
+}
+
+void ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed()
+{
+    ShowUpToDate();
+    emit computeDE();
 }
