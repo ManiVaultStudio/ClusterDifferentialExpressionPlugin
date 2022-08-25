@@ -25,6 +25,7 @@ class ClusterDifferentialExpressionPlugin : public ViewPlugin
 {
     Q_OBJECT
 
+        typedef std::pair<QString, std::pair<std::ptrdiff_t, std::ptrdiff_t>> DimensionNameMatch;
 public:
     ClusterDifferentialExpressionPlugin(const PluginFactory* factory);
 
@@ -32,10 +33,21 @@ public:
 
     void onDataEvent(hdps::DataEvent* dataEvent);
 
+    /**
+    * Load one (or more datasets in the view)
+    * @param datasets Dataset(s) to load
+    */
+    void loadData(const hdps::Datasets& datasets) override;
+
 protected slots:
     void clusters1Selected(QList<int> selectedClusters);
     void clusters2Selected(QList<int> selectedClusters);
 
+private:
+    
+    std::ptrdiff_t get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset);
+    std::vector<double> computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QList<int>& selected_clusters);
+    bool matchDimensionNames();
 public slots:
     void updateData();
     void computeDE();
@@ -45,19 +57,19 @@ public: // Action getters
     SettingsAction& getSettingsAction() { return *_settingsAction; }
 
 private:
+    ClusterDifferentialExpressionWidget* _differentialExpressionWidget;      /** differential expression widget providing the GUI */
+    SettingsAction*                 _settingsAction;
 
-    
+    hdps::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
+    hdps::Dataset<Clusters>         _clusterDataset1;     /** Currently loaded clusters dataset */
+    hdps::Dataset<Clusters>         _clusterDataset2;     /** Currently loaded clusters dataset */
 
-    ClusterDifferentialExpressionWidget* _differentialExpressionWidget;      /** differential expression widget displaying the result */
-    SettingsAction* _settingsAction;
 
-    hdps::gui::DropWidget*      _dropWidget;    /** Widget allowing users to drop in data */
-    hdps::Dataset<Clusters>     _clusters1;     /** Currently loaded clusters dataset */
-    
-    QList<int>                  _clusters1_selection;
-    QList<int>                  _clusters2_selection;
-
-    ProgressManager             _progressManager;
+    QList<int>                      _clusterDataset1_selected_clusters; /** Currently selected clusters in clusters Dataset 1*/
+    QList<int>                      _clusterDataset2_selected_clusters; /** Currently selected clusters in clusters Dataset 2*/
+    std::vector<DimensionNameMatch> _matchingDimensionNames;
+    ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
+    bool                            _identicalDimensions;
 };
     
 

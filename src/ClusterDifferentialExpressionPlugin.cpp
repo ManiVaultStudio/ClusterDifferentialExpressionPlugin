@@ -28,11 +28,12 @@ using namespace hdps::gui;
 using namespace hdps::plugin;
 using namespace hdps::util;
 
-ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const PluginFactory* factory) :
-    ViewPlugin(factory),
-    _differentialExpressionWidget(nullptr),
-    _settingsAction(nullptr),
-    _dropWidget(nullptr)
+ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const PluginFactory* factory)
+    : ViewPlugin(factory)
+    , _differentialExpressionWidget(nullptr)
+    , _settingsAction(nullptr)
+    , _dropWidget(nullptr)
+    , _identicalDimensions(false)
 {
  
 }
@@ -72,15 +73,30 @@ void ClusterDifferentialExpressionPlugin::init()
             const auto candidateDataset = _core->requestDataset<Clusters>(datasetGuid);
             const auto description = QString("Select Clusters %1").arg(candidateDataset->getGuiName());
 
-            if (candidateDataset == _clusters1) {
-                dropRegions << new gui::DropWidget::DropRegion(this, "Clusters", "Cluster set is already in use", "exclamation-circle", false, [this]() {});
-            }
-            else {
-                dropRegions << new gui::DropWidget::DropRegion(this, "Clusters", description, "th-large", true, [this, candidateDataset]() {
-                    _clusters1 = candidateDataset;
+            if (!_clusterDataset1.isValid())
+            {
+                dropRegions << new gui::DropWidget::DropRegion(this, "First Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
                     _differentialExpressionWidget->ShowOutOfDate();
                     _dropWidget->setShowDropIndicator(false);
+                    _clusterDataset1 = candidateDataset;
                     });
+            }
+            else
+            {
+                dropRegions << new gui::DropWidget::DropRegion(this, " First Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
+                    _differentialExpressionWidget->ShowOutOfDate();
+                    _dropWidget->setShowDropIndicator(false);
+                    _clusterDataset1 = candidateDataset;
+                    });
+
+                dropRegions << new gui::DropWidget::DropRegion(this, " Second Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
+                    
+                    _differentialExpressionWidget->ShowOutOfDate();
+                    _dropWidget->setShowDropIndicator(false);
+                    _clusterDataset2 = candidateDataset;
+                    });
+
+               
             }
         }
 
@@ -88,20 +104,47 @@ void ClusterDifferentialExpressionPlugin::init()
         });
 
         const auto updateWindowTitle = [this]() -> void {
-         if (!_clusters1.isValid())
-              _widget.setWindowTitle(getGuiName());
-          else
-             _widget.setWindowTitle(QString("%1: %2").arg(getGuiName(), _clusters1->getGuiName()));
+            QString firstClusterInfo;
+            QString secondClusterInfo;
+            if (_clusterDataset1.isValid())
+            {
+                Dataset<Points> points1 = _clusterDataset1->getParent<Points>();
+                if (points1.isValid())
+                    firstClusterInfo = points1->getGuiName() + " - ";
+                firstClusterInfo += _clusterDataset1->getGuiName();
+            }
+            else
+            {
+                firstClusterInfo = "Unknown";
+            }
+            if (_clusterDataset2.isValid())
+            {
+                Dataset<Points> points2 = _clusterDataset2->getParent<Points>();
+                if (points2.isValid())
+                    secondClusterInfo = points2->getGuiName() + " - ";
+                secondClusterInfo += _clusterDataset1->getGuiName();
+            }
+            else
+            {
+                secondClusterInfo = "Unknown";
+            }
+            _widget.setWindowTitle(QString("%1: %2 vs %3").arg(getGuiName(), firstClusterInfo, secondClusterInfo));
          };
 
         
 
         // Load clusters when the dataset name of the clusters dataset reference changes
-        connect(&_clusters1, &Dataset<Clusters>::changed, this, [this, updateWindowTitle]() {
+        connect(&_clusterDataset1, &Dataset<Clusters>::changed, this, [this, updateWindowTitle]() {
             updateWindowTitle();
         updateData();
             //TODO: Delete DE_Statistics
         });
+
+        connect(&_clusterDataset2, &Dataset<Clusters>::changed, this, [this, updateWindowTitle]() {
+            updateWindowTitle();
+            updateData();
+            //TODO: Delete DE_Statistics
+            });
 
         //connect(_differentialExpressionWidget, SIGNAL(clusterSelectionChanged(QList<int>)), SLOT(clusterSelected(QList<int>)));
         //connect(_differentialExpressionWidget, SIGNAL(dataSetPicked(QString)), SLOT(dataSetPicked(QString)));
@@ -132,58 +175,178 @@ void ClusterDifferentialExpressionPlugin::onDataEvent(hdps::DataEvent* dataEvent
     }
 }
 
+void ClusterDifferentialExpressionPlugin::loadData(const hdps::Datasets& datasets)
+{
+    // Exit if there is nothing to load
+    if (datasets.isEmpty())
+        return;
+
+    // Load the first dataset
+    _clusterDataset1 = datasets.first();
+}
 
 void ClusterDifferentialExpressionPlugin::clusters1Selected(QList<int> selectedClusters)
 {
-    if(selectedClusters != _clusters1_selection)
+    if(selectedClusters != _clusterDataset1_selected_clusters)
     {
-        _clusters1_selection = selectedClusters;
+        _clusterDataset1_selected_clusters = selectedClusters;
         _differentialExpressionWidget->ShowOutOfDate();
     }
     
 }
 void ClusterDifferentialExpressionPlugin::clusters2Selected(QList<int> selectedClusters)
 {
-    if(selectedClusters != _clusters2_selection)
+    if(selectedClusters != _clusterDataset2_selected_clusters)
     {
-        _clusters2_selection = selectedClusters;
+        _clusterDataset2_selected_clusters = selectedClusters;
         _differentialExpressionWidget->ShowOutOfDate();
     }
     
 }
 
+bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
+{
+    _matchingDimensionNames.clear();
+
+    typedef std::pair<QString, std::pair<std::ptrdiff_t, std::ptrdiff_t>> DimensionNameMatch;
+    std::vector<std::vector<DimensionNameMatch>> dimensionNameMatchesPerThread(omp_get_max_threads());
+    
+    auto clusterDataset1Parent = _clusterDataset1->getParent<Points>();
+    auto clusterDataset2Parent = _clusterDataset2->getParent<Points>();
+    if (!clusterDataset1Parent.isValid())
+        return false;
+    if (!clusterDataset2Parent.isValid())
+        return false;
+    const auto clusterDataset1_dimensionNames = clusterDataset1Parent->getDimensionNames();
+    const auto clusterDataset2_dimensionNames = clusterDataset2Parent->getDimensionNames();
+    
+    if(clusterDataset1_dimensionNames == clusterDataset2_dimensionNames)
+    {
+        return true;
+    }
+    bool identicalDimensionNames = true;
+    _progressManager.start(clusterDataset2_dimensionNames.size(), "Checking Dimensions");
+#pragma omp parallel for schedule(dynamic,1)
+    for (ptrdiff_t i = 0; i < clusterDataset1_dimensionNames.size(); ++i)
+    {
+        QString dimensionName = clusterDataset1_dimensionNames[i];
+        if (clusterDataset2_dimensionNames[i] == dimensionName)
+        {
+            DimensionNameMatch newMatch;
+            newMatch.first = dimensionName;
+            newMatch.second.first = i;
+            newMatch.second.second = i;
+            dimensionNameMatchesPerThread[omp_get_thread_num()].push_back(newMatch);
+        }
+        else
+        {
+            identicalDimensionNames = false;
+            auto found = std::find(clusterDataset2_dimensionNames.cbegin(), clusterDataset2_dimensionNames.cend(), dimensionName);
+            if (found != clusterDataset2_dimensionNames.cend())
+            {
+                DimensionNameMatch newMatch;
+                newMatch.first = dimensionName;
+                newMatch.second.first = i;
+                newMatch.second.second = found - clusterDataset2_dimensionNames.cbegin();
+                dimensionNameMatchesPerThread[omp_get_thread_num()].push_back(newMatch);
+            }
+        }
+        _progressManager.print(i);
+    }
+    _progressManager.end();
+    if (identicalDimensionNames)
+        return true;
+    std::size_t numDimensions = 0;
+    for(auto d : dimensionNameMatchesPerThread)
+    {
+        numDimensions += d.size();
+    }
+    _matchingDimensionNames.reserve(numDimensions);
+    for (auto d : dimensionNameMatchesPerThread)
+    {
+        _matchingDimensionNames.insert(_matchingDimensionNames.cend(), d.cbegin(), d.cend());
+    }
+    return false;
+}
+
 void ClusterDifferentialExpressionPlugin::updateData()
 {
-    QStringList clusterNames;
-    auto &clusters = _clusters1->getClusters();
-    for(auto cluster : clusters)
+    // if only 1 cluster dataset is set, set the first also as the second for convenience
+    if(_clusterDataset1.isValid() && !_clusterDataset2.isValid())
     {
-        clusterNames.append(cluster.getName());
+        _clusterDataset2 = _clusterDataset1;
+        
+        _identicalDimensions = true;
     }
-    _differentialExpressionWidget->setClusters1(clusterNames);
-    _differentialExpressionWidget->setClusters2(clusterNames);
+    else
+    {
+        auto _clusterDataset1Parent = _clusterDataset1->getParent<Points>();
+        auto _clusterDataset2Parent = _clusterDataset2->getParent<Points>();
+        if(_clusterDataset1Parent.isValid() && _clusterDataset2Parent.isValid() && (_clusterDataset1Parent.getDatasetGuid() == _clusterDataset2Parent.getDatasetGuid()))
+        {
+               // if they have the same parent, they should have the same dimensions
+            _identicalDimensions = true;
+        }
+        else
+        {
+            _identicalDimensions = matchDimensionNames();
+        }
+        
+    }
+
+    
+
+    QStringList clusterNames1;
+    if(_clusterDataset1.isValid())
+    {
+        auto& clusters = _clusterDataset1->getClusters();
+        for (auto cluster : clusters)
+        {
+            clusterNames1.append(cluster.getName());
+        }
+    }
+    
+
+    QStringList clusterNames2;
+    if(_clusterDataset2.isValid())
+    {
+        auto& clusters = _clusterDataset2->getClusters();
+        for (auto cluster : clusters)
+        {
+            clusterNames2.append(cluster.getName());
+        }
+    }
+    
+
+    _differentialExpressionWidget->setClusters1(clusterNames1);
+    _differentialExpressionWidget->setClusters2(clusterNames2);
+    auto clusterDataset1Parent = _clusterDataset1->getParent<Points>();
+    if(clusterDataset1Parent.isValid())
+        _differentialExpressionWidget->setClusters1ParentName(clusterDataset1Parent->getGuiName());
+    else
+        _differentialExpressionWidget->setClusters1ParentName("Unknown");
+    auto clusterDataset2Parent = _clusterDataset2->getParent<Points>();
+    if(clusterDataset2Parent.isValid())
+        _differentialExpressionWidget->setClusters2ParentName(clusterDataset2Parent->getGuiName());
+    else
+        _differentialExpressionWidget->setClusters2ParentName("Unknown");
     _differentialExpressionWidget->ShowOutOfDate();
 }
 
-void ClusterDifferentialExpressionPlugin::computeDE()
-{
-    if(_clusters1_selection.empty() || _clusters2_selection.empty())
-    {
-        return;
-    }
 
-    Dataset<Points> _points1 = _clusters1->getParent<Points>();
-    const auto& clusters = _clusters1->getClusters();
+std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset)
+{
+    const auto& clusters = clusterDataset->getClusters();
     const auto numClusters = clusters.size();
+
+    hdps::Dataset<Points> _points1 = clusterDataset->getParent<Points>();
     const std::ptrdiff_t numDimensions = _points1->getNumDimensions();
-    if (numClusters == 0)
-        return;
 
     // check if the basic DE_Statistics for the cluster dataset has already been computed
     std::ptrdiff_t child_DE_Statistics_DatasetIndex = -1;
     const QString child_DE_Statistics_DatasetName = "DE_Statistics";
     {
-        const auto& childDatasets = _clusters1->getChildren({ PointType });
+        const auto& childDatasets = clusterDataset->getChildren({ PointType });
         for (std::size_t i = 0; i < childDatasets.size(); ++i)
         {
             if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
@@ -193,47 +356,47 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             }
         }
     }
-    
 
-
-    
     // if they are not available compute them now
     if (child_DE_Statistics_DatasetIndex < 0)
     {
 
 
         //compute the DE statistics for this cluster
-        
+
         const auto numPoints = _points1->getNumPoints();
 
-        std::vector<float> meanExpressions(numClusters*numDimensions,0);
+        std::vector<float> meanExpressions(numClusters * numDimensions, 0);
 
-        _progressManager.start(meanExpressions.size(), "Computing DE Statistis Dataset");
+        int x = omp_get_max_threads();
+        int y = omp_get_num_threads();
 
-        for (std::size_t clusterIdx = 0; clusterIdx < numClusters; ++clusterIdx)
-        {
-
-            const auto& cluster = clusters[clusterIdx];
-            const auto& clusterIndices = cluster.getIndices();
-
-            #pragma omp parallel for schedule(dynamic, 1)
-            for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
+        std::string message = QString("Computing DE Statistics Dataset for %1 - %2").arg(_points1->getGuiName(),clusterDataset->getGuiName()).toStdString();
+        _progressManager.start(meanExpressions.size(), message);
+        
+        _points1->visitData([this, &clusters, &meanExpressions, numClusters, numDimensions](auto vec)
             {
                 
-                auto resultIdx = (clusterIdx * numDimensions) + dimension;
-                for (auto row : clusterIndices)
+                #pragma omp parallel for schedule(dynamic, 1)
+                for (std::ptrdiff_t clusterIdx = 0; clusterIdx < numClusters; ++clusterIdx)
                 {
-                    meanExpressions[resultIdx] += _points1->getValueAt((row * numDimensions) + dimension);
+                    const auto& cluster = clusters[clusterIdx];
+                    const auto& clusterIndices = cluster.getIndices();
+                    std::size_t offset = (clusterIdx * numDimensions);
+                    for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
+                    {
+                        auto resultIdx = offset + dimension;
+                        for (auto row : clusterIndices)
+                        {
+                            meanExpressions[resultIdx] += vec[row][dimension];
+                        }
+                        meanExpressions[resultIdx] /= clusterIndices.size();
+                        this->_progressManager.print(resultIdx);
+                    }
                 }
-                meanExpressions[resultIdx] /= numPoints;
-
-                _progressManager.print(resultIdx);
-            }
-        }
-
+            });
         
-
-        hdps::Dataset<Points> newDataset = _core->addDataset("Points", child_DE_Statistics_DatasetName, _clusters1);
+        hdps::Dataset<Points> newDataset = _core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
         _core->notifyDatasetAdded(newDataset);
         newDataset->setDataElementType<float>();
         newDataset->setData(meanExpressions, numDimensions);
@@ -242,7 +405,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         // now fild the child indices for this dataset
         child_DE_Statistics_DatasetIndex = -1;
         {
-            const auto& childDatasets = _clusters1->getChildren({PointType});
+            const auto& childDatasets = clusterDataset->getChildren({ PointType });
             for (std::size_t i = 0; i < childDatasets.size(); ++i)
             {
                 if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
@@ -252,42 +415,51 @@ void ClusterDifferentialExpressionPlugin::computeDE()
                 }
             }
         }
-        
+
 
         _progressManager.end();
     }
 
-    if (child_DE_Statistics_DatasetIndex < 0)
-        return;
-    const auto& childDatasets = _clusters1->getChildren({ PointType });
-    Dataset<Points> DE_Statistics = childDatasets[child_DE_Statistics_DatasetIndex];
+    return child_DE_Statistics_DatasetIndex;
+}
 
-    _progressManager.start((_clusters1_selection.size()+ _clusters2_selection.size() + 3)*numDimensions, "Compute Differential Expressions");
-    std::size_t progressOffset = 0;
+std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QList<int>& selected_clusters)
+{
+    std::vector<double> meanExpressions_cluster1;
+    auto clusterDataset_DE_Statitstics_Index = get_DE_Statistics_Index(clusterDataset);
+    if (clusterDataset_DE_Statitstics_Index < 0)
+        return meanExpressions_cluster1;
 
-    std::vector<double> meanExpressions_cluster1(numDimensions);
+    const auto& clusterDataset_Children = clusterDataset->getChildren({ PointType });
+    Dataset<Points> DE_Statistics = clusterDataset_Children[clusterDataset_DE_Statitstics_Index];
+
+    const auto& clusters = clusterDataset->getClusters();
+    auto numDimensions = DE_Statistics->getNumDimensions();
+
+    _progressManager.start((numDimensions * selected_clusters.size()) + numDimensions, QString("Computing Mean Expressions for %1").arg(clusterDataset->getGuiName()).toStdString());
+    meanExpressions_cluster1.assign(numDimensions,0);
     { // for each selected cluster in selection 1
         std::size_t sumOfClusterSizes = 0;
         std::size_t numProcessedClusters = 0;
-        for (auto clusterIdx : _clusters1_selection)
+        for (auto clusterIdx : selected_clusters)
         {
             const auto& cluster = clusters[clusterIdx];
             auto clusterName = cluster.getName();
             const auto clusterSize = cluster.getIndices().size();
 
             const std::size_t clusterIndexOffset = clusterIdx * numDimensions;
-            #pragma omp parallel for schedule(dynamic,1)
+#pragma omp parallel for schedule(dynamic,1)
             for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
             {
-                
-                meanExpressions_cluster1[dimension] += DE_Statistics->getValueAt(clusterIndexOffset+dimension) * clusterSize;
-                _progressManager.print(progressOffset + (numProcessedClusters*numDimensions) + dimension);
+
+                meanExpressions_cluster1[dimension] += DE_Statistics->getValueAt(clusterIndexOffset + dimension) * clusterSize;
+                _progressManager.print(  (numProcessedClusters * numDimensions) + dimension);
             }
             sumOfClusterSizes += clusterSize;
             ++numProcessedClusters;
         }
 
-        progressOffset += (_clusters2_selection.size() * numDimensions);
+        std::size_t progressOffset = (selected_clusters.size() * numDimensions);
 
 #pragma omp parallel for schedule(dynamic,1)
         for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
@@ -298,69 +470,92 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         progressOffset += numDimensions;
     }
 
-    std::vector<double> meanExpressions_cluster2(numDimensions);
-    { // for each selected cluster in selection 1
-        std::size_t sumOfClusterSizes = 0;
-        std::size_t numProcessedClusters = 0;
-        for (auto clusterIdx : _clusters2_selection)
-        {
-            const auto& cluster = clusters[clusterIdx];
-            auto clusterName = cluster.getName();
-            const auto clusterSize = cluster.getIndices().size();
+    _progressManager.end();
+    return meanExpressions_cluster1;
+}
 
-            const std::size_t clusterIndexOffset = clusterIdx * numDimensions;
-            #pragma omp parallel for schedule(dynamic,1)
-            for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
-            {
-                meanExpressions_cluster2[dimension] += DE_Statistics->getValueAt(clusterIndexOffset+dimension) * clusterSize;
-                _progressManager.print(progressOffset + (numProcessedClusters * numDimensions) + dimension);
-            }
-            sumOfClusterSizes += clusterSize;
-            ++numProcessedClusters;
-        }
-        progressOffset += (_clusters2_selection.size() * numDimensions);
-        #pragma omp parallel for schedule(dynamic,1)
-        for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
-        {
-            meanExpressions_cluster2[dimension] /= sumOfClusterSizes;
-            _progressManager.print(progressOffset + dimension);
-        }
-        progressOffset += numDimensions;
+void ClusterDifferentialExpressionPlugin::computeDE()
+{
+    if(_clusterDataset1_selected_clusters.empty() || _clusterDataset2_selected_clusters.empty())
+    {
+        return;
     }
 
+    
+    const auto& clusters = _clusterDataset1->getClusters();
+    const auto numClusters = clusters.size();
+    if (numClusters == 0)
+        return;
+
+    std::vector<double> meanExpressions_cluster1 = computeMeanExpressionsForSelectedClusters(_clusterDataset1, _clusterDataset1_selected_clusters);
+    std::vector<double> meanExpressions_cluster2 = computeMeanExpressionsForSelectedClusters(_clusterDataset2, _clusterDataset2_selected_clusters);
+    
+    
     enum{NAME, DE, MEAN1, MEAN2, COLUMN_COUNT};
     QTableItemModel* resultModel = new QTableItemModel(nullptr, false, COLUMN_COUNT);
-
-    const auto& dimensionNames = _points1->getDimensionNames();
-    resultModel->resize(numDimensions);
-    resultModel->startModelBuilding();
-
-    #pragma omp pragma parallel for(schedule,dynamic,1)
-    for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
+    
+    if(_identicalDimensions)
     {
-        std::vector<QVariant> dataVector(COLUMN_COUNT);
-        dataVector[NAME] = dimensionNames[dimension];
-        dataVector[MEAN1] = meanExpressions_cluster1[dimension];
-        dataVector[MEAN2] = meanExpressions_cluster2[dimension];
-        dataVector[DE] = meanExpressions_cluster1[dimension] - meanExpressions_cluster2[dimension];
-        resultModel->setRow(dimension, dataVector, Qt::Unchecked, true);
-
-        _progressManager.print(progressOffset + dimension);
+        std::vector<QString> dimensionNames = _clusterDataset1->getParent<Points>()->getDimensionNames();
+        std::size_t numDimensions = dimensionNames.size();
+        resultModel->resize(numDimensions);
+        resultModel->startModelBuilding();
+        _progressManager.start(numDimensions, "Computing Diferential Expressions");
+        #pragma omp  parallel for schedule(dynamic,1)
+        for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
+        {
+            std::vector<QVariant> dataVector(COLUMN_COUNT);
+            QString dimensionName = dimensionNames[dimension];
+            const double mean1 = meanExpressions_cluster1[dimension];
+            const double mean2 = meanExpressions_cluster2[dimension];
+            dataVector[DE] = mean1 - mean2;
+            dataVector[MEAN1] = mean1;
+            dataVector[MEAN2] = mean2;
+            resultModel->setRow(dimension, dataVector, Qt::Unchecked, true);
+            _progressManager.print(dimension);
+        }
     }
-
-    QString cluster1_mean_header = "Mean ";
-    for (std::size_t c=0; c < _clusters1_selection.size(); ++c)
+    else
     {
-        const auto& cluster = clusters[_clusters1_selection[c]];
+        std::size_t numDimensions = _matchingDimensionNames.size();
+        resultModel->resize(numDimensions);
+        resultModel->startModelBuilding();
+        _progressManager.start(numDimensions, "Computing Diferential Expressions");
+        #pragma omp  parallel for schedule(dynamic,1)
+        for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
+        {
+            std::vector<QVariant> dataVector(COLUMN_COUNT);
+            QString dimensionName = _matchingDimensionNames[dimension].first;
+            std::ptrdiff_t clusterDataset1_Index = _matchingDimensionNames[dimension].second.first;
+            std::ptrdiff_t clusterDataset2_Index = _matchingDimensionNames[dimension].second.second;
+            dataVector[NAME] = dimensionName;
+            const double mean1 = meanExpressions_cluster1[clusterDataset1_Index];
+            const double mean2 = meanExpressions_cluster2[clusterDataset2_Index];
+            dataVector[DE] = mean1 - mean2;
+            dataVector[MEAN1] = mean1;
+            dataVector[MEAN2] = mean2;
+            resultModel->setRow(dimension, dataVector, Qt::Unchecked, true);
+
+            _progressManager.print(dimension);
+        }
+    }
+    
+    
+    
+    QString cluster1_mean_header = "Mean ";
+    for (std::size_t c=0; c < _clusterDataset1_selected_clusters.size(); ++c)
+    {
+        const auto& cluster = clusters[_clusterDataset1_selected_clusters[c]];
         auto clusterName = cluster.getName();
         if (c > 0)
             cluster1_mean_header += "+";
         cluster1_mean_header += clusterName;
     }
+
     QString cluster2_mean_header = "Mean ";
-    for (std::size_t c = 0; c < _clusters2_selection.size(); ++c)
+    for (std::size_t c = 0; c < _clusterDataset2_selected_clusters.size(); ++c)
     {
-        const auto& cluster = clusters[_clusters2_selection[c]];
+        const auto& cluster = clusters[_clusterDataset2_selected_clusters[c]];
         auto clusterName = cluster.getName();
         if (c > 0)
             cluster1_mean_header += "+";
@@ -371,10 +566,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     resultModel->setHorizontalHeader(MEAN1, cluster1_mean_header);
     resultModel->setHorizontalHeader(MEAN2, cluster2_mean_header);
     resultModel->endModelBuilding();
-
-
-  
-
     _progressManager.end();
     
     _differentialExpressionWidget->setData(resultModel);
