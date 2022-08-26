@@ -5,7 +5,7 @@
 // DE
 class ClusterDifferentialExpressionPlugin;
 class QTableItemModel;
-
+class SortFilterProxyModel;
 
 // HDPS
 class Cluster;
@@ -17,7 +17,7 @@ class QLabel;
 class QStringListModel;
 class QPushButton;
 class QProgressBar;
-class QSortFilterProxyModel;
+
 
 class ClusterDifferentialExpressionWidget : public QWidget
 {
@@ -27,8 +27,8 @@ public:
 
     void setClusters1( QStringList clusters);
     void setClusters2( QStringList clusters);
-    void setClusters1ParentName(QString);
-    void setClusters2ParentName(QString);
+    void setFirstClusterLabel(QString);
+    void setSecondClusterLabel(QString);
     void setData(QTableItemModel *newModel);
     void ShowUpToDate();
     void ShowOutOfDate();
@@ -60,7 +60,7 @@ private:
     QComboBox*                              _clusters2Selection;
     QPushButton*                            _updateStatisticsButton;
     QTableItemModel*                        _differentialExpressionModel;
-    QSortFilterProxyModel*                    _sortFilterProxyModel;
+    SortFilterProxyModel*                    _sortFilterProxyModel;
     QProgressBar*                            _progressBar;
     
 };

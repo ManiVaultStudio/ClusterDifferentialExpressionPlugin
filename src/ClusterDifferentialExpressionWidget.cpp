@@ -2,6 +2,8 @@
 #include "ClusterDifferentialExpressionPlugin.h"
 
 #include "QTableItemModel.h"
+#include "SortFilterProxyModel.h"
+
 
 #include <QComboBox>
 #include <QTableView>
@@ -9,7 +11,11 @@
 #include <QHeaderView>
 #include <QProgressBar>
 #include <QGraphicsColorizeEffect>
-#include <QSortFilterProxyModel>
+#include <QLineEdit>
+#include <QVBoxLayout>
+#include <QGroupBox>
+
+
 
 ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(ClusterDifferentialExpressionPlugin* differentialExpressionPlugin)
     :_differentialExpressionPlugin(differentialExpressionPlugin)
@@ -30,29 +36,42 @@ void ClusterDifferentialExpressionWidget::initGui()
 {
 
     setAcceptDrops(true);
-    const int NumberOfColums = 4;
+    const int NumberOfColums = 2;
 
     QGridLayout* layout = new QGridLayout;
     setLayout(layout);
 
     int currentRow = 0;
 
-    { // cluster selection
+    {
+        QVBoxLayout *vboxLayout = new QVBoxLayout;
         _clusters1ParentName = new QLabel();
-        layout->addWidget(_clusters1ParentName, currentRow, 0, 1, 1);
+        vboxLayout->addWidget(_clusters1ParentName);
         _clusters1Selection = new QComboBox;
-        layout->addWidget(_clusters1Selection, currentRow, 1, 1, 1);
+        vboxLayout->addWidget(_clusters1Selection);
         connect(_clusters1Selection, &QComboBox::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
+        QGroupBox* newGroupBox = new QGroupBox("Selection 1");
+        newGroupBox->setLayout(vboxLayout);
+        layout->addWidget(newGroupBox, currentRow, 0, 1, 1);
+        
+    }
 
+    {
+        QVBoxLayout* vboxLayout = new QVBoxLayout;
         _clusters2ParentName = new QLabel();
-        layout->addWidget(_clusters2ParentName, currentRow, 2, 1, 1);
+        vboxLayout->addWidget(_clusters2ParentName);
         _clusters2Selection = new QComboBox;
-        layout->addWidget(_clusters2Selection, currentRow++, 3, 1, 1);
+        vboxLayout->addWidget(_clusters2Selection);
         connect(_clusters2Selection, &QComboBox::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
+        QGroupBox* newGroupBox = new QGroupBox("Selection 2");
+        newGroupBox->setLayout(vboxLayout);
+        layout->addWidget(newGroupBox, currentRow++, 1, 1, 1);
+
     }
     
+    
     { // table view
-        _sortFilterProxyModel = new QSortFilterProxyModel;
+        _sortFilterProxyModel = new SortFilterProxyModel;
         _tableView = new QTableView;
         _tableView->setModel(_sortFilterProxyModel);
         _tableView->setSortingEnabled(true);
@@ -62,8 +81,10 @@ void ClusterDifferentialExpressionWidget::initGui()
         _tableView->setSortingEnabled(true);
 
         QHeaderView* horizontalHeader = _tableView->horizontalHeader();
-        horizontalHeader->setStretchLastSection(true);
+        //horizontalHeader->setStretchLastSection(true);
+        horizontalHeader->setFirstSectionMovable(false);
         horizontalHeader->setSectionsMovable(true);
+        horizontalHeader->sectionResizeMode(QHeaderView::Interactive);
         horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
         horizontalHeader->setSortIndicator(0, Qt::SortOrder::AscendingOrder);
         
@@ -91,6 +112,12 @@ void ClusterDifferentialExpressionWidget::initGui()
         _updateStatisticsButton = new QPushButton("Calculate Differential Expression", this);
         layout->addWidget(_updateStatisticsButton, currentRow++, 0, 1, NumberOfColums);
         QObject::connect(_updateStatisticsButton, &QPushButton::clicked, this, &ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed);
+
+        layout->addWidget(new QLabel("Filter on Name "), currentRow, 0, 1, 1);
+        QLineEdit* nameFilter = new QLineEdit(this);
+        nameFilter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        connect(nameFilter, SIGNAL(textChanged(QString)), _sortFilterProxyModel, SLOT(nameFilterChanged(QString)));
+        layout->addWidget(nameFilter, currentRow++, 1, 1, NumberOfColums-1);
     }
     
 }
@@ -137,14 +164,14 @@ void ClusterDifferentialExpressionWidget::setClusters2( QStringList clusters)
     }
 }
 
-void ClusterDifferentialExpressionWidget::setClusters1ParentName(QString name)
+void ClusterDifferentialExpressionWidget::setFirstClusterLabel(QString name)
 {
     name += ": ";
     if(_clusters1ParentName)
         _clusters1ParentName->setText(name);
 }
 
-void ClusterDifferentialExpressionWidget::setClusters2ParentName(QString name)
+void ClusterDifferentialExpressionWidget::setSecondClusterLabel(QString name)
 {
     name += ": ";
     if (_clusters2ParentName)
@@ -161,8 +188,8 @@ void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
 
     
     QHeaderView* horizontalHeader = _tableView->horizontalHeader();
-    for (auto c = 0; c < horizontalHeader->count(); ++c)
-        horizontalHeader->setSectionResizeMode(c, QHeaderView::ResizeToContents);
+    horizontalHeader->resizeSections(QHeaderView::ResizeToContents);
+    
 
     ShowUpToDate();
 }

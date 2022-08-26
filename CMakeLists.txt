@@ -40,6 +40,8 @@ set(PLUGIN
 set(MODEL
     src/QTableItemModel.h
     src/QTableItemModel.cpp
+    src/SortFilterProxyModel.h
+    src/SortFilterProxyModel.cpp
 )
 
 set(ACTIONS

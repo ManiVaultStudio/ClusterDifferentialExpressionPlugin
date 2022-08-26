@@ -176,13 +176,17 @@ void ProgressManager::setValue(std::size_t value)
 
 void ProgressManager::print(long long i)
 {
+    assert(m_progress[i] == 0);
+    if (m_progress[i] > 0)
+        throw std::out_of_range("ProgressManager - Out Of Range\n");
 	m_progress[i] = 1;
 	if (omp_get_thread_num() == 0)
 	{
 		int64_t zero = 0;
 		int64_t value = std::accumulate(m_progress.cbegin(), m_progress.cend(), zero);
 		const int progressValue = (value == m_maxRange) ? MAX_RANGE : (m_scaleFactor * value);
-		
+
+      //  std::cout << "P: "<< value << "\t" << m_progress.size() << "\t" << progressValue << std::endl;
 // #ifndef HIDE_CONSOLE
 // 		std::cout << "\r" << m_labelText.toStdString() << std::fixed << std::setprecision(3) << 100.0*value / m_maxRange << "%";
 // #endif

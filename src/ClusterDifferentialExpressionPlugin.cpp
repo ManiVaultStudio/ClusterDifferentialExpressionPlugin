@@ -322,14 +322,14 @@ void ClusterDifferentialExpressionPlugin::updateData()
     _differentialExpressionWidget->setClusters2(clusterNames2);
     auto clusterDataset1Parent = _clusterDataset1->getParent<Points>();
     if(clusterDataset1Parent.isValid())
-        _differentialExpressionWidget->setClusters1ParentName(clusterDataset1Parent->getGuiName());
+        _differentialExpressionWidget->setFirstClusterLabel(QString("%1 - %2").arg(clusterDataset1Parent->getGuiName(), _clusterDataset1->getGuiName()));
     else
-        _differentialExpressionWidget->setClusters1ParentName("Unknown");
+        _differentialExpressionWidget->setFirstClusterLabel("Unknown");
     auto clusterDataset2Parent = _clusterDataset2->getParent<Points>();
     if(clusterDataset2Parent.isValid())
-        _differentialExpressionWidget->setClusters2ParentName(clusterDataset2Parent->getGuiName());
+        _differentialExpressionWidget->setSecondClusterLabel(QString("%1 - %2").arg(clusterDataset2Parent->getGuiName(), _clusterDataset2->getGuiName()));
     else
-        _differentialExpressionWidget->setClusters2ParentName("Unknown");
+        _differentialExpressionWidget->setSecondClusterLabel("Unknown");
     _differentialExpressionWidget->ShowOutOfDate();
 }
 
@@ -371,36 +371,46 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         int x = omp_get_max_threads();
         int y = omp_get_num_threads();
 
-        std::string message = QString("Computing DE Statistics Dataset for %1 - %2").arg(_points1->getGuiName(),clusterDataset->getGuiName()).toStdString();
-        _progressManager.start(meanExpressions.size(), message);
-        
+        std::string message = QString("Computing DE Statistics for %1 - %2").arg(_points1->getGuiName(),clusterDataset->getGuiName()).toStdString();
+        _progressManager.start(numDimensions/**numPoints*/, message);
         _points1->visitData([this, &clusters, &meanExpressions, numClusters, numDimensions](auto vec)
             {
                 
                 #pragma omp parallel for schedule(dynamic, 1)
-                for (std::ptrdiff_t clusterIdx = 0; clusterIdx < numClusters; ++clusterIdx)
+                for (int dimension = 0; dimension < numDimensions; ++dimension)
                 {
-                    const auto& cluster = clusters[clusterIdx];
-                    const auto& clusterIndices = cluster.getIndices();
-                    std::size_t offset = (clusterIdx * numDimensions);
-                    for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
+                    //#pragma omp parallel for schedule(dynamic, 1)
+                    for (std::ptrdiff_t clusterIdx = 0; clusterIdx < numClusters; ++clusterIdx)
                     {
-                        auto resultIdx = offset + dimension;
+                        const auto& cluster = clusters[clusterIdx];
+                        const auto& clusterIndices = cluster.getIndices();
+                        std::size_t offset = (clusterIdx * numDimensions) + dimension;
                         for (auto row : clusterIndices)
                         {
-                            meanExpressions[resultIdx] += vec[row][dimension];
+                            meanExpressions[offset] += vec[row][dimension];
+                           // this->_progressManager.print((row * numDimensions) + dimension);
+                           // if(omp_get_thread_num()==0)
+                            //    std::cout << "D: " << dimension << "\t" << clusterIdx << "\t" << row << std::endl;
                         }
-                        meanExpressions[resultIdx] /= clusterIndices.size();
-                        this->_progressManager.print(resultIdx);
+                        meanExpressions[offset] /= clusterIndices.size();
                     }
+                    _progressManager.print(dimension);
                 }
             });
+
+        _progressManager.end();
+
+        
+
+       
+
         
         hdps::Dataset<Points> newDataset = _core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
         _core->notifyDatasetAdded(newDataset);
         newDataset->setDataElementType<float>();
-        newDataset->setData(meanExpressions, numDimensions);
+        newDataset->setData(std::move(meanExpressions), numDimensions);
         _core->notifyDatasetChanged(newDataset);
+       
 
         // now fild the child indices for this dataset
         child_DE_Statistics_DatasetIndex = -1;
@@ -415,11 +425,12 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
                 }
             }
         }
+     
 
 
-        _progressManager.end();
+      
     }
-
+    
     return child_DE_Statistics_DatasetIndex;
 }
 
@@ -508,6 +519,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             QString dimensionName = dimensionNames[dimension];
             const double mean1 = meanExpressions_cluster1[dimension];
             const double mean2 = meanExpressions_cluster2[dimension];
+            dataVector[NAME] = dimensionName;
             dataVector[DE] = mean1 - mean2;
             dataVector[MEAN1] = mean1;
             dataVector[MEAN2] = mean2;
@@ -542,7 +554,8 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     
     
     
-    QString cluster1_mean_header = "Mean ";
+    QString cluster1_mean_header = "Selection 1 Mean";
+    /*
     for (std::size_t c=0; c < _clusterDataset1_selected_clusters.size(); ++c)
     {
         const auto& cluster = clusters[_clusterDataset1_selected_clusters[c]];
@@ -551,8 +564,10 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             cluster1_mean_header += "+";
         cluster1_mean_header += clusterName;
     }
+    */
 
-    QString cluster2_mean_header = "Mean ";
+    QString cluster2_mean_header = "Selection 2 Mean";
+    /*
     for (std::size_t c = 0; c < _clusterDataset2_selected_clusters.size(); ++c)
     {
         const auto& cluster = clusters[_clusterDataset2_selected_clusters[c]];
@@ -561,6 +576,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             cluster1_mean_header += "+";
         cluster2_mean_header += clusterName;
     }
+    */
     resultModel->setHorizontalHeader(NAME, "Gene");
     resultModel->setHorizontalHeader(DE, "Differential Expression");
     resultModel->setHorizontalHeader(MEAN1, cluster1_mean_header);
