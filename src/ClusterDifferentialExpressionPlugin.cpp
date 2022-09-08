@@ -588,9 +588,9 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     
 }
 
-QIcon ClusterDifferentialExpressionFactory::getIcon() const
+QIcon ClusterDifferentialExpressionFactory::getIcon(const QColor& color /*= Qt::black*/) const
 {
-    return Application::getIconFont("FontAwesome").getIcon("table");
+    return Application::getIconFont("FontAwesome").getIcon("table", color);
 }
 
 ClusterDifferentialExpressionPlugin* ClusterDifferentialExpressionFactory::produce()

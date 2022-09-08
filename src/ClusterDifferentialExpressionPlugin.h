@@ -86,7 +86,7 @@ public:
     ~ClusterDifferentialExpressionFactory() {}
 
     /** Returns the plugin icon */
-    QIcon getIcon() const override;
+    QIcon getIcon(const QColor& color = Qt::black) const override;
 
     ClusterDifferentialExpressionPlugin* produce() override;
 
