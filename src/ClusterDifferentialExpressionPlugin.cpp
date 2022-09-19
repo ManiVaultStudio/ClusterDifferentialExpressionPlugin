@@ -322,12 +322,12 @@ void ClusterDifferentialExpressionPlugin::updateData()
     _differentialExpressionWidget->setClusters2(clusterNames2);
     auto clusterDataset1Parent = _clusterDataset1->getParent<Points>();
     if(clusterDataset1Parent.isValid())
-        _differentialExpressionWidget->setFirstClusterLabel(QString("%1 - %2").arg(clusterDataset1Parent->getGuiName(), _clusterDataset1->getGuiName()));
+        _differentialExpressionWidget->setFirstClusterLabel(_clusterDataset1.getDatasetGuid());
     else
         _differentialExpressionWidget->setFirstClusterLabel("Unknown");
     auto clusterDataset2Parent = _clusterDataset2->getParent<Points>();
     if(clusterDataset2Parent.isValid())
-        _differentialExpressionWidget->setSecondClusterLabel(QString("%1 - %2").arg(clusterDataset2Parent->getGuiName(), _clusterDataset2->getGuiName()));
+        _differentialExpressionWidget->setSecondClusterLabel(_clusterDataset2.getDatasetGuid());
     else
         _differentialExpressionWidget->setSecondClusterLabel("Unknown");
     _differentialExpressionWidget->ShowOutOfDate();

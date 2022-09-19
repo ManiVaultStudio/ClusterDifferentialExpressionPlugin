@@ -20,13 +20,16 @@
 ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(ClusterDifferentialExpressionPlugin* differentialExpressionPlugin)
     :_differentialExpressionPlugin(differentialExpressionPlugin)
     , _modelIsUpToDate(false)
-    , _clusters1Selection(nullptr)
-    , _clusters2Selection(nullptr)
+    , _clusterDataset1LabelAction(this, "Dataset")
+    , _clusterDataset2LabelAction(this, "Dataset")
+    , _clusters1SelectionAction(this,"Clusters")
+    , _clusters2SelectionAction(this, "Clusters")
     , _tableView(nullptr)
     , _differentialExpressionModel(nullptr)
     , _sortFilterProxyModel(nullptr)
     , _clusters1ParentName(nullptr)
     , _clusters2ParentName(nullptr)
+	
 {
     initGui();
     
@@ -44,29 +47,41 @@ void ClusterDifferentialExpressionWidget::initGui()
     int currentRow = 0;
 
     {
-        QVBoxLayout *vboxLayout = new QVBoxLayout;
-        _clusters1ParentName = new QLabel();
-        vboxLayout->addWidget(_clusters1ParentName);
-        _clusters1Selection = new QComboBox;
-        vboxLayout->addWidget(_clusters1Selection);
-        connect(_clusters1Selection, &QComboBox::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
-        QGroupBox* newGroupBox = new QGroupBox("Selection 1");
-        newGroupBox->setLayout(vboxLayout);
-        layout->addWidget(newGroupBox, currentRow, 0, 1, 1);
+        QGridLayout* gridLayout = new QGridLayout;
+       // _clusterDataset1LabelAction.publish("vla");
+        gridLayout->addWidget(_clusterDataset1LabelAction.createLabelWidget(this),0,0);
+        auto* w = _clusterDataset1LabelAction.createWidget(this);
+        w->setEnabled(false);
+        gridLayout->addWidget(w,0,1);
         
+        _clusters1SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
+        _clusters1SelectionAction.setPlaceHolderString("Choose Selection 1 Cluster");
+        connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
+        gridLayout->addWidget(_clusters1SelectionAction.createLabelWidget(this), 1,0);
+        gridLayout->addWidget(_clusters1SelectionAction.createWidget(this), 1, 1);
+        
+        QGroupBox* newGroupBox = new QGroupBox("Selection 1");
+        newGroupBox->setLayout(gridLayout);
+        layout->addWidget(newGroupBox, currentRow, 0, 1, 1);
     }
 
     {
-        QVBoxLayout* vboxLayout = new QVBoxLayout;
-        _clusters2ParentName = new QLabel();
-        vboxLayout->addWidget(_clusters2ParentName);
-        _clusters2Selection = new QComboBox;
-        vboxLayout->addWidget(_clusters2Selection);
-        connect(_clusters2Selection, &QComboBox::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
-        QGroupBox* newGroupBox = new QGroupBox("Selection 2");
-        newGroupBox->setLayout(vboxLayout);
-        layout->addWidget(newGroupBox, currentRow++, 1, 1, 1);
+        QGridLayout* gridLayout = new QGridLayout;
 
+        gridLayout->addWidget(_clusterDataset2LabelAction.createLabelWidget(this), 0, 0);
+        auto* w = _clusterDataset2LabelAction.createWidget(this);
+        w->setDisabled(true);
+        gridLayout->addWidget(w, 0, 1);
+
+        _clusters2SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
+        _clusters2SelectionAction.setPlaceHolderString("Choose Selection 2 Cluster");
+        connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
+        gridLayout->addWidget(_clusters2SelectionAction.createLabelWidget(this), 1, 0);
+        gridLayout->addWidget(_clusters2SelectionAction.createWidget(this), 1, 1);
+
+        QGroupBox* newGroupBox = new QGroupBox("Selection 2");
+        newGroupBox->setLayout(gridLayout);
+        layout->addWidget(newGroupBox, currentRow++, 1, 1, 1);
     }
     
     
@@ -79,14 +94,16 @@ void ClusterDifferentialExpressionWidget::initGui()
         _tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
         _tableView->setSortingEnabled(true);
+        
 
         QHeaderView* horizontalHeader = _tableView->horizontalHeader();
         //horizontalHeader->setStretchLastSection(true);
         horizontalHeader->setFirstSectionMovable(false);
         horizontalHeader->setSectionsMovable(true);
         horizontalHeader->sectionResizeMode(QHeaderView::Interactive);
-        horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
+        horizontalHeader->setSectionResizeMode(QHeaderView::Stretch);
         horizontalHeader->setSortIndicator(0, Qt::SortOrder::AscendingOrder);
+        horizontalHeader->setDefaultAlignment(Qt::AlignCenter | Qt::Alignment(Qt::TextWordWrap));
         
 
         layout->addWidget(_tableView, currentRow++, 0, 1, NumberOfColums);
@@ -124,58 +141,22 @@ void ClusterDifferentialExpressionWidget::initGui()
 
 void ClusterDifferentialExpressionWidget::setClusters1(QStringList clusters)
 {
-    _clusters1Selection->clear();
-    if (clusters.size())
-    {
-        std::vector < std::pair<QString, std::size_t>> sortedClusters(clusters.size());
-        for (std::size_t i = 0; i < sortedClusters.size(); ++i)
-        {
-            sortedClusters[i].first = clusters[i];
-            sortedClusters[i].second = i;
-        }
-        std::sort(sortedClusters.begin(), sortedClusters.end());
-        for (auto cluster : sortedClusters)
-        {
-            _clusters1Selection->addItem(cluster.first, cluster.second);
-        }
-        if (_clusters1Selection->count())
-            _clusters1Selection->setCurrentIndex(0);
-    }
+    _clusters1SelectionAction.initialize(clusters);
 }
 
 void ClusterDifferentialExpressionWidget::setClusters2( QStringList clusters)
 {
-    _clusters2Selection->clear();
-    if(clusters.size())
-    {
-        std::vector < std::pair<QString, std::size_t>> sortedClusters(clusters.size());
-        for(std::size_t i=0; i < sortedClusters.size(); ++i)
-        {
-            sortedClusters[i].first = clusters[i];
-            sortedClusters[i].second = i;
-        }
-        std::sort(sortedClusters.begin(), sortedClusters.end());
-        for (auto cluster : sortedClusters)
-        {
-            _clusters2Selection->addItem(cluster.first, cluster.second);
-        }
-        if (_clusters2Selection->count())
-            _clusters2Selection->setCurrentIndex(0);
-    }
+    _clusters2SelectionAction.initialize(clusters);
 }
 
 void ClusterDifferentialExpressionWidget::setFirstClusterLabel(QString name)
 {
-    name += ": ";
-    if(_clusters1ParentName)
-        _clusters1ParentName->setText(name);
+    _clusterDataset1LabelAction.setString(name);
 }
 
 void ClusterDifferentialExpressionWidget::setSecondClusterLabel(QString name)
 {
-    name += ": ";
-    if (_clusters2ParentName)
-        _clusters2ParentName->setText(name);
+    _clusterDataset2LabelAction.setString(name);
 }
 
 void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
@@ -241,14 +222,20 @@ void ClusterDifferentialExpressionWidget::ShowOutOfDate()
 
 void ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged(int index)
 {
-    QList<int> selection = { _clusters1Selection->currentData().toInt() };
-    emit clusters1SelectionChanged(selection);
+    if(index >=0)
+    {
+        QList<int> selection = { index };
+        emit clusters1SelectionChanged(selection);
+    }
 }
 
 void ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged(int index)
 {
-    QList<int> selection = { _clusters2Selection->currentData().toInt() };
-    emit clusters2SelectionChanged(selection);
+    if(index >=0)
+    {
+        QList<int> selection = { index };
+        emit clusters2SelectionChanged(selection);
+    }
 }
 
 void ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed()

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <QWidget>
-
+#include "actions/OptionAction.h"
+#include "actions/StringAction.h"
 // DE
 class ClusterDifferentialExpressionPlugin;
 class QTableItemModel;
@@ -56,8 +57,10 @@ private:
     QTableView*                             _tableView;
     QLabel*                                  _clusters1ParentName;
     QLabel*                                  _clusters2ParentName;
-    QComboBox*                              _clusters1Selection;
-    QComboBox*                              _clusters2Selection;
+    hdps::gui::StringAction                 _clusterDataset1LabelAction;
+    hdps::gui::StringAction                 _clusterDataset2LabelAction;
+    hdps::gui::OptionAction                _clusters1SelectionAction;
+    hdps::gui::OptionAction                _clusters2SelectionAction;
     QPushButton*                            _updateStatisticsButton;
     QTableItemModel*                        _differentialExpressionModel;
     SortFilterProxyModel*                    _sortFilterProxyModel;
