@@ -42,7 +42,8 @@ public:
 protected slots:
     void clusters1Selected(QList<int> selectedClusters);
     void clusters2Selected(QList<int> selectedClusters);
-
+    void clusters1DatasetChanged(const QString& id);
+    void clusters2DatasetChanged(const QString& id);
 private:
     
     std::ptrdiff_t get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset);

@@ -78,7 +78,7 @@ void ClusterDifferentialExpressionPlugin::init()
                 dropRegions << new gui::DropWidget::DropRegion(this, "First Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
                     _differentialExpressionWidget->ShowOutOfDate();
                     _dropWidget->setShowDropIndicator(false);
-                    _clusterDataset1 = candidateDataset;
+                    clusters1DatasetChanged(candidateDataset.getDatasetGuid());
                     });
             }
             else
@@ -86,14 +86,14 @@ void ClusterDifferentialExpressionPlugin::init()
                 dropRegions << new gui::DropWidget::DropRegion(this, " First Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
                     _differentialExpressionWidget->ShowOutOfDate();
                     _dropWidget->setShowDropIndicator(false);
-                    _clusterDataset1 = candidateDataset;
+                    clusters1DatasetChanged(candidateDataset.getDatasetGuid());
                     });
 
                 dropRegions << new gui::DropWidget::DropRegion(this, " Second Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
                     
                     _differentialExpressionWidget->ShowOutOfDate();
                     _dropWidget->setShowDropIndicator(false);
-                    _clusterDataset2 = candidateDataset;
+                    clusters2DatasetChanged(candidateDataset.getDatasetGuid());
                     });
 
                
@@ -136,7 +136,7 @@ void ClusterDifferentialExpressionPlugin::init()
         // Load clusters when the dataset name of the clusters dataset reference changes
         connect(&_clusterDataset1, &Dataset<Clusters>::changed, this, [this, updateWindowTitle]() {
             updateWindowTitle();
-        updateData();
+			updateData();
             //TODO: Delete DE_Statistics
         });
 
@@ -202,6 +202,32 @@ void ClusterDifferentialExpressionPlugin::clusters2Selected(QList<int> selectedC
         _differentialExpressionWidget->ShowOutOfDate();
     }
     
+}
+
+void ClusterDifferentialExpressionPlugin::clusters1DatasetChanged(const QString &id)
+{
+    const auto candidateDataset = _core->requestDataset<Clusters>(id);
+    if(candidateDataset.isValid())
+    {
+    	auto parentDataset = candidateDataset->getParent<Points>();
+        if (parentDataset.isValid())
+        {
+            _clusterDataset1 = candidateDataset;
+        }
+    }
+}
+
+void ClusterDifferentialExpressionPlugin::clusters2DatasetChanged(const QString& id)
+{
+    const auto candidateDataset = _core->requestDataset<Clusters>(id);
+    if (candidateDataset.isValid())
+    {
+        auto parentDataset = candidateDataset->getParent<Points>();
+        if (parentDataset.isValid())
+        {
+            _clusterDataset2 = candidateDataset;
+        }
+    }
 }
 
 bool ClusterDifferentialExpressionPlugin::matchDimensionNames()

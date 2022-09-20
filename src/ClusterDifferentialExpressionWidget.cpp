@@ -50,21 +50,28 @@ void ClusterDifferentialExpressionWidget::initGui()
 
     {
         QGridLayout* gridLayout = new QGridLayout;
-       // _clusterDataset1LabelAction.publish("vla");
-        gridLayout->addWidget(_clusterDataset1LabelAction.createLabelWidget(this),0,0);
-        auto* w = _clusterDataset1LabelAction.createWidget(this);
-        w->setEnabled(false);
-        gridLayout->addWidget(w,0,1);
-        
-        _clusters1SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
-      
-        _clusters1SelectionAction.setPlaceHolderString("Choose Selection 1 Cluster");
-        _clusters1SelectionAction.setDefaultIndex(0);
-        connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
-        _cluster1SectionLabelWidget = _clusters1SelectionAction.createLabelWidget(this);
-        _cluster1SectionLabelWidget->setDisabled(true);
-        gridLayout->addWidget(_cluster1SectionLabelWidget, 1, 0);
-        gridLayout->addWidget(_clusters1SelectionAction.createWidget(this), 1, 1);
+        {
+            gridLayout->addWidget(_clusterDataset1LabelAction.createLabelWidget(this), 0, 0);
+            QWidget* w = _clusterDataset1LabelAction.createWidget(this);
+            {
+                QLineEdit* f = w->findChild<QLineEdit*>();
+                f->setDisabled(true); // no manual editing    
+            }
+            gridLayout->addWidget(w, 0, 1);
+            connect(&_clusterDataset1LabelAction, &hdps::gui::StringAction::stringChanged, this, [this](const QString& id) { emit clusters1DatasetChanged(id); });
+        }
+       
+        {
+            _clusters1SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
+
+            _clusters1SelectionAction.setPlaceHolderString("Choose Selection 1 Cluster");
+            _clusters1SelectionAction.setDefaultIndex(0);
+            connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
+            _cluster1SectionLabelWidget = _clusters1SelectionAction.createLabelWidget(this);
+            _cluster1SectionLabelWidget->setDisabled(true);
+            gridLayout->addWidget(_cluster1SectionLabelWidget, 1, 0);
+            gridLayout->addWidget(_clusters1SelectionAction.createWidget(this), 1, 1);
+        }
         
         QGroupBox* newGroupBox = new QGroupBox("Selection 1");
         newGroupBox->setLayout(gridLayout);
@@ -74,19 +81,29 @@ void ClusterDifferentialExpressionWidget::initGui()
     {
         QGridLayout* gridLayout = new QGridLayout;
 
-        gridLayout->addWidget(_clusterDataset2LabelAction.createLabelWidget(this), 0, 0);
-        auto* w = _clusterDataset2LabelAction.createWidget(this);
-        w->setDisabled(true);
-        gridLayout->addWidget(w, 0, 1);
+        {
+            gridLayout->addWidget(_clusterDataset2LabelAction.createLabelWidget(this), 0, 0);
+            gridLayout->addWidget(_clusterDataset2LabelAction.createWidget(this), 0, 1);
 
-        _clusters2SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
-        _clusters2SelectionAction.setPlaceHolderString("Choose Selection 2 Cluster");
-       
-        connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
-        _cluster2SectionLabelWidget = _clusters2SelectionAction.createLabelWidget(this);
-        _cluster2SectionLabelWidget->setDisabled(true); // disabled until the options are added.
-        gridLayout->addWidget(_cluster2SectionLabelWidget, 1, 0);
-        gridLayout->addWidget(_clusters2SelectionAction.createWidget(this), 1, 1);
+            auto* w = _clusterDataset2LabelAction.createWidget(this);
+            QLineEdit* f = w->findChild<QLineEdit*>();
+            f->setDisabled(true); // no manual editing
+            gridLayout->addWidget(w, 0, 1);
+
+            connect(&_clusterDataset1LabelAction, &hdps::gui::StringAction::stringChanged, this, [this](const QString& id) { emit clusters1DatasetChanged(id); });
+        }
+        
+        
+        {
+            _clusters2SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
+            _clusters2SelectionAction.setPlaceHolderString("Choose Selection 2 Cluster");
+            _cluster2SectionLabelWidget = _clusters2SelectionAction.createLabelWidget(this);
+            _cluster2SectionLabelWidget->setDisabled(true); // disabled until the options are added.
+            gridLayout->addWidget(_cluster2SectionLabelWidget, 1, 0);
+            gridLayout->addWidget(_clusters2SelectionAction.createWidget(this), 1, 1);
+            connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
+        }
+        
 
         QGroupBox* newGroupBox = new QGroupBox("Selection 2");
         newGroupBox->setLayout(gridLayout);

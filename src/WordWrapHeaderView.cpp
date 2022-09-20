@@ -24,12 +24,16 @@ QSize WordWrapHeaderView::sectionSizeFromContents(int logicalIndex) const
         const int maxHeight = 5000; // arbitrarily large
 
         const QFontMetrics metrics(this->fontMetrics());
-		maxWidth -= metrics.horizontalAdvance("M"); // assume M is the widest character ??
-        const QRect rect = metrics.boundingRect(QRect(0, 0, maxWidth, maxHeight), alignment, text);
+    	QRect rect = metrics.boundingRect(QRect(0, 0, maxWidth, maxHeight), alignment, text);
+        const int marginCorrection = 2;
+        const QSize textMarginBuffer(marginCorrection, marginCorrection); // buffer space around text preventing clipping
 
-        const QSize textMarginBuffer(2, 2); // buffer space around text preventing clipping
-        if(logicalIndex == 1)
-			std::cout << std::endl << maxWidth << "\t" << rect.left() << "\t " << rect.width() << "\t" << (2*rect.left()) + rect.width() << "\t" << rect.height() << std::endl;
+        
+        // the bounding rectangle doesn't always give the correct height so we fix it here.
+        if ((maxWidth - (rect.right() + 2*marginCorrection)) <= 0)
+        {
+            rect.setHeight(rect.height() + metrics.height());
+        }
         return rect.size() + textMarginBuffer;
     }
     else

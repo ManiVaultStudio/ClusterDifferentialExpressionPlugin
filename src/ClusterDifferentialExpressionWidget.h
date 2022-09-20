@@ -39,7 +39,10 @@ public:
 
 signals:
     void clusters1SelectionChanged(QList<int> selectedClusters);
+    void clusters1DatasetChanged(QString id);
     void clusters2SelectionChanged(QList<int> selectedClusters);
+    void clusters2DatasetChanged(QString id);
+    
     void computeDE();
 
 private slots:
