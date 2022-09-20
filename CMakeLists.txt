@@ -54,6 +54,8 @@ set(ACTIONS
 set(WIDGETS
     src/ClusterDifferentialExpressionWidget.h
     src/ClusterDifferentialExpressionWidget.cpp
+    src/WordWrapHeaderView.h
+    src/WordWrapHeaderView.cpp
 )
 
 set(UTIL

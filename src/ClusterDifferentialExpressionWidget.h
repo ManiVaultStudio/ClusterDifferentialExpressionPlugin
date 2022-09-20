@@ -65,5 +65,7 @@ private:
     QTableItemModel*                        _differentialExpressionModel;
     SortFilterProxyModel*                    _sortFilterProxyModel;
     QProgressBar*                            _progressBar;
+    QWidget* _cluster1SectionLabelWidget;
+    QWidget* _cluster2SectionLabelWidget;
     
 };

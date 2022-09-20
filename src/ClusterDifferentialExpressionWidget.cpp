@@ -3,7 +3,7 @@
 
 #include "QTableItemModel.h"
 #include "SortFilterProxyModel.h"
-
+#include "WordWrapHeaderView.h"
 
 #include <QComboBox>
 #include <QTableView>
@@ -29,6 +29,8 @@ ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(Cluster
     , _sortFilterProxyModel(nullptr)
     , _clusters1ParentName(nullptr)
     , _clusters2ParentName(nullptr)
+	, _cluster1SectionLabelWidget(nullptr)
+    , _cluster2SectionLabelWidget(nullptr)
 	
 {
     initGui();
@@ -55,9 +57,13 @@ void ClusterDifferentialExpressionWidget::initGui()
         gridLayout->addWidget(w,0,1);
         
         _clusters1SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
+      
         _clusters1SelectionAction.setPlaceHolderString("Choose Selection 1 Cluster");
+        _clusters1SelectionAction.setDefaultIndex(0);
         connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
-        gridLayout->addWidget(_clusters1SelectionAction.createLabelWidget(this), 1,0);
+        _cluster1SectionLabelWidget = _clusters1SelectionAction.createLabelWidget(this);
+        _cluster1SectionLabelWidget->setDisabled(true);
+        gridLayout->addWidget(_cluster1SectionLabelWidget, 1, 0);
         gridLayout->addWidget(_clusters1SelectionAction.createWidget(this), 1, 1);
         
         QGroupBox* newGroupBox = new QGroupBox("Selection 1");
@@ -75,8 +81,11 @@ void ClusterDifferentialExpressionWidget::initGui()
 
         _clusters2SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
         _clusters2SelectionAction.setPlaceHolderString("Choose Selection 2 Cluster");
+       
         connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
-        gridLayout->addWidget(_clusters2SelectionAction.createLabelWidget(this), 1, 0);
+        _cluster2SectionLabelWidget = _clusters2SelectionAction.createLabelWidget(this);
+        _cluster2SectionLabelWidget->setDisabled(true); // disabled until the options are added.
+        gridLayout->addWidget(_cluster2SectionLabelWidget, 1, 0);
         gridLayout->addWidget(_clusters2SelectionAction.createWidget(this), 1, 1);
 
         QGroupBox* newGroupBox = new QGroupBox("Selection 2");
@@ -95,8 +104,9 @@ void ClusterDifferentialExpressionWidget::initGui()
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
         _tableView->setSortingEnabled(true);
         
+        
 
-        QHeaderView* horizontalHeader = _tableView->horizontalHeader();
+        WordWrapHeaderView* horizontalHeader = new WordWrapHeaderView(Qt::Horizontal);
         //horizontalHeader->setStretchLastSection(true);
         horizontalHeader->setFirstSectionMovable(false);
         horizontalHeader->setSectionsMovable(true);
@@ -104,7 +114,7 @@ void ClusterDifferentialExpressionWidget::initGui()
         horizontalHeader->setSectionResizeMode(QHeaderView::Stretch);
         horizontalHeader->setSortIndicator(0, Qt::SortOrder::AscendingOrder);
         horizontalHeader->setDefaultAlignment(Qt::AlignCenter | Qt::Alignment(Qt::TextWordWrap));
-        
+        _tableView->setHorizontalHeader(horizontalHeader);
 
         layout->addWidget(_tableView, currentRow++, 0, 1, NumberOfColums);
     }
@@ -141,12 +151,21 @@ void ClusterDifferentialExpressionWidget::initGui()
 
 void ClusterDifferentialExpressionWidget::setClusters1(QStringList clusters)
 {
-    _clusters1SelectionAction.initialize(clusters);
+    if(clusters.size())
+		_clusters1SelectionAction.initialize(clusters, clusters[0], clusters[0]);
+    else
+        _clusters1SelectionAction.initialize(clusters);
+    
+    _cluster1SectionLabelWidget->setEnabled(true);
 }
 
 void ClusterDifferentialExpressionWidget::setClusters2( QStringList clusters)
 {
-    _clusters2SelectionAction.initialize(clusters);
+    if (clusters.size())
+        _clusters2SelectionAction.initialize(clusters, clusters[0], clusters[0]);
+    else
+        _clusters2SelectionAction.initialize(clusters);
+    _cluster2SectionLabelWidget->setEnabled(true);
 }
 
 void ClusterDifferentialExpressionWidget::setFirstClusterLabel(QString name)

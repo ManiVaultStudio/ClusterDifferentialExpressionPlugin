@@ -168,8 +168,6 @@ QVariant QTableItemModel::headerData(int section, Qt::Orientation orientation, i
 
 			if (orientation == Qt::Horizontal)
 			{
-				if (section == m_columns)
-					return  "\nIndex";
 				return m_horizontalHeader[section];
 			}
 		}
