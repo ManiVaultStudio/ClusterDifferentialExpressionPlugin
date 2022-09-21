@@ -42,13 +42,15 @@ public:
 protected slots:
     void clusters1Selected(QList<int> selectedClusters);
     void clusters2Selected(QList<int> selectedClusters);
-    void clusters1DatasetChanged(const QString& id);
-    void clusters2DatasetChanged(const QString& id);
+    void clusterDataset1Changed(const hdps::Dataset<hdps::DatasetImpl> &dataset);
+    void clusterDataset2Changed(const hdps::Dataset<hdps::DatasetImpl>& dataset);
+    
 private:
     
     std::ptrdiff_t get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset);
     std::vector<double> computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QList<int>& selected_clusters);
     bool matchDimensionNames();
+
 public slots:
     void updateData();
     void computeDE();

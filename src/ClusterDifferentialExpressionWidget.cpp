@@ -14,24 +14,64 @@
 #include <QLineEdit>
 #include <QVBoxLayout>
 #include <QGroupBox>
+#include <QHBoxLayout>
 
+#include <ClusterData.h>
 
+namespace local
+{
+	bool updateOptionAction(hdps::gui::OptionAction &action, const QStringList &options)
+	{
+        if (action.hasOptions() && (!options.isEmpty()))
+        {
+            auto currentText = action.getCurrentText();
+            if (options.contains(currentText))
+            {
+                action.initialize(options, currentText, options[0]);
+                action.setEnabled(true);
+                return true;
+            }
+        }
+        if(options.isEmpty())
+            action.initialize(options);
+        else
+			action.initialize(options, options[0], options[0]);
+
+        action.setEnabled(action.hasOptions());
+
+        return false;
+	}
+
+    bool updateDatasetPickerAction(DatasetPickerAction& action, const QVector < hdps::Dataset <hdps::DatasetImpl>> options)
+	{
+        auto current = action.getCurrentDataset();
+       
+        action.setDatasets(options);
+        if (options.contains(current))
+        {
+            if(action.getCurrentDataset() != current)
+				action.setCurrentDataset(current);
+            return true;
+        }
+        return false;
+	}
+}
 
 ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(ClusterDifferentialExpressionPlugin* differentialExpressionPlugin)
     :_differentialExpressionPlugin(differentialExpressionPlugin)
     , _modelIsUpToDate(false)
-    , _clusterDataset1LabelAction(this, "Dataset")
-    , _clusterDataset2LabelAction(this, "Dataset")
-    , _clusters1SelectionAction(this,"Clusters")
+    , _clusterDataset1Action(this, "Dataset")
+    , _clusterDataset2Action(this, "Dataset")
+    , _clusters1SelectionAction(this, "Clusters")
     , _clusters2SelectionAction(this, "Clusters")
     , _tableView(nullptr)
     , _differentialExpressionModel(nullptr)
     , _sortFilterProxyModel(nullptr)
     , _clusters1ParentName(nullptr)
     , _clusters2ParentName(nullptr)
-	, _cluster1SectionLabelWidget(nullptr)
+    , _cluster1SectionLabelWidget(nullptr)
     , _cluster2SectionLabelWidget(nullptr)
-	
+    , _autoComputeToggleAction(this, "Automatic Update")
 {
     initGui();
     
@@ -51,14 +91,9 @@ void ClusterDifferentialExpressionWidget::initGui()
     {
         QGridLayout* gridLayout = new QGridLayout;
         {
-            gridLayout->addWidget(_clusterDataset1LabelAction.createLabelWidget(this), 0, 0);
-            QWidget* w = _clusterDataset1LabelAction.createWidget(this);
-            {
-                QLineEdit* f = w->findChild<QLineEdit*>();
-                f->setDisabled(true); // no manual editing    
-            }
-            gridLayout->addWidget(w, 0, 1);
-            connect(&_clusterDataset1LabelAction, &hdps::gui::StringAction::stringChanged, this, [this](const QString& id) { emit clusters1DatasetChanged(id); });
+            gridLayout->addWidget(_clusterDataset1Action.createLabelWidget(this), 0, 0);
+            gridLayout->addWidget(_clusterDataset1Action.createWidget(this), 0, 1);
+            connect(&_clusterDataset1Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
         }
        
         {
@@ -82,15 +117,9 @@ void ClusterDifferentialExpressionWidget::initGui()
         QGridLayout* gridLayout = new QGridLayout;
 
         {
-            gridLayout->addWidget(_clusterDataset2LabelAction.createLabelWidget(this), 0, 0);
-            gridLayout->addWidget(_clusterDataset2LabelAction.createWidget(this), 0, 1);
-
-            auto* w = _clusterDataset2LabelAction.createWidget(this);
-            QLineEdit* f = w->findChild<QLineEdit*>();
-            f->setDisabled(true); // no manual editing
-            gridLayout->addWidget(w, 0, 1);
-
-            connect(&_clusterDataset1LabelAction, &hdps::gui::StringAction::stringChanged, this, [this](const QString& id) { emit clusters1DatasetChanged(id); });
+            gridLayout->addWidget(_clusterDataset2Action.createLabelWidget(this), 0, 0);
+            gridLayout->addWidget(_clusterDataset2Action.createWidget(this), 0, 1);
+            connect(&_clusterDataset2Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
         }
         
         
@@ -119,7 +148,7 @@ void ClusterDifferentialExpressionWidget::initGui()
         _tableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-        _tableView->setSortingEnabled(true);
+        
         
         
 
@@ -127,9 +156,10 @@ void ClusterDifferentialExpressionWidget::initGui()
         //horizontalHeader->setStretchLastSection(true);
         horizontalHeader->setFirstSectionMovable(false);
         horizontalHeader->setSectionsMovable(true);
+        horizontalHeader->setSectionsClickable(true);
         horizontalHeader->sectionResizeMode(QHeaderView::Interactive);
         horizontalHeader->setSectionResizeMode(QHeaderView::Stretch);
-        horizontalHeader->setSortIndicator(0, Qt::SortOrder::AscendingOrder);
+		horizontalHeader->setSortIndicator(0, Qt::AscendingOrder);
         horizontalHeader->setDefaultAlignment(Qt::AlignCenter | Qt::Alignment(Qt::TextWordWrap));
         _tableView->setHorizontalHeader(horizontalHeader);
 
@@ -156,44 +186,53 @@ void ClusterDifferentialExpressionWidget::initGui()
         _updateStatisticsButton = new QPushButton("Calculate Differential Expression", this);
         layout->addWidget(_updateStatisticsButton, currentRow++, 0, 1, NumberOfColums);
         QObject::connect(_updateStatisticsButton, &QPushButton::clicked, this, &ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed);
+        {
+            QHBoxLayout* layout2 = new QHBoxLayout;
+            layout2->addWidget(new QLabel("Filter on ID "),1,Qt::AlignLeft);
+            QLineEdit* nameFilter = new QLineEdit(this);
+            nameFilter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+            connect(nameFilter, SIGNAL(textChanged(QString)), _sortFilterProxyModel, SLOT(nameFilterChanged(QString)));
+            layout2->addWidget(nameFilter,99 ,Qt::AlignLeft);
+            layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
+        }
 
-        layout->addWidget(new QLabel("Filter on Name "), currentRow, 0, 1, 1);
-        QLineEdit* nameFilter = new QLineEdit(this);
-        nameFilter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        connect(nameFilter, SIGNAL(textChanged(QString)), _sortFilterProxyModel, SLOT(nameFilterChanged(QString)));
-        layout->addWidget(nameFilter, currentRow++, 1, 1, NumberOfColums-1);
+        {
+            QHBoxLayout* layout2 = new QHBoxLayout;
+            _autoComputeToggleAction.setChecked(false);
+            _autoComputeToggleAction.setEnabled(false);
+            layout2->addWidget(_autoComputeToggleAction.createLabelWidget(this), 1, Qt::AlignLeft);
+            _autoComputeToggleAction.setText("");
+            layout2->addWidget(_autoComputeToggleAction.createWidget(this),99, Qt::AlignLeft);
+            layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
+        }
+
+       
+      
     }
     
 }
 
 void ClusterDifferentialExpressionWidget::setClusters1(QStringList clusters)
 {
-    if(clusters.size())
-		_clusters1SelectionAction.initialize(clusters, clusters[0], clusters[0]);
-    else
-        _clusters1SelectionAction.initialize(clusters);
-    
-    _cluster1SectionLabelWidget->setEnabled(true);
+    auto result = local::updateOptionAction(_clusters1SelectionAction, clusters);
+    if(_autoComputeToggleAction.isEnabled())
+        _autoComputeToggleAction.setChecked(!clusters.empty());
+
 }
 
 void ClusterDifferentialExpressionWidget::setClusters2( QStringList clusters)
 {
-    if (clusters.size())
-        _clusters2SelectionAction.initialize(clusters, clusters[0], clusters[0]);
-    else
-        _clusters2SelectionAction.initialize(clusters);
-    _cluster2SectionLabelWidget->setEnabled(true);
+    auto result = local::updateOptionAction(_clusters2SelectionAction, clusters);
+    if (_autoComputeToggleAction.isEnabled())
+        _autoComputeToggleAction.setChecked(!clusters.empty());
 }
 
-void ClusterDifferentialExpressionWidget::setFirstClusterLabel(QString name)
+void ClusterDifferentialExpressionWidget::setClusterDatasets(const QVector<hdps::Dataset<hdps::DatasetImpl>> &datasets)
 {
-    _clusterDataset1LabelAction.setString(name);
+    local::updateDatasetPickerAction(_clusterDataset1Action,datasets);
+    local::updateDatasetPickerAction(_clusterDataset2Action, datasets);
 }
 
-void ClusterDifferentialExpressionWidget::setSecondClusterLabel(QString name)
-{
-    _clusterDataset2LabelAction.setString(name);
-}
 
 void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
 {
@@ -256,12 +295,23 @@ void ClusterDifferentialExpressionWidget::ShowOutOfDate()
     }
 }
 
+void  ClusterDifferentialExpressionWidget::EnableAutoCompute(bool value)
+{
+    if(false == value)
+    {
+        _autoComputeToggleAction.setChecked(false);
+    }
+    _autoComputeToggleAction.setEnabled(value);
+}
+
 void ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged(int index)
 {
     if(index >=0)
     {
         QList<int> selection = { index };
         emit clusters1SelectionChanged(selection);
+        if (_autoComputeToggleAction.isChecked())
+            updateStatisticsButtonPressed();
     }
 }
 
@@ -271,8 +321,23 @@ void ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged
     {
         QList<int> selection = { index };
         emit clusters2SelectionChanged(selection);
+        if (_autoComputeToggleAction.isChecked())
+            updateStatisticsButtonPressed();
     }
 }
+
+void ClusterDifferentialExpressionWidget::selectClusterDataset1(const hdps::Dataset<hdps::DatasetImpl>&dataset)
+{
+    if(_clusterDataset1Action.getCurrentDataset() != dataset)
+		_clusterDataset1Action.setCurrentDataset(dataset);
+}
+
+void ClusterDifferentialExpressionWidget::selectClusterDataset2(const hdps::Dataset<hdps::DatasetImpl>& dataset)
+{
+    if (_clusterDataset2Action.getCurrentDataset() != dataset)
+		_clusterDataset2Action.setCurrentDataset(dataset);
+}
+
 
 void ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed()
 {

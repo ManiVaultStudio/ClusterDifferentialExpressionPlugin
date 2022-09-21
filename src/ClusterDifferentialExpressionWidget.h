@@ -1,15 +1,23 @@
 #pragma once
 
 #include <QWidget>
+#include <QVector>
 #include "actions/OptionAction.h"
 #include "actions/StringAction.h"
+#include "actions/ToggleAction.h"
+#include "actions/DatasetPickerAction.h"
+
 // DE
 class ClusterDifferentialExpressionPlugin;
 class QTableItemModel;
 class SortFilterProxyModel;
 
 // HDPS
-class Cluster;
+namespace hdps
+{
+    class DatasetImpl;
+}
+
 
 // QT
 class QTableView;
@@ -28,21 +36,22 @@ public:
 
     void setClusters1( QStringList clusters);
     void setClusters2( QStringList clusters);
-    void setFirstClusterLabel(QString);
-    void setSecondClusterLabel(QString);
+    void setClusterDatasets(const QVector<hdps::Dataset<hdps::DatasetImpl>> &datasets);
+    
     void setData(QTableItemModel *newModel);
     void ShowUpToDate();
     void ShowOutOfDate();
+    void EnableAutoCompute(bool value);
     QProgressBar* getProgressBar();
 
     
 
 signals:
     void clusters1SelectionChanged(QList<int> selectedClusters);
-    void clusters1DatasetChanged(QString id);
+    void clusters1DatasetChanged(const hdps::Dataset<hdps::DatasetImpl> &dataset);
     void clusters2SelectionChanged(QList<int> selectedClusters);
-    void clusters2DatasetChanged(QString id);
-    
+    void clusters2DatasetChanged(const hdps::Dataset<hdps::DatasetImpl>& dataset);
+   
     void computeDE();
 
 private slots:
@@ -50,6 +59,11 @@ private slots:
     void clusters2Selection_CurrentIndexChanged(int index);
     void updateStatisticsButtonPressed();
 
+public:
+    void selectClusterDataset1(const hdps::Dataset<hdps::DatasetImpl>& dataset);
+    void selectClusterDataset2(const hdps::Dataset<hdps::DatasetImpl>& dataset);
+    
+ 
 private:
     void initGui();
    
@@ -60,15 +74,15 @@ private:
     QTableView*                             _tableView;
     QLabel*                                  _clusters1ParentName;
     QLabel*                                  _clusters2ParentName;
-    hdps::gui::StringAction                 _clusterDataset1LabelAction;
-    hdps::gui::StringAction                 _clusterDataset2LabelAction;
+    DatasetPickerAction                     _clusterDataset1Action;
+    DatasetPickerAction                     _clusterDataset2Action;
     hdps::gui::OptionAction                _clusters1SelectionAction;
     hdps::gui::OptionAction                _clusters2SelectionAction;
+    hdps::gui::ToggleAction                _autoComputeToggleAction;
     QPushButton*                            _updateStatisticsButton;
     QTableItemModel*                        _differentialExpressionModel;
     SortFilterProxyModel*                    _sortFilterProxyModel;
     QProgressBar*                            _progressBar;
     QWidget* _cluster1SectionLabelWidget;
     QWidget* _cluster2SectionLabelWidget;
-    
 };
