@@ -13,6 +13,8 @@
 
 // QT includes
 #include <QMimeData>
+
+
 #include <iostream>
 
 
@@ -31,6 +33,14 @@ using namespace hdps::util;
 
 namespace local
 {
+    template <typename T>
+    float fround(T n, int d)
+    {
+        assert(!std::numeric_limits<T>::is_integer); // this function should not be called on integer types
+        return static_cast<float>(floor(n * pow(10., d) + 0.5) / pow(10., d));
+    }
+
+
     bool clusterDatset_has_computed_DE_Statistics(hdps::Dataset<Clusters> clusterDataset)
     {
         if(clusterDataset.isValid())
@@ -609,9 +619,9 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             const double mean1 = meanExpressions_cluster1[dimension];
             const double mean2 = meanExpressions_cluster2[dimension];
             dataVector[ID] = dimensionName;
-            dataVector[DE] = mean1 - mean2;
-            dataVector[MEAN1] = mean1;
-            dataVector[MEAN2] = mean2;
+            dataVector[DE] = local::fround(mean1 - mean2,3);
+            dataVector[MEAN1] = local::fround(mean1,3);
+            dataVector[MEAN2] = local::fround(mean2, 3);
             resultModel->setRow(dimension, dataVector, Qt::Unchecked, true);
             _progressManager.print(dimension);
         }
@@ -643,9 +653,9 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     
     
     
-    QString cluster1_mean_header = _clusterDataset1->getParent()->getGuiName() + "\\" + _clusterDataset1->getClusters()[_clusterDataset1_selected_clusters[0]].getName() + " Mean";
+    QString cluster1_mean_header = "";// _clusterDataset1->getParent()->getGuiName() + "\\" + _clusterDataset1->getClusters()[_clusterDataset1_selected_clusters[0]].getName() + " Mean";
 
-	QString cluster2_mean_header = _clusterDataset2->getParent()->getGuiName() + "\\" + _clusterDataset2->getClusters()[_clusterDataset2_selected_clusters[0]].getName() + " Mean";
+    QString cluster2_mean_header = "";// _clusterDataset2->getParent()->getGuiName() + "\\" + _clusterDataset2->getClusters()[_clusterDataset2_selected_clusters[0]].getName() + " Mean";
     /*
     for (std::size_t c = 0; c < _clusterDataset2_selected_clusters.size(); ++c)
     {
@@ -656,7 +666,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         cluster2_mean_header += clusterName;
     }
     */
-    resultModel->setHorizontalHeader(ID, "ID");
+    resultModel->setHorizontalHeader(ID, "");
     resultModel->setHorizontalHeader(DE, "Differential Expression");
     resultModel->setHorizontalHeader(MEAN1, cluster1_mean_header);
     resultModel->setHorizontalHeader(MEAN2, cluster2_mean_header);

@@ -11,6 +11,7 @@
 class ClusterDifferentialExpressionPlugin;
 class QTableItemModel;
 class SortFilterProxyModel;
+class TableView;
 
 // HDPS
 namespace hdps
@@ -70,15 +71,13 @@ private:
 
     bool                                    _modelIsUpToDate;
     ClusterDifferentialExpressionPlugin*    _differentialExpressionPlugin;
-    QStringListModel*                       _clusterModel1;
-    QTableView*                             _tableView;
-    QLabel*                                  _clusters1ParentName;
-    QLabel*                                  _clusters2ParentName;
+    TableView*                             _tableView;
     DatasetPickerAction                     _clusterDataset1Action;
     DatasetPickerAction                     _clusterDataset2Action;
     hdps::gui::OptionAction                _clusters1SelectionAction;
     hdps::gui::OptionAction                _clusters2SelectionAction;
     hdps::gui::ToggleAction                _autoComputeToggleAction;
+    hdps::gui::StringAction                 _filterOnIdAction;
     QPushButton*                            _updateStatisticsButton;
     QTableItemModel*                        _differentialExpressionModel;
     SortFilterProxyModel*                    _sortFilterProxyModel;

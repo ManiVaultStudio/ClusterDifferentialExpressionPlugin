@@ -44,6 +44,16 @@ QVariant QTableItemModel::data(const QModelIndex &index, int role /*= Qt::Displa
 		return QVariant();
 	if (index.column() >= columnCount() || index.column() < 0)
 		return QVariant();
+	/*
+	if(role == Qt::TextAlignmentRole)
+	{
+		if (index.column() == 0)
+			return Qt::AlignLeft;
+		else
+			return Qt::AlignRight;
+	}
+	else
+	*/
 	if (role == Qt::BackgroundRole)
 	{
 		if (m_outOfDate)
@@ -57,6 +67,7 @@ QVariant QTableItemModel::data(const QModelIndex &index, int role /*= Qt::Displa
 	{
 		return m_data[index.row()].checkState();
 	}
+
 	return QVariant();
 }
 
