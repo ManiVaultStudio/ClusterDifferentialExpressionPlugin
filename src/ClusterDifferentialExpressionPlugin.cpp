@@ -71,7 +71,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const P
 
 void ClusterDifferentialExpressionPlugin::init()
 {
-    _widget.setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
+    getWidget().setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding));
 
     _differentialExpressionWidget = new ClusterDifferentialExpressionWidget(this);
     auto dataSets = hdps::Application::core()->requestAllDataSets(QVector<hdps::DataType> {ClusterType});
@@ -111,7 +111,7 @@ void ClusterDifferentialExpressionPlugin::init()
     _dropWidget = new gui::DropWidget(_differentialExpressionWidget);
     _settingsAction = new SettingsAction(*this);
    
-    _dropWidget->setDropIndicatorWidget(new gui::DropWidget::DropIndicatorWidget(&_widget, "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data..."));
+    _dropWidget->setDropIndicatorWidget(new gui::DropWidget::DropIndicatorWidget(&getWidget(), "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data..."));
     _dropWidget->initialize([this](const QMimeData* mimeData) -> gui::DropWidget::DropRegions {
         gui::DropWidget::DropRegions dropRegions;
 
@@ -188,7 +188,7 @@ void ClusterDifferentialExpressionPlugin::init()
             {
                 secondClusterInfo = "Unknown";
             }
-            _widget.setWindowTitle(QString("%1: %2 vs %3").arg(getGuiName(), firstClusterInfo, secondClusterInfo));
+            getWidget().setWindowTitle(QString("%1: %2 vs %3").arg(getGuiName(), firstClusterInfo, secondClusterInfo));
          };
 
         
@@ -217,7 +217,7 @@ void ClusterDifferentialExpressionPlugin::init()
      //   mainLayout->addWidget(_settingsAction->createWidget(&_widget));
         mainLayout->addWidget(_differentialExpressionWidget, 1);
 
-        _widget.setLayout(mainLayout);
+        getWidget().setLayout(mainLayout);
 }
 
 
