@@ -1,5 +1,6 @@
 #pragma once
 #include <ViewPlugin.h>
+#include <Dataset.h>
 #include "widgets/DropWidget.h"
 
 #include "ProgressManager.h"
@@ -14,6 +15,7 @@ class QTableItemModel;
 class SettingsAction;
 class Points;
 class Clusters;
+
 
 namespace hdps {
     namespace gui {
@@ -48,6 +50,7 @@ protected slots:
 private:
     
     std::ptrdiff_t get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset);
+    hdps::Dataset<Points> get_DE_Statistics_Dataset(hdps::Dataset<Clusters> clusterDataset);
     std::vector<double> computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QList<int>& selected_clusters);
     bool matchDimensionNames();
 

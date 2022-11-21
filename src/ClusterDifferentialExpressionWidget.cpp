@@ -103,59 +103,6 @@ void ClusterDifferentialExpressionWidget::initGui()
     connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
     connect(&_clusterDataset2Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
     connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
-    /*
-    {
-        QGridLayout* gridLayout = new QGridLayout;
-        {
-            gridLayout->addWidget(_clusterDataset1Action.createLabelWidget(this), 0, 0);
-            gridLayout->addWidget(_clusterDataset1Action.createWidget(this), 0, 1);
-         //   connect(&_clusterDataset1Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
-        }
-       
-        {
-            _clusters1SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
-
-            _clusters1SelectionAction.setPlaceHolderString("Choose Selection 1 Cluster");
-            _clusters1SelectionAction.setDefaultIndex(0);
-       //     connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
-            _cluster1SectionLabelWidget = _clusters1SelectionAction.createLabelWidget(this);
-            _cluster1SectionLabelWidget->setDisabled(true);
-            gridLayout->addWidget(_cluster1SectionLabelWidget, 1, 0);
-            gridLayout->addWidget(_clusters1SelectionAction.createWidget(this), 1, 1);
-        }
-        
-        QGroupBox* newGroupBox = new QGroupBox("Selection 1");
-        newGroupBox->setLayout(gridLayout);
-        layout->addWidget(newGroupBox, currentRow, 0, 1, 1);
-    }
-    */
-    /*
-    {
-        QGridLayout* gridLayout = new QGridLayout;
-
-        {
-            gridLayout->addWidget(_clusterDataset2Action.createLabelWidget(this), 0, 0);
-            gridLayout->addWidget(_clusterDataset2Action.createWidget(this), 0, 1);
-         //   connect(&_clusterDataset2Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
-        }
-        
-        
-        {
-            _clusters2SelectionAction.setDefaultWidgetFlags(hdps::gui::OptionAction::ComboBox);
-            _clusters2SelectionAction.setPlaceHolderString("Choose Selection 2 Cluster");
-            _cluster2SectionLabelWidget = _clusters2SelectionAction.createLabelWidget(this);
-            _cluster2SectionLabelWidget->setDisabled(true); // disabled until the options are added.
-            gridLayout->addWidget(_cluster2SectionLabelWidget, 1, 0);
-            gridLayout->addWidget(_clusters2SelectionAction.createWidget(this), 1, 1);
-          //  connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
-        }
-        
-
-        QGroupBox* newGroupBox = new QGroupBox("Selection 2");
-        newGroupBox->setLayout(gridLayout);
-        layout->addWidget(newGroupBox, currentRow++, 1, 1, 1);
-    }
-    */
     
     connect(&_clusterDataset1Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
     connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
@@ -326,7 +273,10 @@ void ClusterDifferentialExpressionWidget::initGui()
             layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
         }
 
-       
+
+        QPushButton* specialMode1Button = new QPushButton("specialMode1");
+        QObject::connect(specialMode1Button,&QPushButton::clicked, [this]() { emit)
+        layout->addWidget()
       
     }
     

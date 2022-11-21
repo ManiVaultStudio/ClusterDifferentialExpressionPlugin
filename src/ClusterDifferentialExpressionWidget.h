@@ -54,6 +54,7 @@ signals:
     void clusters2DatasetChanged(const hdps::Dataset<hdps::DatasetImpl>& dataset);
    
     void computeDE();
+    void specialMode1();
 
 private slots:
     void clusters1Selection_CurrentIndexChanged(int index);
