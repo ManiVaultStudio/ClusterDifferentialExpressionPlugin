@@ -274,9 +274,6 @@ void ClusterDifferentialExpressionWidget::initGui()
         }
 
 
-        QPushButton* specialMode1Button = new QPushButton("specialMode1");
-        QObject::connect(specialMode1Button,&QPushButton::clicked, [this]() { emit)
-        layout->addWidget()
       
     }
     
