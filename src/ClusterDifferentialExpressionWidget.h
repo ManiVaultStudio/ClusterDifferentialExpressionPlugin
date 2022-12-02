@@ -52,14 +52,18 @@ signals:
     void clusters1DatasetChanged(const hdps::Dataset<hdps::DatasetImpl> &dataset);
     void clusters2SelectionChanged(QList<int> selectedClusters);
     void clusters2DatasetChanged(const hdps::Dataset<hdps::DatasetImpl>& dataset);
-   
+    void selectedRowChanged(int row);
+
     void computeDE();
     void specialMode1();
+
+    
 
 private slots:
     void clusters1Selection_CurrentIndexChanged(int index);
     void clusters2Selection_CurrentIndexChanged(int index);
     void updateStatisticsButtonPressed();
+    void tableView_Clicked(const QModelIndex&);
 
 public:
     void selectClusterDataset1(const hdps::Dataset<hdps::DatasetImpl>& dataset);
@@ -79,6 +83,7 @@ private:
     hdps::gui::OptionAction                _clusters2SelectionAction;
     hdps::gui::ToggleAction                _autoComputeToggleAction;
     hdps::gui::StringAction                 _filterOnIdAction;
+    hdps::gui::StringAction                 _selectedIdAction;
     QPushButton*                            _updateStatisticsButton;
     QTableItemModel*                        _differentialExpressionModel;
     SortFilterProxyModel*                    _sortFilterProxyModel;

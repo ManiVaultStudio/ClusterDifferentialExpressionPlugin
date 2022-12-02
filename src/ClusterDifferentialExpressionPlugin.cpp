@@ -10,8 +10,14 @@
 #include "PointData.h"
 #include "ClusterData.h"
 #include "event/Event.h"
+#include <actions/PluginTriggerAction.h>
+#include "DataHierarchyItem.h"
+
+
 
 // QT includes
+#include "ClusterDifferentialExpressionPlugin.h"
+
 #include <QMimeData>
 
 
@@ -64,10 +70,116 @@ namespace local
         return clusterDataset->getParent<Points>().isValid();
     }
 
-   
+
+    std::ptrdiff_t get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset)
+    {
+        const auto& clusters = clusterDataset->getClusters();
+        const auto numClusters = clusters.size();
+
+        hdps::Dataset<Points> points = clusterDataset->getParent<Points>();
+        const std::ptrdiff_t numDimensions = points->getNumDimensions();
+
+        // check if the basic DE_Statistics for the cluster dataset has already been computed
+        std::ptrdiff_t child_DE_Statistics_DatasetIndex = -1;
+        const QString child_DE_Statistics_DatasetName = "DE_Statistics";
+        {
+            const auto& childDatasets = clusterDataset->getChildren({ PointType });
+            for (std::size_t i = 0; i < childDatasets.size(); ++i)
+            {
+                if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
+                {
+                    child_DE_Statistics_DatasetIndex = i;
+                    break;
+                }
+            }
+        }
+
+        // if they are not available compute them now
+        if (child_DE_Statistics_DatasetIndex < 0)
+        {
+
+
+            //compute the DE statistics for this cluster
+
+            const auto numPoints = points->getNumPoints();
+
+            std::vector<float> meanExpressions(numClusters * numDimensions, 0);
+
+            int x = omp_get_max_threads();
+            int y = omp_get_num_threads();
+
+           
+            points->visitData([&clusters, &meanExpressions, numClusters, numDimensions](auto vec)
+                {
+
+#pragma omp parallel for schedule(dynamic, 1)
+                    for (int dimension = 0; dimension < numDimensions; ++dimension)
+                    {
+                        //#pragma omp parallel for schedule(dynamic, 1)
+                        for (std::ptrdiff_t clusterIdx = 0; clusterIdx < numClusters; ++clusterIdx)
+                        {
+                            const auto& cluster = clusters[clusterIdx];
+                            const auto& clusterIndices = cluster.getIndices();
+                            std::size_t offset = (clusterIdx * numDimensions) + dimension;
+                            for (auto row : clusterIndices)
+                            {
+                                meanExpressions[offset] += vec[row][dimension];
+                                // this->_progressManager.print((row * numDimensions) + dimension);
+                                // if(omp_get_thread_num()==0)
+                                 //    std::cout << "D: " << dimension << "\t" << clusterIdx << "\t" << row << std::endl;
+                            }
+                            meanExpressions[offset] /= clusterIndices.size();
+                        }
+                       
+                    }
+                });
+
+            
+
+
+
+
+
+            auto *core = Application::core();
+            hdps::Dataset<Points> newDataset = core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
+            core->notifyDatasetAdded(newDataset);
+            newDataset->setDataElementType<float>();
+            newDataset->setData(std::move(meanExpressions), numDimensions);
+            newDataset->setDimensionNames(points->getDimensionNames());
+
+            core->notifyDatasetChanged(newDataset);
+
+
+            // now fild the child indices for this dataset
+            child_DE_Statistics_DatasetIndex = -1;
+            {
+                const auto& childDatasets = clusterDataset->getChildren({ PointType });
+                for (std::size_t i = 0; i < childDatasets.size(); ++i)
+                {
+                    if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
+                    {
+                        child_DE_Statistics_DatasetIndex = i;
+                        break;
+                    }
+                }
+            }
+
+        }
+
+        return child_DE_Statistics_DatasetIndex;
+    }
+
+    Dataset<Points> get_DE_Statistics_Dataset(hdps::Dataset<Clusters> clusterDataset)
+    {
+        auto clusterDataset_DE_Statitstics_Index = get_DE_Statistics_Index(clusterDataset);
+        assert(clusterDataset_DE_Statitstics_Index >= 0);
+        const auto& clusterDataset_Children = clusterDataset->getChildren({ PointType });
+        Dataset<Points> DE_Statistics = clusterDataset_Children[clusterDataset_DE_Statitstics_Index];
+        return DE_Statistics;
+    }
 
 }
-ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const PluginFactory* factory)
+ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory)
     : ViewPlugin(factory)
     , _differentialExpressionWidget(nullptr)
     , _settingsAction(nullptr)
@@ -112,7 +224,7 @@ void ClusterDifferentialExpressionPlugin::init()
     connect(_differentialExpressionWidget, &ClusterDifferentialExpressionWidget::computeDE, this, &ClusterDifferentialExpressionPlugin::computeDE);
     connect(_differentialExpressionWidget, &ClusterDifferentialExpressionWidget::clusters1DatasetChanged, this, &ClusterDifferentialExpressionPlugin::clusterDataset1Changed);
     connect(_differentialExpressionWidget, &ClusterDifferentialExpressionWidget::clusters2DatasetChanged, this, &ClusterDifferentialExpressionPlugin::clusterDataset2Changed);
-
+    connect(_differentialExpressionWidget, &ClusterDifferentialExpressionWidget::selectedRowChanged, this, &ClusterDifferentialExpressionPlugin::selectedRowChanged);
     
 
     _dropWidget = new gui::DropWidget(_differentialExpressionWidget);
@@ -252,6 +364,73 @@ void ClusterDifferentialExpressionPlugin::loadData(const hdps::Datasets& dataset
     _clusterDataset1 = datasets.first();
 }
 
+
+void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(int dataset_index, int index)
+{
+    assert(dataset_index == 1 || dataset_index == 2);
+    assert(_identicalDimensions || (!_matchingDimensionNames.empty()));
+
+    
+    int de_Statistics_dimension = (_identicalDimensions) ? index : (dataset_index == 1) ? _matchingDimensionNames[index].second.first : _matchingDimensionNames[index].second.second;
+    
+    if (de_Statistics_dimension >= 0)
+    {
+        const auto& clusters = (dataset_index == 1) ? _clusterDataset1->getClusters() : _clusterDataset2->getClusters();
+        std::size_t nrOfClusters = clusters.size();
+        std::size_t nrOfPoints = 0;
+        for (auto cluster : clusters)
+        {
+            nrOfPoints += cluster.getNumberOfIndices();
+        }
+        std::vector<float> meanExpressionData(nrOfPoints);
+
+
+        auto de_Statistics_clusterDataset = (dataset_index == 1) ? get_DE_Statistics_Dataset(_clusterDataset1) : get_DE_Statistics_Dataset(_clusterDataset2);
+        const Points* p = de_Statistics_clusterDataset.get();
+        for (std::size_t clusterIndex = 0; clusterIndex < clusters.size(); ++clusterIndex)
+        {
+            std::size_t point_index = (clusterIndex * p->getNumDimensions()) + de_Statistics_dimension;
+            float value = p->getValueAt(point_index);
+            const auto& clusterIndices = clusters[clusterIndex].getIndices();
+            for (auto i : clusterIndices)
+            {
+                meanExpressionData[i] = value;
+            }
+        }
+
+        QString meanExpressionDatasetGuid = (dataset_index == 1) ? _meanExpressionDatasetGuid1 : _meanExpressionDatasetGuid2;
+        Dataset<Points> meanExpressionDataset;
+        if (!meanExpressionDatasetGuid.isEmpty())
+        {
+            try
+            {
+                meanExpressionDataset = _core->requestDataset(meanExpressionDatasetGuid);
+            }
+            catch (...)
+            {
+                meanExpressionDatasetGuid.clear();
+            }
+
+        }
+        if (meanExpressionDatasetGuid.isEmpty())
+        {
+            if (dataset_index == 1)
+            {
+                meanExpressionDataset = _core->addDataset("Points", "MeanExpressionDataset1");
+                _meanExpressionDatasetGuid1 = meanExpressionDataset.getDatasetGuid();
+            }
+            else
+            {
+                meanExpressionDataset = _core->addDataset("Points", "MeanExpressionDataset2");
+            	_meanExpressionDatasetGuid2 = meanExpressionDataset.getDatasetGuid();
+            }
+        }
+
+        meanExpressionDataset->setData(meanExpressionData, 1);
+        _core->notifyDatasetChanged(meanExpressionDataset);
+    }
+}
+
 void ClusterDifferentialExpressionPlugin::clusters1Selected(QList<int> selectedClusters)
 {
     if(selectedClusters != _clusterDataset1_selected_clusters)
@@ -308,6 +487,17 @@ void ClusterDifferentialExpressionPlugin::clusterDataset2Changed(const hdps::Dat
 }
 
 
+void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
+{
+    if (index < 0)
+        return;
+
+    
+    createMeanExpressionDataset(1, index);
+    createMeanExpressionDataset(2, index);
+
+}
+
 
 bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 {
@@ -348,7 +538,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     }
 
     bool identicalDimensionNames = true;
-    _progressManager.start(clusterDataset2_dimensionNames.size(), "Checking Dimensions");
+    //_progressManager.start(clusterDataset2_dimensionNames.size(), "Checking Dimensions");
 #pragma omp parallel for schedule(dynamic,1)
     for (ptrdiff_t i = 0; i < clusterDataset1_dimensionNames.size(); ++i)
     {
@@ -374,9 +564,9 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
                 dimensionNameMatchesPerThread[omp_get_thread_num()].push_back(newMatch);
             }
         }
-        _progressManager.print(i);
+        //_progressManager.print(i);
     }
-    _progressManager.end();
+    //_progressManager.end();
     if (identicalDimensionNames)
         return true;
     std::size_t numDimensions = 0;
@@ -495,7 +685,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         int y = omp_get_num_threads();
 
         std::string message = QString("Computing DE Statistics for %1 - %2").arg(points->getGuiName(),clusterDataset->getGuiName()).toStdString();
-        _progressManager.start(numDimensions/**numPoints*/, message);
+        //_progressManager.start(numDimensions/**numPoints*/, message);
         points->visitData([this, &clusters, &meanExpressions, numClusters, numDimensions](auto vec)
             {
                 
@@ -521,7 +711,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
                 }
             });
 
-        _progressManager.end();
+        //_progressManager.end();
 
         
 
@@ -573,6 +763,9 @@ Dataset<Points> ClusterDifferentialExpressionPlugin::get_DE_Statistics_Dataset(h
 
 std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QList<int>& selected_clusters)
 {
+
+   // std::cout << clusterDataset->getGuiName().toStdString() << ": " << selected_clusters[0] << std::endl;
+    
     std::vector<double> meanExpressions_cluster1;
     auto clusterDataset_DE_Statitstics_Index = get_DE_Statistics_Index(clusterDataset);
     if (clusterDataset_DE_Statitstics_Index < 0)
@@ -584,7 +777,7 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
     const auto& clusters = clusterDataset->getClusters();
     auto numDimensions = DE_Statistics->getNumDimensions();
 
-    _progressManager.start((numDimensions * selected_clusters.size()) + numDimensions, QString("Computing Mean Expressions for %1").arg(clusterDataset->getGuiName()).toStdString());
+    //_progressManager.start((numDimensions * selected_clusters.size()) + numDimensions, QString("Computing Mean Expressions for %1").arg(clusterDataset->getGuiName()).toStdString());
     meanExpressions_cluster1.assign(numDimensions,0);
     { // for each selected cluster in selection 1
         std::size_t sumOfClusterSizes = 0;
@@ -601,7 +794,7 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
             {
 
                 meanExpressions_cluster1[dimension] += DE_Statistics->getValueAt(clusterIndexOffset + dimension) * clusterSize;
-                _progressManager.print(  (numProcessedClusters * numDimensions) + dimension);
+               //_progressManager.print(  (numProcessedClusters * numDimensions) + dimension);
             }
             sumOfClusterSizes += clusterSize;
             ++numProcessedClusters;
@@ -613,12 +806,12 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
         for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
         {
             meanExpressions_cluster1[dimension] /= sumOfClusterSizes;
-            _progressManager.print(progressOffset + dimension);
+            //_progressManager.print(progressOffset + dimension);
         }
         progressOffset += numDimensions;
     }
 
-    _progressManager.end();
+    //_progressManager.end();
     return meanExpressions_cluster1;
 }
 
@@ -650,7 +843,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         std::size_t numDimensions = dimensionNames.size();
         resultModel->resize(numDimensions);
         resultModel->startModelBuilding();
-        _progressManager.start(numDimensions, "Computing Diferential Expressions");
+        //_progressManager.start(numDimensions, "Computing Diferential Expressions");
         #pragma omp  parallel for schedule(dynamic,1)
         for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
         {
@@ -663,7 +856,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             dataVector[MEAN1] = local::fround(mean1,3);
             dataVector[MEAN2] = local::fround(mean2, 3);
             resultModel->setRow(dimension, dataVector, Qt::Unchecked, true);
-            _progressManager.print(dimension);
+            //_progressManager.print(dimension);
         }
     }
     else
@@ -673,7 +866,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         std::size_t numDimensions = _matchingDimensionNames.size();
         resultModel->resize(numDimensions);
         resultModel->startModelBuilding();
-        _progressManager.start(numDimensions, "Computing Diferential Expressions");
+        //_progressManager.start(numDimensions, "Computing Diferential Expressions");
         #pragma omp  parallel for schedule(dynamic,1)
         for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
         {
@@ -689,7 +882,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             dataVector[MEAN2] = mean2;
             resultModel->setRow(dimension, dataVector, Qt::Unchecked, true);
 
-            _progressManager.print(dimension);
+            //_progressManager.print(dimension);
         }
     }
     
@@ -735,3 +928,90 @@ hdps::DataTypes ClusterDifferentialExpressionFactory::supportedDataTypes() const
     supportedTypes.append(ClusterType);
     return supportedTypes;
 }
+
+hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginTriggerActions(const hdps::Datasets& datasets) const
+{
+
+    PluginTriggerActions pluginTriggerActions;
+
+    
+    /*
+     * temporary functions to help create data for simian viewer. won't work with normal HDPS core.
+     *
+     **
+    Datasets clusterDatasets;
+    for (const auto& dataset : datasets)
+    {
+        if (dataset->getDataType() == hdps::DataType(QString("Clusters")))
+        {
+            clusterDatasets << dataset;
+        }
+    }
+
+    if (clusterDatasets.count())
+    {
+        auto pluginTriggerAction = createPluginTriggerAction("Compute DE Statistics...", "Compute DE Statistics", clusterDatasets, "retweet");
+        connect(pluginTriggerAction, &QAction::triggered, [this, clusterDatasets]() -> void {
+            for (const auto& dataset : clusterDatasets)
+            {
+                local::get_DE_Statistics_Index(dataset);
+            }
+
+            });
+
+        pluginTriggerActions << pluginTriggerAction;
+    }
+
+    Datasets  pointDatasets;
+    for (const auto& dataset : datasets)
+    {
+        if (dataset->getDataType() == hdps::DataType(QString("Points")))
+        {
+            pointDatasets << dataset;
+        }
+    }
+
+    if(pointDatasets.count())
+    {
+        Datasets numericalMetaDataDatasets;
+	    for(const auto pdataset : pointDatasets)
+	    {
+		    if(pdataset->getGuiName() =="Numerical MetaData")
+			{
+                numericalMetaDataDatasets << pdataset;
+			}
+	    }
+
+        if (numericalMetaDataDatasets.size())
+        {
+            auto pluginTriggerAction = createPluginTriggerAction("Clean-up data for SimianViewer", "Swap content of Datasets and remove the 2nd", numericalMetaDataDatasets, "retweet");
+            connect(pluginTriggerAction, &QAction::triggered, [this, numericalMetaDataDatasets]() -> void {
+
+                for(auto numDataset : numericalMetaDataDatasets)
+                {
+                    Dataset<Points>numericalMetaDataset = numDataset;
+                    Dataset<Points> parentDataset = numericalMetaDataset.get()->getParent<Points>();
+                    parentDataset->swap(*numericalMetaDataset);
+                    
+                    auto* core = Application::core();
+                    auto& item = core->getDataHierarchyItem(numericalMetaDataset->getGuid());
+                    auto& parent = item.getParent();
+                    core->removeDataset(numDataset);
+                    parent.removeChild(item);
+                }
+                });
+            pluginTriggerActions << pluginTriggerAction;
+        }
+    }
+    
+  
+   
+    
+    */
+        
+    
+   
+
+    return pluginTriggerActions;
+}
+

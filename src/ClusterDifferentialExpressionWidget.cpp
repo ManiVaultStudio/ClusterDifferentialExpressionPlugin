@@ -58,7 +58,7 @@ namespace local
     bool updateDatasetPickerAction(DatasetPickerAction& action, const QVector < hdps::Dataset <hdps::DatasetImpl>> options)
 	{
         auto current = action.getCurrentDataset();
-       
+        action.setShowFullPathName(false);
         action.setDatasets(options);
         if (options.contains(current))
         {
@@ -78,6 +78,7 @@ ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(Cluster
     , _clusters1SelectionAction(this, "Clusters")
     , _clusters2SelectionAction(this, "Clusters")
     , _filterOnIdAction(this, "Filter on Id")
+    , _selectedIdAction(this, "Selected Id")
     , _tableView(nullptr)
     , _differentialExpressionModel(nullptr)
     , _sortFilterProxyModel(nullptr)
@@ -119,7 +120,7 @@ void ClusterDifferentialExpressionWidget::initGui()
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
         
         
-        
+        connect(_tableView, &QTableView::clicked, this, &ClusterDifferentialExpressionWidget::tableView_Clicked);
 
         WordWrapHeaderView* horizontalHeader = new WordWrapHeaderView(Qt::Horizontal);
         //horizontalHeader->setStretchLastSection(true);
@@ -270,8 +271,17 @@ void ClusterDifferentialExpressionWidget::initGui()
             layout2->addWidget(_autoComputeToggleAction.createLabelWidget(this), 1, Qt::AlignLeft);
             _autoComputeToggleAction.setText("");
             layout2->addWidget(_autoComputeToggleAction.createWidget(this),99, Qt::AlignLeft);
-            layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
+
+            _selectedIdAction.setPlaceHolderString("");
+            _selectedIdAction.setEnabled(true);
+            layout2->addWidget(_selectedIdAction.createLabelWidget(this), 1, Qt::AlignLeft);
+            auto* w = _selectedIdAction.createWidget(this);
+            w->setEnabled(false);
+            layout2->addWidget(w, 99, Qt::AlignLeft);
+
+        	layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
         }
+
 
 
       
@@ -424,4 +434,15 @@ void ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed()
 {
     ShowUpToDate();
     emit computeDE();
+}
+
+void ClusterDifferentialExpressionWidget::tableView_Clicked(const QModelIndex &index)
+{
+    QModelIndex firstColumn = index.sibling(index.row(),  0);
+  
+    QString selectedGeneName = firstColumn.data().toString();
+    _selectedIdAction.setString(selectedGeneName);
+    QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
+    auto row = temp.row();
+    emit selectedRowChanged(row);
 }

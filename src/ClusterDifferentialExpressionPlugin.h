@@ -7,7 +7,7 @@
 
 using hdps::plugin::ViewPluginFactory;
 using hdps::plugin::ViewPlugin;
-using hdps::plugin::PluginFactory;
+//using hdps::plugin::PluginFactory;
 
 class ClusterDifferentialExpressionWidget;
 class QTableItemModel;
@@ -29,7 +29,7 @@ class ClusterDifferentialExpressionPlugin : public ViewPlugin
 
         typedef std::pair<QString, std::pair<std::ptrdiff_t, std::ptrdiff_t>> DimensionNameMatch;
 public:
-    ClusterDifferentialExpressionPlugin(const PluginFactory* factory);
+    ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory);
 
     void init() override;
 
@@ -41,11 +41,15 @@ public:
     */
     void loadData(const hdps::Datasets& datasets) override;
 
+private:
+    void createMeanExpressionDataset(int dataset_index, int index);
+
 protected slots:
     void clusters1Selected(QList<int> selectedClusters);
     void clusters2Selected(QList<int> selectedClusters);
     void clusterDataset1Changed(const hdps::Dataset<hdps::DatasetImpl> &dataset);
     void clusterDataset2Changed(const hdps::Dataset<hdps::DatasetImpl>& dataset);
+    void selectedRowChanged(int index);
     
 private:
     
@@ -76,6 +80,8 @@ private:
     std::vector<DimensionNameMatch> _matchingDimensionNames;
     ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
     bool                            _identicalDimensions;
+    QString                         _meanExpressionDatasetGuid1;
+    QString                         _meanExpressionDatasetGuid2;
 };
     
 
@@ -89,7 +95,7 @@ class ClusterDifferentialExpressionFactory : public ViewPluginFactory
 
 public:
     ClusterDifferentialExpressionFactory() {}
-    ~ClusterDifferentialExpressionFactory() {}
+    ~ClusterDifferentialExpressionFactory() override {}
 
     /** Returns the plugin icon */
     QIcon getIcon(const QColor& color = Qt::black) const override;
@@ -97,4 +103,7 @@ public:
     ClusterDifferentialExpressionPlugin* produce() override;
 
     hdps::DataTypes supportedDataTypes() const override;
+
+
+	hdps::gui::PluginTriggerActions getPluginTriggerActions(const hdps::Datasets & datasets) const override;
 };
