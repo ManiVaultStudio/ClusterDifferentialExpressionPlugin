@@ -254,7 +254,7 @@ void ClusterDifferentialExpressionPlugin::init()
             if (!_clusterDataset1.isValid())
             {
                 dropRegions << new gui::DropWidget::DropRegion(this, "First Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
-                    _differentialExpressionWidget->ShowOutOfDate();
+                    _differentialExpressionWidget->ShowComputeButton();
                     _dropWidget->setShowDropIndicator(false);
                     clusterDataset1Changed(candidateDataset);
                     clusterDataset2Changed(candidateDataset);
@@ -263,14 +263,14 @@ void ClusterDifferentialExpressionPlugin::init()
             else
             {
                 dropRegions << new gui::DropWidget::DropRegion(this, " First Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
-                    _differentialExpressionWidget->ShowOutOfDate();
+                    _differentialExpressionWidget->ShowComputeButton();
                     _dropWidget->setShowDropIndicator(false);
                     clusterDataset1Changed(candidateDataset);
                     });
 
                 dropRegions << new gui::DropWidget::DropRegion(this, " Second Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
                     
-                    _differentialExpressionWidget->ShowOutOfDate();
+                    _differentialExpressionWidget->ShowComputeButton();
                     _dropWidget->setShowDropIndicator(false);
                     clusterDataset2Changed(candidateDataset);
                     });
@@ -315,14 +315,13 @@ void ClusterDifferentialExpressionPlugin::init()
         // Load clusters when the dataset name of the clusters dataset reference changes
         connect(&_clusterDataset1, &Dataset<Clusters>::changed, this, [this, updateWindowTitle]() {
             updateWindowTitle();
-			updateData();
-            //TODO: Delete DE_Statistics
+			updateData(1);
+            
         });
 
         connect(&_clusterDataset2, &Dataset<Clusters>::changed, this, [this, updateWindowTitle]() {
             updateWindowTitle();
-            updateData();
-            //TODO: Delete DE_Statistics
+            updateData(2);
             });
 
         //connect(_differentialExpressionWidget, SIGNAL(clusterSelectionChanged(QList<int>)), SLOT(clusterSelected(QList<int>)));
@@ -350,7 +349,7 @@ void ClusterDifferentialExpressionPlugin::onDataEvent(hdps::DataEvent* dataEvent
     // Event which gets triggered when the data contained in a dataset changes.
     if (dataEvent->getType() == EventType::DataChanged)
     {
-        updateData();
+        updateData(0);
     }
 }
 
@@ -436,7 +435,7 @@ void ClusterDifferentialExpressionPlugin::clusters1Selected(QList<int> selectedC
     if(selectedClusters != _clusterDataset1_selected_clusters)
     {
         _clusterDataset1_selected_clusters = selectedClusters;
-        _differentialExpressionWidget->ShowOutOfDate();
+        _differentialExpressionWidget->ShowComputeButton();
     }
     
 }
@@ -445,7 +444,7 @@ void ClusterDifferentialExpressionPlugin::clusters2Selected(QList<int> selectedC
     if(selectedClusters != _clusterDataset2_selected_clusters)
     {
         _clusterDataset2_selected_clusters = selectedClusters;
-        _differentialExpressionWidget->ShowOutOfDate();
+        _differentialExpressionWidget->ShowComputeButton();
     }
     
 }
@@ -582,7 +581,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     return false;
 }
 
-void ClusterDifferentialExpressionPlugin::updateData()
+void ClusterDifferentialExpressionPlugin::updateData(int index)
 {
     // if only 1 cluster dataset is set, set the first also as the second for convenience
     if(_clusterDataset1.isValid() && !_clusterDataset2.isValid())
@@ -609,41 +608,53 @@ void ClusterDifferentialExpressionPlugin::updateData()
         
     }
 
-    
-
     QStringList clusterNames1;
-    if(_clusterDataset1.isValid())
+    if(index!=2)
     {
-        auto& clusters = _clusterDataset1->getClusters();
-        for (auto cluster : clusters)
+        if (_clusterDataset1.isValid())
         {
-            clusterNames1.append(cluster.getName());
+            auto& clusters = _clusterDataset1->getClusters();
+            for (auto cluster : clusters)
+            {
+                clusterNames1.append(cluster.getName());
+            }
         }
     }
+    
     
 
     QStringList clusterNames2;
-    if(_clusterDataset2.isValid())
+    if(index != 1)
     {
-        auto& clusters = _clusterDataset2->getClusters();
-        for (auto cluster : clusters)
+        if (_clusterDataset2.isValid())
         {
-            clusterNames2.append(cluster.getName());
+            auto& clusters = _clusterDataset2->getClusters();
+            for (auto cluster : clusters)
+            {
+                clusterNames2.append(cluster.getName());
+            }
         }
     }
     
+    
+    if (index != 2)
+    {
+        _differentialExpressionWidget->setClusters1(clusterNames1);
+        auto clusterDataset1Parent = _clusterDataset1->getParent<Points>();
+        if (clusterDataset1Parent.isValid())
+            _differentialExpressionWidget->selectClusterDataset1(_clusterDataset1);
+    }
+    if (index != 1)
+    {
+        _differentialExpressionWidget->setClusters2(clusterNames2);
 
-    _differentialExpressionWidget->setClusters1(clusterNames1);
-    _differentialExpressionWidget->setClusters2(clusterNames2);
-    auto clusterDataset1Parent = _clusterDataset1->getParent<Points>();
-    if(clusterDataset1Parent.isValid())
-        _differentialExpressionWidget->selectClusterDataset1(_clusterDataset1);
-   
-    auto clusterDataset2Parent = _clusterDataset2->getParent<Points>();
-    if(clusterDataset2Parent.isValid())
-        _differentialExpressionWidget->selectClusterDataset2(_clusterDataset2);
+
+        auto clusterDataset2Parent = _clusterDataset2->getParent<Points>();
+        if (clusterDataset2Parent.isValid())
+            _differentialExpressionWidget->selectClusterDataset2(_clusterDataset2);
+    }
   
-    _differentialExpressionWidget->ShowOutOfDate();
+    _differentialExpressionWidget->ShowComputeButton();
 }
 
 

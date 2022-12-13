@@ -72,7 +72,7 @@ void WordWrapHeaderView::fixWidgetPosition(int logicalIndex)
         auto h = height();
         auto o = horizontalOffset();
         auto s = sectionSizeFromContents(logicalIndex);
-        std::cout << x << "\t" << y << "\t" << h << "\t" << o << "\t(" << s.width() << ","<< s.height() << ")"<< std::endl;
+        
 
         found.value()->setFixedWidth(s.width()-5);
     	found.value()->setGeometry(sectionViewportPosition(logicalIndex), 5,
@@ -122,7 +122,7 @@ QSize WordWrapHeaderView::sectionSizeFromContents(int logicalIndex) const
     {
         int maxWidth = this->sectionSize(logicalIndex);
         int height = found.value()->height();
-        std::cout << "H: " << height << std::endl;
+       
         return QSize(maxWidth+2, height+5);
     }
     else

@@ -78,16 +78,22 @@ ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(Cluster
     , _clusters1SelectionAction(this, "Clusters")
     , _clusters2SelectionAction(this, "Clusters")
     , _filterOnIdAction(this, "Filter on Id")
-    , _selectedIdAction(this, "Selected Id")
+    , _selectedIdAction(this, "Last selected Id")
+	, _updateStatisticsAction(this, "Calculate Differential Expression")
     , _tableView(nullptr)
     , _differentialExpressionModel(nullptr)
     , _sortFilterProxyModel(nullptr)
     , _cluster1SectionLabelWidget(nullptr)
     , _cluster2SectionLabelWidget(nullptr)
     , _autoComputeToggleAction(this, "Automatic Update")
+	, _updateStatisticsButton(nullptr)
 {
     initGui();
-    
+    QString pluginID = differentialExpressionPlugin->getGuiName();
+    _selectedIdAction.publish(pluginID+"_selectedId");
+    _updateStatisticsAction.setCheckable(false);
+    _updateStatisticsAction.setChecked(false);
+    _updateStatisticsAction.publish(pluginID+"_calculateStatistics");
 }
 
 void ClusterDifferentialExpressionWidget::initGui()
@@ -256,9 +262,13 @@ void ClusterDifferentialExpressionWidget::initGui()
 
         
         {
-            _updateStatisticsButton = new QPushButton("Calculate Differential Expression", this);
-            layout->addWidget(_updateStatisticsButton, currentRow++, 0, 1, NumberOfColums);
-            QObject::connect(_updateStatisticsButton, &QPushButton::clicked, this, &ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed);
+            
+            QWidget* w = _updateStatisticsAction.createWidget(this);
+            _updateStatisticsButton = w->findChild<hdps::gui::TriggerAction::PushButtonWidget*>();// new QPushButton("Calculate Differential Expression", this);
+            _updateStatisticsButton->setText("Calculate Differential Expression");
+            layout->addWidget(w, currentRow++, 0, 1, NumberOfColums);
+            QObject::connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, [this]() -> void { this->updateStatisticsButtonPressed(); });
+            //QObject::connect(updateStatisticsButton, &QPushButton::clicked, this, &ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed);
         }
         
        
@@ -279,6 +289,9 @@ void ClusterDifferentialExpressionWidget::initGui()
             w->setEnabled(false);
             layout2->addWidget(w, 99, Qt::AlignLeft);
 
+
+           // layout2->addWidget(_updateStatisticsAction.createLabelWidget(this), 1, Qt::AlignLeft);
+
         	layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
         }
 
@@ -293,7 +306,8 @@ void ClusterDifferentialExpressionWidget::setClusters1(QStringList clusters)
 {
     auto result = local::updateOptionAction(_clusters1SelectionAction, clusters);
     if(_autoComputeToggleAction.isEnabled())
-        _autoComputeToggleAction.setChecked(!clusters.empty());
+        if (_autoComputeToggleAction.isChecked())
+			_autoComputeToggleAction.setChecked(!clusters.empty());
 
 }
 
@@ -301,7 +315,8 @@ void ClusterDifferentialExpressionWidget::setClusters2( QStringList clusters)
 {
     auto result = local::updateOptionAction(_clusters2SelectionAction, clusters);
     if (_autoComputeToggleAction.isEnabled())
-        _autoComputeToggleAction.setChecked(!clusters.empty());
+        if(_autoComputeToggleAction.isChecked())
+			_autoComputeToggleAction.setChecked(!clusters.empty());
 }
 
 void ClusterDifferentialExpressionWidget::setClusterDatasets(const QVector<hdps::Dataset<hdps::DatasetImpl>> &datasets)
@@ -337,12 +352,13 @@ void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
     
     
     
-    ShowUpToDate();
+    ShowProgressBar();
     
 }
 
-void ClusterDifferentialExpressionWidget::ShowUpToDate()
+void ClusterDifferentialExpressionWidget::ShowProgressBar()
 {
+    
     _updateStatisticsButton->hide();
     _progressBar->show();
     if(_differentialExpressionModel)
@@ -361,7 +377,7 @@ QProgressBar* ClusterDifferentialExpressionWidget::getProgressBar()
 }
 
 
-void ClusterDifferentialExpressionWidget::ShowOutOfDate()
+void ClusterDifferentialExpressionWidget::ShowComputeButton()
 {
     _progressBar->hide();
     _updateStatisticsButton->show();
@@ -401,8 +417,8 @@ void ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged
     {
         QList<int> selection = { index };
         emit clusters1SelectionChanged(selection);
-        if (_autoComputeToggleAction.isChecked())
-            updateStatisticsButtonPressed();
+      //  if (_autoComputeToggleAction.isChecked())
+       //     updateStatisticsButtonPressed();
     }
 }
 
@@ -412,8 +428,8 @@ void ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged
     {
         QList<int> selection = { index };
         emit clusters2SelectionChanged(selection);
-        if (_autoComputeToggleAction.isChecked())
-            updateStatisticsButtonPressed();
+        //if (_autoComputeToggleAction.isChecked())
+          //  updateStatisticsButtonPressed();
     }
 }
 
@@ -432,7 +448,7 @@ void ClusterDifferentialExpressionWidget::selectClusterDataset2(const hdps::Data
 
 void ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed()
 {
-    ShowUpToDate();
+    ShowProgressBar();
     emit computeDE();
 }
 

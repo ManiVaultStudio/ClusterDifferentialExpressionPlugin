@@ -6,6 +6,7 @@
 #include "actions/StringAction.h"
 #include "actions/ToggleAction.h"
 #include "actions/DatasetPickerAction.h"
+#include "actions/TriggerAction.h"
 
 // DE
 class ClusterDifferentialExpressionPlugin;
@@ -40,8 +41,8 @@ public:
     void setClusterDatasets(const QVector<hdps::Dataset<hdps::DatasetImpl>> &datasets);
     
     void setData(QTableItemModel *newModel);
-    void ShowUpToDate();
-    void ShowOutOfDate();
+    void ShowProgressBar();
+    void ShowComputeButton();
     void EnableAutoCompute(bool value);
     QProgressBar* getProgressBar();
 
@@ -84,7 +85,8 @@ private:
     hdps::gui::ToggleAction                _autoComputeToggleAction;
     hdps::gui::StringAction                 _filterOnIdAction;
     hdps::gui::StringAction                 _selectedIdAction;
-    QPushButton*                            _updateStatisticsButton;
+    hdps::gui::TriggerAction                _updateStatisticsAction;
+    hdps::gui::TriggerAction::PushButtonWidget*                            _updateStatisticsButton;
     QTableItemModel*                        _differentialExpressionModel;
     SortFilterProxyModel*                    _sortFilterProxyModel;
     QProgressBar*                            _progressBar;

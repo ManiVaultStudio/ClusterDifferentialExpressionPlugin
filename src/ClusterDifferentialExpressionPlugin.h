@@ -57,9 +57,10 @@ private:
     hdps::Dataset<Points> get_DE_Statistics_Dataset(hdps::Dataset<Clusters> clusterDataset);
     std::vector<double> computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QList<int>& selected_clusters);
     bool matchDimensionNames();
+    void updateData(int index);
 
 public slots:
-    void updateData();
+   
     void computeDE();
 
 public: // Action getters
