@@ -1,18 +1,22 @@
 #pragma once
+
+//#include "SettingsAction.h"
+#include "ProgressManager.h"
+
+// HDPS includes
 #include <ViewPlugin.h>
 #include <Dataset.h>
 #include "widgets/DropWidget.h"
+#include "actions/VariantAction.h"
 
-#include "ProgressManager.h"
 
 using hdps::plugin::ViewPluginFactory;
 using hdps::plugin::ViewPlugin;
-//using hdps::plugin::PluginFactory;
 
 class ClusterDifferentialExpressionWidget;
 class QTableItemModel;
 
-class SettingsAction;
+
 class Points;
 class Clusters;
 
@@ -40,6 +44,9 @@ public:
     * @param datasets Dataset(s) to load
     */
     void loadData(const hdps::Datasets& datasets) override;
+    
+    ClusterDifferentialExpressionWidget& getClusterDifferentialExpressionWidget();
+   // SettingsAction& getSettingsAction() { return _settingsAction; }
 
 private:
     void createMeanExpressionDataset(int dataset_index, int index);
@@ -63,13 +70,11 @@ public slots:
    
     void computeDE();
 
-public: // Action getters
 
-    SettingsAction& getSettingsAction() { return *_settingsAction; }
 
 private:
     ClusterDifferentialExpressionWidget* _differentialExpressionWidget;      /** differential expression widget providing the GUI */
-    SettingsAction*                 _settingsAction;
+    
 
     hdps::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
     hdps::Dataset<Clusters>         _clusterDataset1;     /** Currently loaded clusters dataset */
@@ -83,6 +88,10 @@ private:
     bool                            _identicalDimensions;
     QString                         _meanExpressionDatasetGuid1;
     QString                         _meanExpressionDatasetGuid2;
+
+    hdps::gui::VariantAction        _preInfoVariantAction;
+
+    //SettingsAction                 _settingsAction;
 };
     
 

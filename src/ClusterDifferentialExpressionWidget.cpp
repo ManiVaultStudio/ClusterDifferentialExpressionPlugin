@@ -14,6 +14,7 @@
 #include <QGraphicsColorizeEffect>
 #include <QLineEdit>
 #include <QVBoxLayout>
+#include <QResizeEvent>
 #include <QGroupBox>
 #include <QHBoxLayout>
 
@@ -58,7 +59,7 @@ namespace local
     bool updateDatasetPickerAction(DatasetPickerAction& action, const QVector < hdps::Dataset <hdps::DatasetImpl>> options)
 	{
         auto current = action.getCurrentDataset();
-        action.setShowFullPathName(false);
+        action.setShowFullPathName(true);
         action.setDatasets(options);
         if (options.contains(current))
         {
@@ -90,10 +91,130 @@ ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(Cluster
 {
     initGui();
     QString pluginID = differentialExpressionPlugin->getGuiName();
-    _selectedIdAction.publish(pluginID+"_selectedId");
+    _selectedIdAction.publish(pluginID+": selectedId");
     _updateStatisticsAction.setCheckable(false);
     _updateStatisticsAction.setChecked(false);
-    _updateStatisticsAction.publish(pluginID+"_calculateStatistics");
+    _updateStatisticsAction.publish(pluginID+": calculateStatistics");
+}
+
+
+void ClusterDifferentialExpressionWidget::initTableViewHeader()
+{
+    WordWrapHeaderView* horizontalHeader = new WordWrapHeaderView(Qt::Horizontal);
+    //horizontalHeader->setStretchLastSection(true);
+    horizontalHeader->setFirstSectionMovable(false);
+    horizontalHeader->setSectionsMovable(true);
+    horizontalHeader->setSectionsClickable(true);
+    horizontalHeader->sectionResizeMode(QHeaderView::Stretch);
+    horizontalHeader->setSectionResizeMode(QHeaderView::Stretch);
+    //horizontalHeader->setSectionResizeMode(0,QHeaderView::Interactive);
+    horizontalHeader->setSortIndicator(0, Qt::AscendingOrder);
+    horizontalHeader->setDefaultAlignment(Qt::AlignBottom | Qt::AlignHCenter | Qt::Alignment(Qt::TextWordWrap));
+    _tableView->setHorizontalHeader(horizontalHeader);
+    
+    { // search action for ID column
+
+        QWidget* clusterHeaderWidget = new QWidget;
+        QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
+        clusterHeaderWidgetLayout->setContentsMargins(0, 0, 0, 0);
+        clusterHeaderWidgetLayout->setHorizontalSpacing(0);
+        clusterHeaderWidgetLayout->setVerticalSpacing(0);
+        clusterHeaderWidgetLayout->setSpacing(0);
+        clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
+
+        auto* w1 = _filterOnIdAction.createLabelWidget(this);
+        local::setLabelWidgetIcon(w1, "search");
+        clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
+
+
+        auto* w2 = _filterOnIdAction.createWidget(this);
+        clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
+
+        clusterHeaderWidgetLayout->addWidget(new QLabel(""), 1, 0, 1, 2, Qt::AlignCenter);
+        clusterHeaderWidgetLayout->addWidget(new QLabel("ID"), 2, 0, 1, 2, Qt::AlignCenter);
+        clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
+
+        connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
+
+        horizontalHeader->setWidget(0, clusterHeaderWidget);
+    }
+
+    {
+        QWidget* clusterHeaderWidget = new QWidget;
+        QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
+        clusterHeaderWidgetLayout->setContentsMargins(1, 1, 1, 1);
+        clusterHeaderWidgetLayout->setHorizontalSpacing(0);
+        clusterHeaderWidgetLayout->setVerticalSpacing(0);
+        clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
+
+        _clusterDataset1Action.setText(":");
+        _clusterDataset1Action.setShowIcon(false);
+        _clusterDataset1Action.setShowFullPathName(true);
+        _clusters1SelectionAction.setText(":");
+        auto* w1 = _clusterDataset1Action.createLabelWidget(horizontalHeader);
+        local::setLabelWidgetIcon(w1, "th-large"); // symbol for cluster datasets
+
+        auto* w2 = _clusterDataset1Action.createWidget(horizontalHeader);
+        auto* w3 = _clusters1SelectionAction.createLabelWidget(horizontalHeader);
+        local::setLabelWidgetIcon(w3, "layer-group");
+        auto* w4 = _clusters1SelectionAction.createWidget(horizontalHeader);
+        auto* w5 = new QLabel("Mean", horizontalHeader);
+        clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
+        clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
+        clusterHeaderWidgetLayout->addWidget(w3, 1, 0, 1, 1, Qt::AlignTop);
+        clusterHeaderWidgetLayout->addWidget(w4, 1, 1, 1, 1, Qt::AlignTop);
+        clusterHeaderWidgetLayout->addWidget(w5, 2, 0, 1, 2, Qt::AlignCenter);
+
+        clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
+        horizontalHeader->setWidget(2, clusterHeaderWidget);
+    }
+
+    {
+        QWidget* clusterHeaderWidget = new QWidget;
+        QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
+        clusterHeaderWidgetLayout->setContentsMargins(0, 0, 0, 0);
+        clusterHeaderWidgetLayout->setHorizontalSpacing(0);
+        clusterHeaderWidgetLayout->setVerticalSpacing(0);
+        clusterHeaderWidgetLayout->setSpacing(0);
+        clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
+
+        _clusterDataset2Action.setText(":");
+        _clusterDataset2Action.setShowIcon(false);
+        _clusters2SelectionAction.setText(":");
+        auto* w1 = _clusterDataset2Action.createLabelWidget(horizontalHeader);
+        local::setLabelWidgetIcon(w1, "th-large");
+        auto* w2 = _clusterDataset2Action.createWidget(horizontalHeader);
+        auto* w3 = _clusters2SelectionAction.createLabelWidget(horizontalHeader);
+        local::setLabelWidgetIcon(w3, "layer-group");
+        auto* w4 = _clusters2SelectionAction.createWidget(horizontalHeader);
+        auto* w5 = new QLabel("Mean", horizontalHeader);
+        int h11 = w1->height();
+        int h12 = w2->height();
+        int w21 = w3->height();
+        int w22 = w4->height();
+        auto* c = new QComboBox(horizontalHeader);
+        int wc = c->height();
+        delete c;
+        int h1 = std::max(h11, h12);
+        int h2 = std::max(w21, w22);
+        int h3 = w5->height();
+
+        clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
+        clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
+        clusterHeaderWidgetLayout->addWidget(w3, 1, 0, 1, 1, Qt::AlignTop);
+        clusterHeaderWidgetLayout->addWidget(w4, 1, 1, 1, 1, Qt::AlignTop);
+        clusterHeaderWidgetLayout->addWidget(w5, 2, 0, 1, 2, Qt::AlignCenter);
+        clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
+
+
+
+        horizontalHeader->setWidget(3, clusterHeaderWidget);
+        QCoreApplication::processEvents();
+    }
+	horizontalHeader->enableWidgetSupport(true);
+
+    //horizontalHeader->setCascadingSectionResizes(true);
+    
 }
 
 void ClusterDifferentialExpressionWidget::initGui()
@@ -125,122 +246,11 @@ void ClusterDifferentialExpressionWidget::initGui()
         _tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
         
+
         
-        connect(_tableView, &QTableView::clicked, this, &ClusterDifferentialExpressionWidget::tableView_Clicked);
+        connect(_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ClusterDifferentialExpressionWidget::tableView_sectionChanged);
 
-        WordWrapHeaderView* horizontalHeader = new WordWrapHeaderView(Qt::Horizontal);
-        //horizontalHeader->setStretchLastSection(true);
-        horizontalHeader->setFirstSectionMovable(false);
-        horizontalHeader->setSectionsMovable(true);
-        horizontalHeader->setSectionsClickable(true);
-        horizontalHeader->sectionResizeMode(QHeaderView::Stretch);
-        horizontalHeader->setSectionResizeMode(QHeaderView::Stretch);
-        //horizontalHeader->setSectionResizeMode(0,QHeaderView::Interactive);
-		horizontalHeader->setSortIndicator(0, Qt::AscendingOrder);
-        horizontalHeader->setDefaultAlignment(Qt::AlignBottom | Qt::AlignHCenter | Qt::Alignment(Qt::TextWordWrap));
-        _tableView->setHorizontalHeader(horizontalHeader);
-
-        {
-            QWidget* clusterHeaderWidget = new QWidget;
-            QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
-            clusterHeaderWidgetLayout->setContentsMargins(1, 1, 1, 1);
-            clusterHeaderWidgetLayout->setHorizontalSpacing(0);
-            clusterHeaderWidgetLayout->setVerticalSpacing(0);
-            clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
-
-            _clusterDataset1Action.setText(":");
-            _clusterDataset1Action.setShowIcon(false);
-            _clusters1SelectionAction.setText(":");
-            auto* w1 = _clusterDataset1Action.createLabelWidget(horizontalHeader);
-            local::setLabelWidgetIcon(w1, "th-large"); // symbol for cluster datasets
-            
-            auto* w2 = _clusterDataset1Action.createWidget(horizontalHeader);
-            auto* w3 = _clusters1SelectionAction.createLabelWidget(horizontalHeader);
-            local::setLabelWidgetIcon(w3, "layer-group");
-            auto* w4 = _clusters1SelectionAction.createWidget(horizontalHeader);
-            auto* w5 = new QLabel("Mean", horizontalHeader);
-            clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
-            clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
-            clusterHeaderWidgetLayout->addWidget(w3, 1, 0, 1, 1, Qt::AlignTop);
-            clusterHeaderWidgetLayout->addWidget(w4, 1, 1, 1, 1, Qt::AlignTop);
-            clusterHeaderWidgetLayout->addWidget(w5, 2, 0, 1, 2, Qt::AlignCenter);
-            
-            clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
-			horizontalHeader->setWidget(2, clusterHeaderWidget);
-        }
-
-        {
-            QWidget* clusterHeaderWidget = new QWidget;
-            QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
-            clusterHeaderWidgetLayout->setContentsMargins(0, 0, 0, 0);
-            clusterHeaderWidgetLayout->setHorizontalSpacing(0);
-            clusterHeaderWidgetLayout->setVerticalSpacing(0);
-            clusterHeaderWidgetLayout->setSpacing(0);
-            clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
-            
-            _clusterDataset2Action.setText(":");
-            _clusterDataset2Action.setShowIcon(false);
-            _clusters2SelectionAction.setText(":");
-            auto* w1 = _clusterDataset2Action.createLabelWidget(horizontalHeader);
-            local::setLabelWidgetIcon(w1, "th-large");
-            auto* w2 = _clusterDataset2Action.createWidget(horizontalHeader);
-            auto* w3 = _clusters2SelectionAction.createLabelWidget(horizontalHeader);
-            local::setLabelWidgetIcon(w3, "layer-group");
-            auto* w4 = _clusters2SelectionAction.createWidget(horizontalHeader);
-            auto* w5 = new QLabel("Mean",horizontalHeader);
-            int h11 = w1->height();
-            int h12 = w2->height();
-            int w21 = w3->height();
-            int w22 = w4->height();
-            auto* c = new QComboBox(horizontalHeader);
-            int wc = c->height();
-            delete c;
-            int h1 = std::max(h11, h12);
-            int h2 = std::max(w21, w22);
-            int h3 = w5->height();
-
-            clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
-            clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
-            clusterHeaderWidgetLayout->addWidget(w3, 1, 0, 1, 1, Qt::AlignTop);
-            clusterHeaderWidgetLayout->addWidget(w4, 1, 1, 1, 1, Qt::AlignTop);
-            clusterHeaderWidgetLayout->addWidget(w5, 2, 0, 1, 2, Qt::AlignCenter);
-            clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
-           
-            
-            
-            horizontalHeader->setWidget(3, clusterHeaderWidget);
-            QCoreApplication::processEvents();
-        }
-
-
-        {
-
-            QWidget* clusterHeaderWidget = new QWidget;
-            QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
-            clusterHeaderWidgetLayout->setContentsMargins(0, 0, 0, 0);
-            clusterHeaderWidgetLayout->setHorizontalSpacing(0);
-            clusterHeaderWidgetLayout->setVerticalSpacing(0);
-            clusterHeaderWidgetLayout->setSpacing(0);
-            clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
-
-            auto* w1 = _filterOnIdAction.createLabelWidget(this);
-            local::setLabelWidgetIcon(w1, "search");
-            clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
-
-
-            auto* w2 = _filterOnIdAction.createWidget(this);
-            clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
-
-            clusterHeaderWidgetLayout->addWidget(new QLabel(""), 1, 0, 1, 2, Qt::AlignCenter);
-            clusterHeaderWidgetLayout->addWidget(new QLabel("ID"), 2, 0, 1, 2, Qt::AlignCenter);
-            clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
-
-            connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
-
-            horizontalHeader->setWidget(0, clusterHeaderWidget);
-        }
-
-        horizontalHeader->enableWidgetSupport(true);
+        initTableViewHeader();
 
         layout->addWidget(_tableView, currentRow++, 0, 1, NumberOfColums);
     }
@@ -289,8 +299,7 @@ void ClusterDifferentialExpressionWidget::initGui()
             w->setEnabled(false);
             layout2->addWidget(w, 99, Qt::AlignLeft);
 
-
-           // layout2->addWidget(_updateStatisticsAction.createLabelWidget(this), 1, Qt::AlignLeft);
+            
 
         	layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
         }
@@ -334,22 +343,16 @@ void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
     if(oldModel)
         delete oldModel;
 
-    
+	//update header    
     QHeaderView* horizontalHeader = _tableView->horizontalHeader();
+    if(oldModel == nullptr)
+		horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
+    
+    emit horizontalHeader->headerDataChanged(Qt::Horizontal, 0, newModel->columnCount());
 
-
-    horizontalHeader->setSectionResizeMode(0,QHeaderView::ResizeToContents);
-	for(auto i=1; i < horizontalHeader->count(); ++i)
-    {
-        
-        horizontalHeader->setSectionResizeMode(0, QHeaderView::Stretch);
-    }
-    horizontalHeader->update();
     QCoreApplication::processEvents();
-    
-
-    //horizontalHeader->resizeSections(QHeaderView::ResizeToContents);
-    
+    horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
+   
     
     
     ShowProgressBar();
@@ -375,6 +378,12 @@ QProgressBar* ClusterDifferentialExpressionWidget::getProgressBar()
 {
     return _progressBar;
 }
+
+void ClusterDifferentialExpressionWidget::setNrOfExtraColumns(std::size_t offset)
+{
+    qobject_cast<WordWrapHeaderView*>(_tableView->horizontalHeader())->setExtraLeftSideColumns(offset);
+}
+
 
 
 void ClusterDifferentialExpressionWidget::ShowComputeButton()
@@ -461,4 +470,18 @@ void ClusterDifferentialExpressionWidget::tableView_Clicked(const QModelIndex &i
     QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
     auto row = temp.row();
     emit selectedRowChanged(row);
+}
+
+void ClusterDifferentialExpressionWidget::tableView_sectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+{
+    tableView_Clicked(selected.indexes().first());
+}
+
+void ClusterDifferentialExpressionWidget::resizeEvent(QResizeEvent* event) 
+{
+    QWidget::resizeEvent(event);
+    QHeaderView* horizontalHeader = _tableView->horizontalHeader();
+    horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
+    QCoreApplication::processEvents();
+    horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
 }

@@ -1,10 +1,12 @@
 #include "WordWrapHeaderView.h"
 #include <iostream>
+#include <qlayout.h>
 #include <qtextoption.h>
 
 WordWrapHeaderView::WordWrapHeaderView(Qt::Orientation orientation, QWidget* parent)
  : QHeaderView(orientation,parent)
 , _widgetSupportEnabled(false)
+, _columnOffset(0)
 {
     
 }
@@ -33,6 +35,7 @@ void WordWrapHeaderView::enableWidgetSupport(bool enabled)
                 SLOT(handleSectionMoved(int, int, int)));
 
             setSectionsMovable(true);
+            
         }
         else
         {
@@ -52,6 +55,7 @@ void WordWrapHeaderView::enableWidgetSupport(bool enabled)
 void WordWrapHeaderView::setWidget(unsigned i, QWidget *w)
 {
     w->setParent(this);
+    w->raise();
     auto found = _widgets.find(i);
     if (found != _widgets.end())
     {
@@ -60,6 +64,36 @@ void WordWrapHeaderView::setWidget(unsigned i, QWidget *w)
     }
     else
         _widgets[i] = w;
+}
+
+
+void WordWrapHeaderView::setExtraLeftSideColumns(std::size_t offset)
+{
+    long long offsetChange = offset - _columnOffset;
+    if (offsetChange == 0)
+        return;
+    QMap<unsigned, QWidget*> newMap;
+    for(QMap<unsigned, QWidget*>::iterator i=_widgets.begin(); i != _widgets.end(); ++i)
+    {
+        if (i.key() == 0)
+            newMap[0] = i.value();
+        else
+            newMap[i.key() + offsetChange] = i.value();
+    }
+    _widgets = newMap;
+    _columnOffset = offset;
+    emit headerDataChanged(Qt::Horizontal, 0, count());
+}
+
+
+void WordWrapHeaderView::clearWidgets()
+{
+	for(auto w : _widgets)
+	{
+       
+        delete w;
+	}
+    _widgets.clear();
 }
 
 void WordWrapHeaderView::fixWidgetPosition(int logicalIndex)
@@ -73,11 +107,9 @@ void WordWrapHeaderView::fixWidgetPosition(int logicalIndex)
         auto o = horizontalOffset();
         auto s = sectionSizeFromContents(logicalIndex);
         
-
-        found.value()->setFixedWidth(s.width()-5);
-    	found.value()->setGeometry(sectionViewportPosition(logicalIndex), 5,
-
-            s.width()-5, height()+5);
+        QWidget *foundWidget = found.value();
+        foundWidget->setFixedWidth(s.width()-5);
+        foundWidget->setGeometry(sectionViewportPosition(logicalIndex), 5,   s.width()-5, height()+5);
     }
 }
 
@@ -143,7 +175,7 @@ QSize WordWrapHeaderView::sectionSizeFromContents(int logicalIndex) const
             auto m = metrics.boundingRect("M");
             QRect rect = metrics.boundingRect(QRect(0, 0, maxWidth, maxHeight), alignment, text);
             const int correction = 4;
-            const QSize textMarginBuffer(2, 2); // buffer space around text preventing clipping
+            const QSize textMarginBuffer(5, 2); // buffer space around text preventing clipping
 
 
 
@@ -194,7 +226,6 @@ void WordWrapHeaderView::updateGeometries()
     for (auto widget_iterator = _widgets.begin(); widget_iterator != _widgets.end(); ++widget_iterator)
     {
         unsigned index = widget_iterator.key();
-        QWidget* widget = widget_iterator.value();
         fixWidgetPosition(index);
     }
 }

@@ -45,8 +45,10 @@ public:
     void ShowComputeButton();
     void EnableAutoCompute(bool value);
     QProgressBar* getProgressBar();
+    void setNrOfExtraColumns(std::size_t offset);
 
-    
+
+
 
 signals:
     void clusters1SelectionChanged(QList<int> selectedClusters);
@@ -65,6 +67,10 @@ private slots:
     void clusters2Selection_CurrentIndexChanged(int index);
     void updateStatisticsButtonPressed();
     void tableView_Clicked(const QModelIndex&);
+    void tableView_sectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+
+public slots:
+    void resizeEvent(QResizeEvent* event) override;
 
 public:
     void selectClusterDataset1(const hdps::Dataset<hdps::DatasetImpl>& dataset);
@@ -72,24 +78,25 @@ public:
     
  
 private:
+    void initTableViewHeader();
     void initGui();
    
 
-    bool                                    _modelIsUpToDate;
-    ClusterDifferentialExpressionPlugin*    _differentialExpressionPlugin;
-    TableView*                             _tableView;
-    DatasetPickerAction                     _clusterDataset1Action;
-    DatasetPickerAction                     _clusterDataset2Action;
-    hdps::gui::OptionAction                _clusters1SelectionAction;
-    hdps::gui::OptionAction                _clusters2SelectionAction;
-    hdps::gui::ToggleAction                _autoComputeToggleAction;
-    hdps::gui::StringAction                 _filterOnIdAction;
-    hdps::gui::StringAction                 _selectedIdAction;
-    hdps::gui::TriggerAction                _updateStatisticsAction;
-    hdps::gui::TriggerAction::PushButtonWidget*                            _updateStatisticsButton;
-    QTableItemModel*                        _differentialExpressionModel;
-    SortFilterProxyModel*                    _sortFilterProxyModel;
-    QProgressBar*                            _progressBar;
-    QWidget* _cluster1SectionLabelWidget;
-    QWidget* _cluster2SectionLabelWidget;
+    bool                                        _modelIsUpToDate;
+    ClusterDifferentialExpressionPlugin*        _differentialExpressionPlugin;
+    TableView*                                  _tableView;
+    DatasetPickerAction                         _clusterDataset1Action;
+    DatasetPickerAction                         _clusterDataset2Action;
+    hdps::gui::OptionAction                     _clusters1SelectionAction;
+    hdps::gui::OptionAction                     _clusters2SelectionAction;
+    hdps::gui::ToggleAction                     _autoComputeToggleAction;
+    hdps::gui::StringAction                     _filterOnIdAction;
+    hdps::gui::StringAction                     _selectedIdAction;
+    hdps::gui::TriggerAction                    _updateStatisticsAction;
+    hdps::gui::TriggerAction::PushButtonWidget* _updateStatisticsButton;
+    QTableItemModel*                            _differentialExpressionModel;
+    SortFilterProxyModel*                       _sortFilterProxyModel;
+    QProgressBar*                               _progressBar;
+    QWidget*                                    _cluster1SectionLabelWidget;
+    QWidget*                                    _cluster2SectionLabelWidget;
 };

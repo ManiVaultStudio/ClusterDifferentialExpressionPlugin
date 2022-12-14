@@ -54,14 +54,48 @@ QVariant QTableItemModel::data(const QModelIndex &index, int role /*= Qt::Displa
 	}
 	else
 	*/
-	if (role == Qt::BackgroundRole)
+	if(role == Qt::ForegroundRole)
+	{
+		auto temp = m_data[index.row()].data[index.column()];
+		if (temp.type() == QMetaType::QVariantList)
+		{
+			auto temp2 = temp.toList();
+			if (temp2.size() >= 2)
+			{
+
+				return temp2.at(1);
+			}
+		}
+	}
+	else if (role == Qt::BackgroundRole)
 	{
 		if (m_outOfDate)
 			return QBrush(QColor::fromRgb(227,227,227));
+		auto temp = m_data[index.row()].data[index.column()];
+		if (temp.type() == QMetaType::QVariantList)
+		{
+			auto temp2 = temp.toList();
+			if (temp2.size() >= 3)
+			{
+
+				return temp2.at(2);
+			}
+		}
 	}
 	else if (role == Qt::DisplayRole)
 	{
-		return m_data[index.row()].data[index.column()];
+		auto temp = m_data[index.row()].data[index.column()];
+		if (temp.type() == QMetaType::QVariantList)
+		{
+			auto temp2 = temp.toList();
+			if (temp2.size())
+			{
+
+				return temp2.at(0);
+			}
+		}
+		return temp;
+		//return m_data[index.row()].data[index.column()];
 	}
 	else if  (m_checkable && (role == Qt::CheckStateRole && index.column() == 0))
 	{

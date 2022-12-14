@@ -45,9 +45,10 @@ set(MODEL
 )
 
 set(ACTIONS
-   
-    src/SettingsAction.h
-    src/SettingsAction.cpp
+    src/PluginAction.h
+    src/PluginAction.cpp
+    #src/SettingsAction.h
+    #src/SettingsAction.cpp
   
 )
 

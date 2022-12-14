@@ -9,7 +9,8 @@ public:
 	virtual ~WordWrapHeaderView();
 	void enableWidgetSupport(bool value);
 	void setWidget(unsigned, QWidget*);
-
+	void clearWidgets();
+	void setExtraLeftSideColumns(std::size_t offset);
 private:
 	void fixWidgetPosition(int logicalIndex);
 
@@ -27,4 +28,5 @@ protected:
 private:
 	bool _widgetSupportEnabled;
 	QMap<unsigned, QWidget*> _widgets;
+	std::size_t _columnOffset;
 };
