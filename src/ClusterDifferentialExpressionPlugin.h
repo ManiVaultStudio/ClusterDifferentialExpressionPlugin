@@ -90,6 +90,7 @@ private:
     QString                         _meanExpressionDatasetGuid2;
 
     hdps::gui::VariantAction        _preInfoVariantAction;
+    hdps::gui::VariantAction        _postInfoVariantAction;
 
     //SettingsAction                 _settingsAction;
 };

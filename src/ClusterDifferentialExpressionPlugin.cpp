@@ -185,10 +185,11 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _dropWidget(nullptr)
     , _identicalDimensions(false)
 	, _preInfoVariantAction(nullptr)
+	, _postInfoVariantAction(nullptr)
 {
 
     _preInfoVariantAction.publish(getGuiName() + ": TableViewLeftSideInfo");
-
+    _postInfoVariantAction.publish(getGuiName() + ": TableViewRightSideInfo");
    
    
     
@@ -889,6 +890,10 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         demoMap["HARS"] = demoHARS;
         demoMap["HCONDELS"] = demoHCONDELS;
         _preInfoVariantAction.setVariant(demoMap);
+
+        QVariantMap emptColumn;
+        emptColumn[""] = QVariantMap();
+        _postInfoVariantAction.setVariant(emptColumn);
     }
     
     const auto& clusters = _clusterDataset1->getClusters();
@@ -904,8 +909,9 @@ void ClusterDifferentialExpressionPlugin::computeDE()
 
     enum{ID, DE, MEAN1, MEAN2, COLUMN_COUNT};
     auto preInfoMap = _preInfoVariantAction.getVariant().toMap();
+    auto postInfoMap = _postInfoVariantAction.getVariant().toMap();
     std::size_t columnOffset = preInfoMap.size();
-    std::size_t totalColumnCount = columnOffset + COLUMN_COUNT;
+    std::size_t totalColumnCount = columnOffset + COLUMN_COUNT + postInfoMap.size();
 
     QTableItemModel* resultModel = new QTableItemModel(nullptr, false, totalColumnCount);
 
@@ -954,6 +960,18 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         dataVector[columnOffset + DE] = local::fround(mean1 - mean2, 3);
         dataVector[columnOffset + MEAN1] = local::fround(mean1, 3);
         dataVector[columnOffset + MEAN2] = local::fround(mean2, 3);
+
+        columnNr = columnOffset + MEAN2 + 1;
+        for (auto info = postInfoMap.cbegin(); info != postInfoMap.cend(); ++info, ++columnNr)
+        {
+            auto infoMap = info.value().toMap();
+            auto found = infoMap.constFind(dimensionName);
+            if (found != infoMap.cend())
+            {
+                dataVector[columnNr] = found.value();
+            }
+        }
+
         resultModel->setRow(dimension, dataVector, Qt::Unchecked, true);
     }
    
@@ -980,6 +998,11 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     resultModel->setHorizontalHeader(columnOffset+DE, "Differential Expression");
     resultModel->setHorizontalHeader(columnOffset+MEAN1, cluster1_mean_header);
     resultModel->setHorizontalHeader(columnOffset+MEAN2, cluster2_mean_header);
+     columnNr = columnOffset + MEAN2 + 1;
+    for (auto i = postInfoMap.constBegin(); i != postInfoMap.constEnd(); ++i, ++columnNr)
+    {
+        resultModel->setHorizontalHeader(columnNr, i.key());
+    }
     resultModel->endModelBuilding();
     _progressManager.end();
 
