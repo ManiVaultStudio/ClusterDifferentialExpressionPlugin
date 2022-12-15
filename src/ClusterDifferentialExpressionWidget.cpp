@@ -282,7 +282,7 @@ void ClusterDifferentialExpressionWidget::initGui()
         }
         
        
-
+        /*
         {
             QHBoxLayout* layout2 = new QHBoxLayout;
             
@@ -303,7 +303,7 @@ void ClusterDifferentialExpressionWidget::initGui()
 
         	layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
         }
-
+        */
 
 
       
