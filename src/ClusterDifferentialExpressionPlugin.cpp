@@ -877,8 +877,13 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         QVariantMap demoHARS;
         QVariantMap demoHCONDELS;
 
-        QVariantList l1; l1 << QString("#") << QBrush(QColor::fromRgb(255, 0, 0)) << QBrush(QColor::fromRgb(0, 0, 0));
-        demoHARS["A1BG"] = l1;
+        
+        QVariantMap item1;
+        item1[QString::number(Qt::BackgroundRole)] = QBrush(QColor::fromRgb(128, 128, 128));
+        item1[QString::number(Qt::SizeHintRole)] = QSize(200, 1);
+        demoHARS["A1BG"] = item1;
+ 
+        demoHARS["PVALB"] = item1;
     	demoHCONDELS["A1BG"] = QString("*");
 
         demoMap["HARS"] = demoHARS;

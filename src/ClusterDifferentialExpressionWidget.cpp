@@ -338,6 +338,7 @@ void ClusterDifferentialExpressionWidget::setClusterDatasets(const QVector<hdps:
 void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
 {
     auto* oldModel = _sortFilterProxyModel->sourceModel();
+    bool firstTime = (oldModel == nullptr);
     _differentialExpressionModel = newModel;
     _sortFilterProxyModel->setSourceModel(_differentialExpressionModel);
     if(oldModel)
@@ -345,12 +346,18 @@ void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
 
 	//update header    
     QHeaderView* horizontalHeader = _tableView->horizontalHeader();
-    if(oldModel == nullptr)
-		horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
+    if (firstTime)
+    {
+        horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
+        horizontalHeader->setStretchLastSection(true);
+    }
+    
     
     emit horizontalHeader->headerDataChanged(Qt::Horizontal, 0, newModel->columnCount());
 
     QCoreApplication::processEvents();
+    if(firstTime)
+        _tableView->resizeColumnsToContents();
     horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
    
     

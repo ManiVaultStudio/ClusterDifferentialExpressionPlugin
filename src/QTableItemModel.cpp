@@ -44,58 +44,25 @@ QVariant QTableItemModel::data(const QModelIndex &index, int role /*= Qt::Displa
 		return QVariant();
 	if (index.column() >= columnCount() || index.column() < 0)
 		return QVariant();
-	/*
-	if(role == Qt::TextAlignmentRole)
-	{
-		if (index.column() == 0)
-			return Qt::AlignLeft;
-		else
-			return Qt::AlignRight;
-	}
-	else
-	*/
-	if(role == Qt::ForegroundRole)
-	{
-		auto temp = m_data[index.row()].data[index.column()];
-		if (temp.type() == QMetaType::QVariantList)
-		{
-			auto temp2 = temp.toList();
-			if (temp2.size() >= 2)
-			{
 
-				return temp2.at(1);
-			}
+	auto data = m_data[index.row()].data[index.column()];
+	if(data.type() == QMetaType::QVariantMap)
+	{
+		QVariantMap map = data.toMap();
+		QString roleString = QString::number(role);
+		if(map.contains(roleString))
+		{
+			return map[roleString];
 		}
 	}
 	else if (role == Qt::BackgroundRole)
 	{
 		if (m_outOfDate)
 			return QBrush(QColor::fromRgb(227,227,227));
-		auto temp = m_data[index.row()].data[index.column()];
-		if (temp.type() == QMetaType::QVariantList)
-		{
-			auto temp2 = temp.toList();
-			if (temp2.size() >= 3)
-			{
-
-				return temp2.at(2);
-			}
-		}
 	}
 	else if (role == Qt::DisplayRole)
 	{
-		auto temp = m_data[index.row()].data[index.column()];
-		if (temp.type() == QMetaType::QVariantList)
-		{
-			auto temp2 = temp.toList();
-			if (temp2.size())
-			{
-
-				return temp2.at(0);
-			}
-		}
-		return temp;
-		//return m_data[index.row()].data[index.column()];
+		return data;
 	}
 	else if  (m_checkable && (role == Qt::CheckStateRole && index.column() == 0))
 	{
