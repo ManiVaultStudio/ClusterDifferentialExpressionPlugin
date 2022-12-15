@@ -430,38 +430,42 @@ void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(int datase
     assert(_identicalDimensions || (!_matchingDimensionNames.empty()));
 
     
-    int de_Statistics_dimension = (_identicalDimensions) ? index : (dataset_index == 1) ? _matchingDimensionNames[index].second.first : _matchingDimensionNames[index].second.second;
-    
-    if (de_Statistics_dimension >= 0)
+    const auto& clusters = (dataset_index == 1) ? _clusterDataset1->getClusters() : _clusterDataset2->getClusters();
+    std::size_t nrOfClusters = clusters.size();
+    std::size_t nrOfPoints = 0;
+    for (auto cluster : clusters)
     {
-        const auto& clusters = (dataset_index == 1) ? _clusterDataset1->getClusters() : _clusterDataset2->getClusters();
-        std::size_t nrOfClusters = clusters.size();
-        std::size_t nrOfPoints = 0;
-        for (auto cluster : clusters)
-        {
-            nrOfPoints += cluster.getNumberOfIndices();
-        }
-        std::vector<float> meanExpressionData(nrOfPoints);
+        nrOfPoints += cluster.getNumberOfIndices();
+    }
+    std::vector<float> meanExpressionData(nrOfPoints,0);
 
+    if(index >=0)
+    {
+        int de_Statistics_dimension = (_identicalDimensions) ? index : (dataset_index == 1) ? _matchingDimensionNames[index].second.first : _matchingDimensionNames[index].second.second;
 
-        auto de_Statistics_clusterDataset = (dataset_index == 1) ? get_DE_Statistics_Dataset(_clusterDataset1) : get_DE_Statistics_Dataset(_clusterDataset2);
-        const Points* p = de_Statistics_clusterDataset.get();
-        for (std::size_t clusterIndex = 0; clusterIndex < clusters.size(); ++clusterIndex)
+        if (de_Statistics_dimension >= 0)
         {
-            std::size_t point_index = (clusterIndex * p->getNumDimensions()) + de_Statistics_dimension;
-            float value = p->getValueAt(point_index);
-            const auto& clusterIndices = clusters[clusterIndex].getIndices();
-            for (auto i : clusterIndices)
+            auto de_Statistics_clusterDataset = (dataset_index == 1) ? get_DE_Statistics_Dataset(_clusterDataset1) : get_DE_Statistics_Dataset(_clusterDataset2);
+            const Points* p = de_Statistics_clusterDataset.get();
+            for (std::size_t clusterIndex = 0; clusterIndex < clusters.size(); ++clusterIndex)
             {
-                meanExpressionData[i] = value;
+                std::size_t point_index = (clusterIndex * p->getNumDimensions()) + de_Statistics_dimension;
+                float value = p->getValueAt(point_index);
+                const auto& clusterIndices = clusters[clusterIndex].getIndices();
+                for (auto i : clusterIndices)
+                {
+                    meanExpressionData[i] = value;
+                }
             }
         }
-
-        QString meanExpressionDatasetGuid = (dataset_index == 1) ? _meanExpressionDatasetGuid1 : _meanExpressionDatasetGuid2;
-        Dataset<Points> meanExpressionDataset = _core->requestDataset(meanExpressionDatasetGuid);
-        meanExpressionDataset->setData(meanExpressionData, 1);
-        _core->notifyDatasetChanged(meanExpressionDataset);
     }
+    
+    QString meanExpressionDatasetGuid = (dataset_index == 1) ? _meanExpressionDatasetGuid1 : _meanExpressionDatasetGuid2;
+    Dataset<Points> meanExpressionDataset = _core->requestDataset(meanExpressionDatasetGuid);
+    meanExpressionDataset->setData(meanExpressionData, 1);
+    _core->notifyDatasetChanged(meanExpressionDataset);
+       
+   
 }
 
 void ClusterDifferentialExpressionPlugin::clusters1Selected(QList<int> selectedClusters)
@@ -500,6 +504,8 @@ void ClusterDifferentialExpressionPlugin::clusterDataset1Changed(const hdps::Dat
         {
             _differentialExpressionWidget->selectClusterDataset1(_clusterDataset1);
         }
+
+        createMeanExpressionDataset(1, -1);
     }
 }
 
@@ -520,6 +526,8 @@ void ClusterDifferentialExpressionPlugin::clusterDataset2Changed(const hdps::Dat
         {
             _differentialExpressionWidget->selectClusterDataset1(_clusterDataset2);
         }
+
+        createMeanExpressionDataset(2, -1);
     }
 }
 
