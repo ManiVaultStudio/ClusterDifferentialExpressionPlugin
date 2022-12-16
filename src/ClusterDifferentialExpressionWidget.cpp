@@ -219,27 +219,61 @@ void ClusterDifferentialExpressionWidget::initGui()
     connect(&_clusterDataset2Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
     connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
 
-
+    _sortFilterProxyModel = new SortFilterProxyModel;
    
     {
-        QHBoxLayout* searchWidgetLayout = new QHBoxLayout(this);
-        searchWidgetLayout->setContentsMargins(0, 0, 0, 0);
-        searchWidgetLayout->setSpacing(0);
-        searchWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
-        searchWidgetLayout->setAlignment(Qt::AlignLeft);
-        
-        auto* searchWidget = _filterOnIdAction.createWidget(this);
-        searchWidget->setFixedWidth(100);
+        QHBoxLayout* aboveTableViewLayout = new QHBoxLayout(this);
+        aboveTableViewLayout->setContentsMargins(0, 0, 0, 0);
+        aboveTableViewLayout->setSpacing(2);
+        aboveTableViewLayout->setSizeConstraint(QLayout::SetFixedSize);
+        aboveTableViewLayout->setAlignment(Qt::AlignLeft);
+
+        {
+            auto* searchWidget = _filterOnIdAction.createWidget(this);
+            searchWidget->setFixedWidth(100);
+            aboveTableViewLayout->addWidget(searchWidget, 0, Qt::AlignLeft);
+            connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
+        }
+        /*
+        {
+            _clusterDataset1Action.setText("Dataset 1:");
+            auto* datasetLabelWidget = _clusters1SelectionAction.createLabelWidget(this);
+            aboveTableViewLayout->addWidget(datasetLabelWidget, 0, Qt::AlignLeft);
+            auto* datasetWidget = _clusterDataset1Action.createWidget(this, OptionAction::LineEdit);
+            datasetWidget->setEnabled(false);
+            datasetWidget->setMinimumWidth(20);
+            datasetWidget->findChild<QLineEdit*>()->setEnabled(false);
+            aboveTableViewLayout->addWidget(datasetWidget, 20, Qt::AlignLeft);
+
+            auto *clusterWidget = _clusters1SelectionAction.createWidget(this, OptionAction::LineEdit);
+            aboveTableViewLayout->addWidget(clusterWidget, 25, Qt::AlignLeft);
+        }
+        {
+            aboveTableViewLayout->addWidget(new QLabel(" vs "), 1, Qt::AlignLeft);
+        }
+        {
+            _clusterDataset2Action.setText("Dataset 2:");
+            auto* datasetLabelWidget = _clusterDataset2Action.createLabelWidget(this);
+            aboveTableViewLayout->addWidget(datasetLabelWidget, 0, Qt::AlignLeft);
+
+        	auto* datasetWidget = _clusterDataset2Action.createWidget(this, OptionAction::LineEdit);
+            datasetWidget->setEnabled(false);
+            datasetWidget->setMinimumWidth(20);
+
+            aboveTableViewLayout->addWidget(datasetWidget, 20, Qt::AlignLeft);
+
+
+            auto* clusterWidget = _clusters2SelectionAction.createWidget(this, OptionAction::LineEdit);
+            aboveTableViewLayout->addWidget(clusterWidget, 25, Qt::AlignLeft);
+        }
+        */
 
         
-        searchWidgetLayout->addWidget(searchWidget, 0, Qt::AlignLeft);
-
-        connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
-        layout->addLayout(searchWidgetLayout, currentRow++, 0, 1, NumberOfColums);
+        layout->addLayout(aboveTableViewLayout, currentRow++, 0, 1, NumberOfColums);
     }
 
     { // table view
-        _sortFilterProxyModel = new SortFilterProxyModel;
+        
         _tableView = new TableView(this);
         _tableView->setModel(_sortFilterProxyModel);
         _tableView->setSortingEnabled(true);
@@ -271,6 +305,7 @@ void ClusterDifferentialExpressionWidget::initGui()
 
         layout->addWidget(_progressBar, currentRow, 0, 1, NumberOfColums);
         _progressBar->hide();
+
 
 
         {
