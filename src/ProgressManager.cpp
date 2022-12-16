@@ -186,10 +186,7 @@ void ProgressManager::print(long long i)
 		int64_t value = std::accumulate(m_progress.cbegin(), m_progress.cend(), zero);
 		const int progressValue = (value == m_maxRange) ? MAX_RANGE : (m_scaleFactor * value);
 
-      //  std::cout << "P: "<< value << "\t" << m_progress.size() << "\t" << progressValue << std::endl;
-// #ifndef HIDE_CONSOLE
-// 		std::cout << "\r" << m_labelText.toStdString() << std::fixed << std::setprecision(3) << 100.0*value / m_maxRange << "%";
-// #endif
+      
 		if (m_progressBar || m_progressDialog)
 		{
 			
@@ -207,10 +204,9 @@ void ProgressManager::print(long long i)
 				}
 			}
 		}		
-#ifndef HIDE_CONSOLE
-		else
-			std::cout << "  print:: progressbar&m_progressDialog not set";
-#endif		
+
+	//	else
+	//		qDebug << "  print:: progressbar&m_progressDialog not set";
 	}
 	qApp->processEvents();
 }
@@ -221,9 +217,7 @@ void ProgressManager::end()
 	
 	if (omp_get_thread_num() == 0)
 	{
-// #ifndef HIDE_CONSOLE
-// 		std::cout << "\r" << m_labelText.toStdString() << std::fixed <</* std::setw(11) <<*/ std::setprecision(3) << 100.0*std::accumulate(m_progress.cbegin(), m_progress.cend(), 0) / m_progress.size() << "%" << std::endl;
-// #endif
+
 	}
 
 	if (m_progressBar)

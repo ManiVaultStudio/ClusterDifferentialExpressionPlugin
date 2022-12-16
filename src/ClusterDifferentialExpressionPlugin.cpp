@@ -196,24 +196,29 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
 
 void ClusterDifferentialExpressionPlugin::init()
 {
-
+    std::vector<float> meanExpressionData(1, 0);
     {
         QString datasetName = this->getGuiName() + ": SelectedIDMeanExpressions1";
         try
         {
-            Dataset<DatasetImpl> meanExpressionDataset = _core->requestDataset(datasetName);
+            Dataset<Points> meanExpressionDataset = _core->requestDataset(datasetName);
             if (meanExpressionDataset.isValid())
-                _meanExpressionDatasetGuid1 = meanExpressionDataset.getDatasetGuid();
-            else
             {
-                Dataset<DatasetImpl> meanExpressionDataset = _core->addDataset("Points", datasetName);
                 _meanExpressionDatasetGuid1 = meanExpressionDataset.getDatasetGuid();
             }
+            else
+            {
+                 meanExpressionDataset = _core->addDataset("Points", datasetName);
+                _meanExpressionDatasetGuid1 = meanExpressionDataset.getDatasetGuid();
+            }
+            meanExpressionDataset->setData(meanExpressionData, 1);
         }
         catch (...)
         {
-            Dataset<DatasetImpl> meanExpressionDataset = _core->addDataset("Points", datasetName);
+            Dataset<Points> meanExpressionDataset = _core->addDataset("Points", datasetName);
             _meanExpressionDatasetGuid1 = meanExpressionDataset.getDatasetGuid();
+            meanExpressionDataset->setData(meanExpressionData, 1);
+
         }
     }
 
@@ -221,19 +226,24 @@ void ClusterDifferentialExpressionPlugin::init()
         QString datasetName = this->getGuiName() + ": SelectedIDMeanExpressions2";
         try
         {
-            Dataset<DatasetImpl> meanExpressionDataset = _core->requestDataset(datasetName);
+            Dataset<Points> meanExpressionDataset = _core->requestDataset(datasetName);
             if (meanExpressionDataset.isValid())
-                _meanExpressionDatasetGuid2 = meanExpressionDataset.getDatasetGuid();
-            else
             {
-                Dataset<DatasetImpl> meanExpressionDataset = _core->addDataset("Points", datasetName);
                 _meanExpressionDatasetGuid2 = meanExpressionDataset.getDatasetGuid();
             }
+            else
+            {
+                meanExpressionDataset = _core->addDataset("Points", datasetName);
+                _meanExpressionDatasetGuid2 = meanExpressionDataset.getDatasetGuid();
+            }
+            meanExpressionDataset->setData(meanExpressionData, 1);
         }
         catch (...)
         {
-            Dataset<DatasetImpl> meanExpressionDataset = _core->addDataset("Points", datasetName);
+            Dataset<Points> meanExpressionDataset = _core->addDataset("Points", datasetName);
             _meanExpressionDatasetGuid2 = meanExpressionDataset.getDatasetGuid();
+            meanExpressionDataset->setData(meanExpressionData, 1);
+
         }
     }
 

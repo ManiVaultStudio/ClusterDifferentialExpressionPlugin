@@ -480,13 +480,23 @@ void ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed()
 
 void ClusterDifferentialExpressionWidget::tableView_Clicked(const QModelIndex &index)
 {
-    QModelIndex firstColumn = index.sibling(index.row(),  0);
-  
-    QString selectedGeneName = firstColumn.data().toString();
-    _selectedIdAction.setString(selectedGeneName);
-    QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
-    auto row = temp.row();
-    emit selectedRowChanged(row);
+    if (_differentialExpressionModel->outDated())
+        return;
+    try
+    {
+        QModelIndex firstColumn = index.sibling(index.row(), 0);
+
+        QString selectedGeneName = firstColumn.data().toString();
+        QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
+        auto row = temp.row();
+        _selectedIdAction.setString(selectedGeneName);
+        emit selectedRowChanged(row);
+    }
+    catch(...)
+    {
+	    // catch everything
+    }
+    
 }
 
 void ClusterDifferentialExpressionWidget::tableView_sectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
