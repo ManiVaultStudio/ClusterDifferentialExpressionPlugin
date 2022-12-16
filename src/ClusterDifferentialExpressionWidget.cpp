@@ -95,6 +95,11 @@ ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(Cluster
     _updateStatisticsAction.setCheckable(false);
     _updateStatisticsAction.setChecked(false);
     _updateStatisticsAction.publish(pluginID+": calculateStatistics");
+
+    _filterOnIdAction.setSearchMode(true);
+    _filterOnIdAction.setClearable(true);
+    _filterOnIdAction.setPlaceHolderString("Filter by ID");
+    _filterOnIdAction.publish(pluginID + ": filterOnID");
 }
 
 
@@ -111,33 +116,10 @@ void ClusterDifferentialExpressionWidget::initTableViewHeader()
     horizontalHeader->setSortIndicator(0, Qt::AscendingOrder);
     horizontalHeader->setDefaultAlignment(Qt::AlignBottom | Qt::AlignHCenter | Qt::Alignment(Qt::TextWordWrap));
     _tableView->setHorizontalHeader(horizontalHeader);
+
     
-    { // search action for ID column
-
-        QWidget* clusterHeaderWidget = new QWidget;
-        QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
-        clusterHeaderWidgetLayout->setContentsMargins(0, 0, 0, 0);
-        clusterHeaderWidgetLayout->setHorizontalSpacing(0);
-        clusterHeaderWidgetLayout->setVerticalSpacing(0);
-        clusterHeaderWidgetLayout->setSpacing(0);
-        clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
-
-        auto* w1 = _filterOnIdAction.createLabelWidget(this);
-        local::setLabelWidgetIcon(w1, "search");
-        clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
-
-
-        auto* w2 = _filterOnIdAction.createWidget(this);
-        clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
-
-        clusterHeaderWidgetLayout->addWidget(new QLabel(""), 1, 0, 1, 2, Qt::AlignCenter);
-        clusterHeaderWidgetLayout->addWidget(new QLabel("ID"), 2, 0, 1, 2, Qt::AlignCenter);
-        clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
-
-        connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
-
-        horizontalHeader->setWidget(0, clusterHeaderWidget);
-    }
+    
+   
 
     {
         QWidget* clusterHeaderWidget = new QWidget;
@@ -237,6 +219,25 @@ void ClusterDifferentialExpressionWidget::initGui()
     connect(&_clusterDataset2Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
     connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
 
+
+   
+    {
+        QHBoxLayout* searchWidgetLayout = new QHBoxLayout(this);
+        searchWidgetLayout->setContentsMargins(0, 0, 0, 0);
+        searchWidgetLayout->setSpacing(0);
+        searchWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
+        searchWidgetLayout->setAlignment(Qt::AlignLeft);
+        
+        auto* searchWidget = _filterOnIdAction.createWidget(this);
+        searchWidget->setFixedWidth(100);
+
+        
+        searchWidgetLayout->addWidget(searchWidget, 0, Qt::AlignLeft);
+
+        connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
+        layout->addLayout(searchWidgetLayout, currentRow++, 0, 1, NumberOfColums);
+    }
+
     { // table view
         _sortFilterProxyModel = new SortFilterProxyModel;
         _tableView = new TableView(this);
@@ -255,6 +256,7 @@ void ClusterDifferentialExpressionWidget::initGui()
         layout->addWidget(_tableView, currentRow++, 0, 1, NumberOfColums);
     }
 
+   
     {// Progress bar and update button
         _progressBar = new QProgressBar(this);
         _progressBar->setTextVisible(true);
@@ -270,9 +272,9 @@ void ClusterDifferentialExpressionWidget::initGui()
         layout->addWidget(_progressBar, currentRow, 0, 1, NumberOfColums);
         _progressBar->hide();
 
-        
+
         {
-            
+
             QWidget* w = _updateStatisticsAction.createWidget(this);
             _updateStatisticsButton = w->findChild<hdps::gui::TriggerAction::PushButtonWidget*>();// new QPushButton("Calculate Differential Expression", this);
             _updateStatisticsButton->setText("Calculate Differential Expression");
@@ -280,35 +282,8 @@ void ClusterDifferentialExpressionWidget::initGui()
             QObject::connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, [this]() -> void { this->updateStatisticsButtonPressed(); });
             //QObject::connect(updateStatisticsButton, &QPushButton::clicked, this, &ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed);
         }
-        
-       
-        /*
-        {
-            QHBoxLayout* layout2 = new QHBoxLayout;
-            
-            _autoComputeToggleAction.setChecked(false);
-            _autoComputeToggleAction.setEnabled(false);
-            layout2->addWidget(_autoComputeToggleAction.createLabelWidget(this), 1, Qt::AlignLeft);
-            _autoComputeToggleAction.setText("");
-            layout2->addWidget(_autoComputeToggleAction.createWidget(this),99, Qt::AlignLeft);
 
-            _selectedIdAction.setPlaceHolderString("");
-            _selectedIdAction.setEnabled(true);
-            layout2->addWidget(_selectedIdAction.createLabelWidget(this), 1, Qt::AlignLeft);
-            auto* w = _selectedIdAction.createWidget(this);
-            w->setEnabled(false);
-            layout2->addWidget(w, 99, Qt::AlignLeft);
-
-            
-
-        	layout->addLayout(layout2, currentRow++, 0, 1, NumberOfColums);
-        }
-        */
-
-
-      
     }
-    
 }
 
 void ClusterDifferentialExpressionWidget::setClusters1(QStringList clusters)

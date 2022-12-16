@@ -124,9 +124,6 @@ namespace local
                             for (auto row : clusterIndices)
                             {
                                 meanExpressions[offset] += vec[row][dimension];
-                                // this->_progressManager.print((row * numDimensions) + dimension);
-                                // if(omp_get_thread_num()==0)
-                                 //    std::cout << "D: " << dimension << "\t" << clusterIdx << "\t" << row << std::endl;
                             }
                             meanExpressions[offset] /= clusterIndices.size();
                         }
@@ -758,9 +755,6 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
                         for (auto row : clusterIndices)
                         {
                             meanExpressions[offset] += vec[row][dimension];
-                           // this->_progressManager.print((row * numDimensions) + dimension);
-                           // if(omp_get_thread_num()==0)
-                            //    std::cout << "D: " << dimension << "\t" << clusterIdx << "\t" << row << std::endl;
                         }
                         meanExpressions[offset] /= clusterIndices.size();
                     }
@@ -821,7 +815,7 @@ Dataset<Points> ClusterDifferentialExpressionPlugin::get_DE_Statistics_Dataset(h
 std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QList<int>& selected_clusters)
 {
 
-   // std::cout << clusterDataset->getGuiName().toStdString() << ": " << selected_clusters[0] << std::endl;
+   
     
     std::vector<double> meanExpressions_cluster1;
     auto clusterDataset_DE_Statitstics_Index = get_DE_Statistics_Index(clusterDataset);
@@ -997,7 +991,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         cluster2_mean_header += clusterName;
     }
     */
-    resultModel->setHorizontalHeader(ID, "");
+    resultModel->setHorizontalHeader(ID, "ID");
     std::size_t columnNr = 1;
     for(auto i  = preInfoMap.constBegin(); i!= preInfoMap.constEnd(); ++i, ++columnNr)
     {
