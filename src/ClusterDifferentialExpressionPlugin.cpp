@@ -139,12 +139,12 @@ namespace local
 
             auto *core = Application::core();
             hdps::Dataset<Points> newDataset = core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
-            core->notifyDatasetAdded(newDataset);
+            events().notifyDatasetAdded(newDataset);
             newDataset->setDataElementType<float>();
             newDataset->setData(std::move(meanExpressions), numDimensions);
             newDataset->setDimensionNames(points->getDimensionNames());
 
-            core->notifyDatasetChanged(newDataset);
+            events().notifyDatasetChanged(newDataset);
 
 
             // now fild the child indices for this dataset
@@ -470,7 +470,7 @@ void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(int datase
     QString meanExpressionDatasetGuid = (dataset_index == 1) ? _meanExpressionDatasetGuid1 : _meanExpressionDatasetGuid2;
     Dataset<Points> meanExpressionDataset = _core->requestDataset(meanExpressionDatasetGuid);
     meanExpressionDataset->setData(meanExpressionData, 1);
-    _core->notifyDatasetChanged(meanExpressionDataset);
+    events().notifyDatasetChanged(meanExpressionDataset);
        
    
 }
@@ -780,12 +780,12 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
 
         
         hdps::Dataset<Points> newDataset = _core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
-        _core->notifyDatasetAdded(newDataset);
+        events().notifyDatasetAdded(newDataset);
         newDataset->setDataElementType<float>();
         newDataset->setData(std::move(meanExpressions), numDimensions);
         newDataset->setDimensionNames(points->getDimensionNames());
         
-        _core->notifyDatasetChanged(newDataset);
+        events().notifyDatasetChanged(newDataset);
        
 
         // now fild the child indices for this dataset
