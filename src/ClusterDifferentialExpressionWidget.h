@@ -85,8 +85,8 @@ private:
     bool                                        _modelIsUpToDate;
     ClusterDifferentialExpressionPlugin*        _differentialExpressionPlugin;
     TableView*                                  _tableView;
-    DatasetPickerAction                         _clusterDataset1Action;
-    DatasetPickerAction                         _clusterDataset2Action;
+    hdps::gui::DatasetPickerAction                         _clusterDataset1Action;
+    hdps::gui::DatasetPickerAction                         _clusterDataset2Action;
     hdps::gui::OptionAction                     _clusters1SelectionAction;
     hdps::gui::OptionAction                     _clusters2SelectionAction;
     hdps::gui::ToggleAction                     _autoComputeToggleAction;

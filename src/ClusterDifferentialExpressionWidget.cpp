@@ -19,7 +19,6 @@
 #include <QHBoxLayout>
 
 #include <ClusterData.h>
-
 namespace local
 {
 
@@ -56,7 +55,7 @@ namespace local
         return false;
 	}
 
-    bool updateDatasetPickerAction(DatasetPickerAction& action, const QVector < hdps::Dataset <hdps::DatasetImpl>> options)
+    bool updateDatasetPickerAction(hdps::gui::DatasetPickerAction& action, const QVector < hdps::Dataset <hdps::DatasetImpl>> options)
 	{
         auto current = action.getCurrentDataset();
         action.setShowFullPathName(true);
@@ -209,14 +208,14 @@ void ClusterDifferentialExpressionWidget::initGui()
     setLayout(layout);
 
     int currentRow = 0;
-    connect(&_clusterDataset1Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
+    connect(&_clusterDataset1Action, &hdps::gui::DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
     connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
-    connect(&_clusterDataset2Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
+    connect(&_clusterDataset2Action, &hdps::gui::DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
     connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
     
-    connect(&_clusterDataset1Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
+    connect(&_clusterDataset1Action, &hdps::gui::DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
     connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
-    connect(&_clusterDataset2Action, &DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
+    connect(&_clusterDataset2Action, &hdps::gui::DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
     connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
 
     _sortFilterProxyModel = new SortFilterProxyModel;
