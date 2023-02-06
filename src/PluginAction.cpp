@@ -9,7 +9,7 @@ PluginAction::PluginAction(QObject* parent, ClusterDifferentialExpressionPlugin*
     WidgetAction(parent),
     _plugin(plugin)
 {
-    _plugin->getClusterDifferentialExpressionWidget().addAction(this);
+    _plugin->getWidget().addAction(this);
 
     setText(title);
     setToolTip(title);

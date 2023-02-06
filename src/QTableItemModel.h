@@ -9,8 +9,11 @@
 //template<std::size_t Columns>
 class QTableItemModel : public QAbstractTableModel
 {
-public:
+
 	
+public:
+	enum class Status { Undefined, OutDated, Updating, UpToDate };
+
 	class Row
 	{
 	public:
@@ -22,8 +25,12 @@ public:
 		
 	};
 	Q_OBJECT
+
+private:
+	void clear();
+	void resize(std::size_t size);
 public:
-	QTableItemModel(QObject *parent, bool checkable, std::size_t columns);
+	QTableItemModel(QObject *parent, bool checkable);
 	virtual int	rowCount(const QModelIndex &parent = QModelIndex()) const override;
 	virtual int	columnCount(const QModelIndex &parent = QModelIndex()) const override;
 	virtual QVariant	data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
@@ -38,27 +45,34 @@ public:
 	void setCheckState(int row, Qt::CheckState state);
 	Qt::CheckState checkState(int row) const;
 
-	void resize(std::size_t size);
+	
 	QVariant& at(std::size_t row, std::size_t column);
 	
 	void setRow(std::size_t row, const std::vector<QVariant> &data, Qt::CheckState checked, bool silent=false);
 
-	void clear();
-	void startModelBuilding();
+	
+	void startModelBuilding(qsizetype columns, qsizetype rows);
 	void endModelBuilding();
 	void setHorizontalHeader(int index, const QString &value);
 
 	void copyToClipboard() const;
 
-	void setOutDated(bool value);
-	bool outDated() const;
+	void invalidate();
+
+	void setStatus(Status status);
+public:
+	Status status();
+
+signals:
+	void statusChanged(Status status);
+
 private:
 	
 	std::vector < Row > m_data;
 	std::vector < QString> m_horizontalHeader;
 	bool m_checkable;
 	std::size_t m_columns;
-	bool m_outOfDate;
+	Status m_status;
 };
 
 #endif

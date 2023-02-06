@@ -1,43 +1,76 @@
 #pragma once
 
-#include <actions/WidgetAction.h>
+#include "PluginAction.h"
+#include "LoadedDatasetsAction.h"
 
-using namespace hdps;
+#include "actions/WidgetActionStateWidget.h"
+
 using namespace hdps::gui;
 
-class ClusterDifferentialExpressionPlugin;
+class ScatterplotPlugin;
 
-class SettingsAction : public WidgetAction
+class SettingsAction : public PluginAction
 {
-protected:
+public:
+    class SpacerWidget : public QWidget {
+    public:
+        enum class Type {
+            Divider,
+            Spacer
+        };
 
-    class Widget : public hdps::gui::WidgetActionWidget {
+    public:
+        SpacerWidget(const Type& type = Type::Spacer);
+
+        static Type getType(const WidgetActionWidget::State& widgetTypeLeft, const WidgetActionWidget::State& widgetTypeRight);
+        static Type getType(const hdps::gui::WidgetActionStateWidget* stateWidgetLeft, const hdps::gui::WidgetActionStateWidget* stateWidgetRight);
+
+        void setType(const Type& type);
+        static std::int32_t getWidth(const Type& type);
+
+    protected:
+        Type            _type;
+        QHBoxLayout*    _layout;
+       // QFrame*         _verticalLine;
+    };
+
+protected: // Widget
+
+    class Widget : public WidgetActionWidget {
     public:
         Widget(QWidget* parent, SettingsAction* settingsAction);
+
+        bool eventFilter(QObject* object, QEvent* event);
+
+    protected:
+        void addStateWidget(WidgetAction* widgetAction, const std::int32_t& priority = 0);
+
+    private:
+        void updateLayout();
+
+    protected:
+        QHBoxLayout                         _layout;
+        QWidget                             _toolBarWidget;
+        QHBoxLayout                         _toolBarLayout;
+        QVector<WidgetActionStateWidget*>   _stateWidgets;
+        QVector<SpacerWidget*>              _spacerWidgets;
+
+        friend class SettingsAction;
     };
 
     QWidget* getWidget(QWidget* parent, const std::int32_t& widgetFlags) override {
-        return new SettingsAction::Widget(parent, this);
+        return new Widget(parent, this);
     };
 
 public:
-    SettingsAction(ClusterDifferentialExpressionPlugin& differentialExpressionPlugin);
+    SettingsAction(ClusterDifferentialExpressionPlugin* plugin);
 
-    ClusterDifferentialExpressionPlugin& getDimensionsViewerPlugin();
+    QMenu* getContextMenu();
 
-    QVariantMap getSpec();
+    void addAction(QSharedPointer<WidgetAction> action, qsizetype priority=0);
 
-    std::int32_t getModified() const { return _spec["modified"].toInt(); }
-    void setModified() { _spec["modified"] = _spec["modified"].toInt() + 1; }
-
-public: // Action getters
-
- 
 protected:
-    ClusterDifferentialExpressionPlugin&    _differentialExpressionPlugin;
+    QVector<QSharedPointer<WidgetAction>>   _actions;
+    QVector<qsizetype> _priorities;
     
-    QVariantMap                     _spec;
-    bool                            _isLoading;
-
-    //friend class ChannelAction;
 };

@@ -3,7 +3,7 @@
 #include <QProgressDialog>
 #include <iostream>
 #include <iomanip>
-#include <QWidgetAction>
+
 #include <QProgressBar>
 #include <QMenuBar>
 #include "QApplication"

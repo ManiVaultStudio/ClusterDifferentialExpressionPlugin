@@ -7,13 +7,13 @@
 
 //#define TESTING
 
-QTableItemModel::QTableItemModel(QObject *parent /*= Q_NULLPTR*/, bool checkable, std::size_t columns)
+QTableItemModel::QTableItemModel(QObject *parent /*= Q_NULLPTR*/, bool checkable)
 	:QAbstractTableModel(parent)
 	, m_checkable(checkable)
-	, m_columns(columns)
-	, m_outOfDate(false)
+	, m_columns(0)
+	, m_status(Status::Undefined)
 {
-	m_horizontalHeader.resize(m_columns);
+	
 }
 
 int QTableItemModel::rowCount(const QModelIndex &parent /*= QModelIndex()*/) const
@@ -57,7 +57,7 @@ QVariant QTableItemModel::data(const QModelIndex &index, int role /*= Qt::Displa
 	}
 	else if (role == Qt::BackgroundRole)
 	{
-		if (m_outOfDate)
+		if (m_status == Status::OutDated)
 			return QBrush(QColor::fromRgb(227,227,227));
 	}
 	else if (role == Qt::DisplayRole)
@@ -89,6 +89,7 @@ bool QTableItemModel::setData(const QModelIndex & index, const QVariant & value,
 	else if (role == Qt::EditRole)
 	{
 		m_data[index.row()].data[index.column()] = value;
+		emit(dataChanged(index, index));
 		return true;
 	}
 	return false;
@@ -112,18 +113,18 @@ void QTableItemModel::resize(std::size_t size)
 	if (size != m_data.size())
 	{
 		m_data.resize(size);
-		for (std::size_t i = 0; i < size; ++i)
-		{
-#ifdef TESTING
-			m_data[i].data.resize(m_columns+1);
-			m_data[i].data[m_columns] = i;
-#endif
-			if (m_data[i].data.size() != m_columns)
-				m_data[i].data.resize(m_columns);
-
-		}
 	}
-	
+
+	for (std::size_t i = 0; i < size; ++i)
+	{
+#ifdef TESTING
+		m_data[i].data.resize(m_columns + 1);
+		m_data[i].data[m_columns] = i;
+#endif
+		if (m_data[i].data.size() != m_columns)
+			m_data[i].data.resize(m_columns);
+
+	}
 }
 
 QVariant& QTableItemModel::at(std::size_t row, std::size_t column)
@@ -204,14 +205,19 @@ void QTableItemModel::clear()
 	m_data.clear();
 }
 
-void QTableItemModel::startModelBuilding()
+void QTableItemModel::startModelBuilding(qsizetype columns, qsizetype rows)
 {
 	beginResetModel();
+	m_columns = columns;
+	m_horizontalHeader.resize(columns);
+	resize(rows);
+	setStatus(Status::Updating);
 }
 
 void QTableItemModel::endModelBuilding()
 {
-	setOutDated(false);
+	setStatus(Status::UpToDate);
+	emit headerDataChanged(Qt::Horizontal, 0, m_columns - 1);
 	endResetModel();
 }
 
@@ -258,18 +264,22 @@ void QTableItemModel::copyToClipboard() const
 	clipboard->setText(result);
 }
 
-void QTableItemModel::setOutDated(bool value)
+void QTableItemModel::invalidate()
 {
-	
-	if (value != m_outOfDate)
-	{
-		layoutAboutToBeChanged();
-		m_outOfDate = value;
-		emit layoutChanged();
-	}
+	setStatus(QTableItemModel::Status::OutDated);
 }
 
-bool QTableItemModel::outDated() const
+void QTableItemModel::setStatus(QTableItemModel::Status status)
 {
-	return m_outOfDate;
+	if (status != m_status)
+	{
+		layoutAboutToBeChanged();
+		m_status = status;
+		emit layoutChanged();
+		emit statusChanged(status);
+	}
+}
+QTableItemModel::Status QTableItemModel::status()
+{
+	return m_status;
 }

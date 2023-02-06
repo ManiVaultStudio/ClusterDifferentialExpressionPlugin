@@ -47,8 +47,10 @@ set(MODEL
 set(ACTIONS
     src/PluginAction.h
     src/PluginAction.cpp
-    #src/SettingsAction.h
-    #src/SettingsAction.cpp
+    src/LoadedDatasetsAction.h
+    src/LoadedDatasetsAction.cpp
+    src/SettingsAction.h
+    src/SettingsAction.cpp
   
 )
 
@@ -59,12 +61,13 @@ set(WIDGETS
     src/WordWrapHeaderView.cpp
     src/TableView.h
     src/TableView.cpp
+    src/ButtonProgressBar.h
+    src/ButtonProgressBar.cpp
 )
 
 set(UTIL
     src/ProgressManager.h
     src/ProgressManager.cpp
-
 )
 
 set(AUX

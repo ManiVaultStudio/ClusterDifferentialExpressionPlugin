@@ -5,6 +5,7 @@
 #include "SortFilterProxyModel.h"
 #include "WordWrapHeaderView.h"
 #include "TableView.h"
+#include "ButtonProgressBar.h"
 
 #include <QComboBox>
 #include <QTableView>
@@ -12,13 +13,14 @@
 #include <QHeaderView>
 #include <QProgressBar>
 #include <QGraphicsColorizeEffect>
-#include <QLineEdit>
+
 #include <QVBoxLayout>
 #include <QResizeEvent>
-#include <QGroupBox>
-#include <QHBoxLayout>
+
+
 
 #include <ClusterData.h>
+
 namespace local
 {
 
@@ -55,7 +57,7 @@ namespace local
         return false;
 	}
 
-    bool updateDatasetPickerAction(hdps::gui::DatasetPickerAction& action, const QVector < hdps::Dataset <hdps::DatasetImpl>> options)
+    bool updateDatasetPickerAction(DatasetPickerAction& action, const QVector < hdps::Dataset <hdps::DatasetImpl>> options)
 	{
         auto current = action.getCurrentDataset();
         action.setShowFullPathName(true);
@@ -73,34 +75,20 @@ namespace local
 ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(ClusterDifferentialExpressionPlugin* differentialExpressionPlugin)
     :_differentialExpressionPlugin(differentialExpressionPlugin)
     , _modelIsUpToDate(false)
-    , _clusterDataset1Action(this, "Dataset")
-    , _clusterDataset2Action(this, "Dataset")
-    , _clusters1SelectionAction(this, "Clusters")
-    , _clusters2SelectionAction(this, "Clusters")
-    , _filterOnIdAction(this, "Filter on Id")
-    , _selectedIdAction(this, "Last selected Id")
-	, _updateStatisticsAction(this, "Calculate Differential Expression")
     , _tableView(nullptr)
-    , _differentialExpressionModel(nullptr)
-    , _sortFilterProxyModel(nullptr)
-    , _cluster1SectionLabelWidget(nullptr)
-    , _cluster2SectionLabelWidget(nullptr)
-    , _autoComputeToggleAction(this, "Automatic Update")
-	, _updateStatisticsButton(nullptr)
+	,_differentialExpressionModel(nullptr)
+	,_buttonProgressBar(nullptr)
 {
     initGui();
-    QString pluginID = differentialExpressionPlugin->getGuiName();
-    _selectedIdAction.publish(pluginID+": selectedId");
-    _updateStatisticsAction.setCheckable(false);
-    _updateStatisticsAction.setChecked(false);
-    _updateStatisticsAction.publish(pluginID+": calculateStatistics");
-
-    _filterOnIdAction.setSearchMode(true);
-    _filterOnIdAction.setClearable(true);
-    _filterOnIdAction.setPlaceHolderString("Filter by ID");
-    _filterOnIdAction.publish(pluginID + ": filterOnID");
+   
 }
 
+
+void ClusterDifferentialExpressionWidget::setDatasetTooltip(qsizetype index, const QString& label)
+{
+    if (index < _datasetLabels.size())
+        _datasetLabels[index]->setToolTip(label);
+}
 
 void ClusterDifferentialExpressionWidget::initTableViewHeader()
 {
@@ -113,13 +101,12 @@ void ClusterDifferentialExpressionWidget::initTableViewHeader()
     horizontalHeader->setSectionResizeMode(QHeaderView::Stretch);
     //horizontalHeader->setSectionResizeMode(0,QHeaderView::Interactive);
     horizontalHeader->setSortIndicator(0, Qt::AscendingOrder);
-    horizontalHeader->setDefaultAlignment(Qt::AlignBottom | Qt::AlignHCenter | Qt::Alignment(Qt::TextWordWrap));
+    horizontalHeader->setDefaultAlignment(Qt::AlignBottom | Qt::AlignLeft | Qt::Alignment(Qt::TextWordWrap));
     _tableView->setHorizontalHeader(horizontalHeader);
 
-    
-    
-   
-
+    const auto NrOfDatasets = _differentialExpressionPlugin->getLoadedDatasetsAction()->size();
+    _datasetLabels.resize(NrOfDatasets);
+    for(qsizetype datasetIndex = 0; datasetIndex < NrOfDatasets; ++datasetIndex)
     {
         QWidget* clusterHeaderWidget = new QWidget;
         QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
@@ -128,73 +115,53 @@ void ClusterDifferentialExpressionWidget::initTableViewHeader()
         clusterHeaderWidgetLayout->setVerticalSpacing(0);
         clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
 
-        _clusterDataset1Action.setText(":");
-        _clusterDataset1Action.setShowIcon(false);
-        _clusterDataset1Action.setShowFullPathName(true);
-        _clusters1SelectionAction.setText(":");
-        auto* w1 = _clusterDataset1Action.createLabelWidget(horizontalHeader);
-        local::setLabelWidgetIcon(w1, "th-large"); // symbol for cluster datasets
+        {
+            QWidget* datasetNameWidget = _differentialExpressionPlugin->getLoadedDatasetsAction()->getDatasetNameWidget(datasetIndex, horizontalHeader, 1);
+            QLineEdit* internalWidget = datasetNameWidget->findChild<hdps::gui::StringAction::LineEditWidget*>();
+            internalWidget->setReadOnly(true);
+            internalWidget->setFrame(false);
+            /*
+            internalWidget->setAttribute(Qt::WA_TranslucentBackground, true);
+            internalWidget->setWindowFlag(Qt::FramelessWindowHint, true);// required on Windows for WA_TranslucentBackground
+            internalWidget->setAlignment(Qt::AlignHCenter);
+            */
+            _datasetLabels[datasetIndex] = datasetNameWidget;
+            clusterHeaderWidgetLayout->addWidget(datasetNameWidget, 0, 0, Qt::AlignTop);
+        }
 
-        auto* w2 = _clusterDataset1Action.createWidget(horizontalHeader);
-        auto* w3 = _clusters1SelectionAction.createLabelWidget(horizontalHeader);
-        local::setLabelWidgetIcon(w3, "layer-group");
-        auto* w4 = _clusters1SelectionAction.createWidget(horizontalHeader);
-        auto* w5 = new QLabel("Mean", horizontalHeader);
-        clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(w3, 1, 0, 1, 1, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(w4, 1, 1, 1, 1, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(w5, 2, 0, 1, 2, Qt::AlignCenter);
+        {
+            QWidget* widget = _differentialExpressionPlugin->getLoadedDatasetsAction()->getClusterSelectionWidget(datasetIndex, horizontalHeader, 1);
+            /*
+            QComboBox* internalWidget = widget->findChild<hdps::gui::OptionsAction::ComboBoxWidget*>();
+            
+            if (!internalWidget->lineEdit())
+            {
+                internalWidget->setEditable(true);
+                internalWidget->lineEdit()->setReadOnly(true);
+            }
+        	if (internalWidget->lineEdit())
+            {
+                internalWidget->lineEdit()->setAlignment(Qt::AlignHCenter);
+                for (int i = 0; i < internalWidget->count(); ++i)
+                {
+                    internalWidget->setItemData(i, Qt::AlignHCenter, Qt::TextAlignmentRole);
+                }
+            }
+            */
+            clusterHeaderWidgetLayout->addWidget(widget, 1, 0,  Qt::AlignTop);
+        }
+
+
+       
+        clusterHeaderWidgetLayout->addWidget(new QLabel("Mean", horizontalHeader), 2, 0,  Qt::AlignLeft);
 
         clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
-        horizontalHeader->setWidget(2, clusterHeaderWidget);
+        horizontalHeader->setWidget(2+datasetIndex, clusterHeaderWidget);
     }
-
-    {
-        QWidget* clusterHeaderWidget = new QWidget;
-        QGridLayout* clusterHeaderWidgetLayout = new QGridLayout(clusterHeaderWidget);
-        clusterHeaderWidgetLayout->setContentsMargins(0, 0, 0, 0);
-        clusterHeaderWidgetLayout->setHorizontalSpacing(0);
-        clusterHeaderWidgetLayout->setVerticalSpacing(0);
-        clusterHeaderWidgetLayout->setSpacing(0);
-        clusterHeaderWidgetLayout->setSizeConstraint(QLayout::SetFixedSize);
-
-        _clusterDataset2Action.setText(":");
-        _clusterDataset2Action.setShowIcon(false);
-        _clusters2SelectionAction.setText(":");
-        auto* w1 = _clusterDataset2Action.createLabelWidget(horizontalHeader);
-        local::setLabelWidgetIcon(w1, "th-large");
-        auto* w2 = _clusterDataset2Action.createWidget(horizontalHeader);
-        auto* w3 = _clusters2SelectionAction.createLabelWidget(horizontalHeader);
-        local::setLabelWidgetIcon(w3, "layer-group");
-        auto* w4 = _clusters2SelectionAction.createWidget(horizontalHeader);
-        auto* w5 = new QLabel("Mean", horizontalHeader);
-        int h11 = w1->height();
-        int h12 = w2->height();
-        int w21 = w3->height();
-        int w22 = w4->height();
-        auto* c = new QComboBox(horizontalHeader);
-        int wc = c->height();
-        delete c;
-        int h1 = std::max(h11, h12);
-        int h2 = std::max(w21, w22);
-        int h3 = w5->height();
-
-        clusterHeaderWidgetLayout->addWidget(w1, 0, 0, 1, 1, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(w2, 0, 1, 1, 1, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(w3, 1, 0, 1, 1, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(w4, 1, 1, 1, 1, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(w5, 2, 0, 1, 2, Qt::AlignCenter);
-        clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
-
-
-
-        horizontalHeader->setWidget(3, clusterHeaderWidget);
-        QCoreApplication::processEvents();
-    }
+	QCoreApplication::processEvents();
 	horizontalHeader->enableWidgetSupport(true);
 
-    //horizontalHeader->setCascadingSectionResizes(true);
+    
     
 }
 
@@ -202,197 +169,125 @@ void ClusterDifferentialExpressionWidget::initGui()
 {
 
     setAcceptDrops(true);
-    const int NumberOfColums = 2;
+    const int NumberOfColums = 1;
 
-    QGridLayout* layout = new QGridLayout;
-    setLayout(layout);
+    delete layout();
+
+    QGridLayout* newLayout = new QGridLayout;
+   
+    setLayout(newLayout);
 
     int currentRow = 0;
-    connect(&_clusterDataset1Action, &hdps::gui::DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
-    connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
-    connect(&_clusterDataset2Action, &hdps::gui::DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
-    connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
-    
-    connect(&_clusterDataset1Action, &hdps::gui::DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters1DatasetChanged(dataset); });
-    connect(&_clusters1SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged);
-    connect(&_clusterDataset2Action, &hdps::gui::DatasetPickerAction::datasetPicked, this, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) { emit clusters2DatasetChanged(dataset); });
-    connect(&_clusters2SelectionAction, &hdps::gui::OptionAction::currentIndexChanged, this, &ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged);
-
-    _sortFilterProxyModel = new SortFilterProxyModel;
-   
+  
     {
-        QHBoxLayout* aboveTableViewLayout = new QHBoxLayout(this);
-        aboveTableViewLayout->setContentsMargins(0, 0, 0, 0);
-        aboveTableViewLayout->setSpacing(2);
-        aboveTableViewLayout->setSizeConstraint(QLayout::SetFixedSize);
-        aboveTableViewLayout->setAlignment(Qt::AlignLeft);
-
-        {
-            auto* searchWidget = _filterOnIdAction.createWidget(this);
-            searchWidget->setFixedWidth(100);
-            aboveTableViewLayout->addWidget(searchWidget, 0, Qt::AlignLeft);
-            connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
-        }
-        /*
-        {
-            _clusterDataset1Action.setText("Dataset 1:");
-            auto* datasetLabelWidget = _clusters1SelectionAction.createLabelWidget(this);
-            aboveTableViewLayout->addWidget(datasetLabelWidget, 0, Qt::AlignLeft);
-            auto* datasetWidget = _clusterDataset1Action.createWidget(this, OptionAction::LineEdit);
-            datasetWidget->setEnabled(false);
-            datasetWidget->setMinimumWidth(20);
-            datasetWidget->findChild<QLineEdit*>()->setEnabled(false);
-            aboveTableViewLayout->addWidget(datasetWidget, 20, Qt::AlignLeft);
-
-            auto *clusterWidget = _clusters1SelectionAction.createWidget(this, OptionAction::LineEdit);
-            aboveTableViewLayout->addWidget(clusterWidget, 25, Qt::AlignLeft);
-        }
-        {
-            aboveTableViewLayout->addWidget(new QLabel(" vs "), 1, Qt::AlignLeft);
-        }
-        {
-            _clusterDataset2Action.setText("Dataset 2:");
-            auto* datasetLabelWidget = _clusterDataset2Action.createLabelWidget(this);
-            aboveTableViewLayout->addWidget(datasetLabelWidget, 0, Qt::AlignLeft);
-
-        	auto* datasetWidget = _clusterDataset2Action.createWidget(this, OptionAction::LineEdit);
-            datasetWidget->setEnabled(false);
-            datasetWidget->setMinimumWidth(20);
-
-            aboveTableViewLayout->addWidget(datasetWidget, 20, Qt::AlignLeft);
-
-
-            auto* clusterWidget = _clusters2SelectionAction.createWidget(this, OptionAction::LineEdit);
-            aboveTableViewLayout->addWidget(clusterWidget, 25, Qt::AlignLeft);
-        }
-        */
-
-        
-        layout->addLayout(aboveTableViewLayout, currentRow++, 0, 1, NumberOfColums);
+        QWidget* w = _differentialExpressionPlugin->getSettingsAction().createWidget(this);
+        newLayout->addWidget(w, currentRow,0);
+        newLayout->setRowStretch(currentRow++, 1);
     }
 
     { // table view
         
         _tableView = new TableView(this);
-        _tableView->setModel(_sortFilterProxyModel);
+        _tableView->setModel(_differentialExpressionPlugin->getSortFiltrProxyModel());
         _tableView->setSortingEnabled(true);
         _tableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-        
-
-        
         connect(_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ClusterDifferentialExpressionWidget::tableView_sectionChanged);
 
         initTableViewHeader();
 
-        layout->addWidget(_tableView, currentRow++, 0, 1, NumberOfColums);
+        newLayout->addWidget(_tableView, currentRow, 0);
+        newLayout->setRowStretch(currentRow++, 97);
     }
 
-   
-    {// Progress bar and update button
-        _progressBar = new QProgressBar(this);
-        _progressBar->setTextVisible(true);
-        _progressBar->setAlignment(Qt::AlignCenter);
-        _progressBar->setOrientation(Qt::Orientation::Horizontal);
-        QGraphicsColorizeEffect* colorizeEffect = new QGraphicsColorizeEffect();
-        colorizeEffect->setColor(Qt::red);
-        colorizeEffect->setStrength(1);
-        _progressBar->setGraphicsEffect(colorizeEffect);
-        _progressBar->setFormat("No Selections");
-        _progressBar->graphicsEffect()->setEnabled(false);
-
-        layout->addWidget(_progressBar, currentRow, 0, 1, NumberOfColums);
-        _progressBar->hide();
-
-
-
-        {
-
-            QWidget* w = _updateStatisticsAction.createWidget(this);
-            _updateStatisticsButton = w->findChild<hdps::gui::TriggerAction::PushButtonWidget*>();// new QPushButton("Calculate Differential Expression", this);
-            _updateStatisticsButton->setText("Calculate Differential Expression");
-            layout->addWidget(w, currentRow++, 0, 1, NumberOfColums);
-            QObject::connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, [this]() -> void { this->updateStatisticsButtonPressed(); });
-            //QObject::connect(updateStatisticsButton, &QPushButton::clicked, this, &ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed);
-        }
-
-    }
-}
-
-void ClusterDifferentialExpressionWidget::setClusters1(QStringList clusters)
-{
-    auto result = local::updateOptionAction(_clusters1SelectionAction, clusters);
-    if(_autoComputeToggleAction.isEnabled())
-        if (_autoComputeToggleAction.isChecked())
-			_autoComputeToggleAction.setChecked(!clusters.empty());
-
-}
-
-void ClusterDifferentialExpressionWidget::setClusters2( QStringList clusters)
-{
-    auto result = local::updateOptionAction(_clusters2SelectionAction, clusters);
-    if (_autoComputeToggleAction.isEnabled())
-        if(_autoComputeToggleAction.isChecked())
-			_autoComputeToggleAction.setChecked(!clusters.empty());
-}
-
-void ClusterDifferentialExpressionWidget::setClusterDatasets(const QVector<hdps::Dataset<hdps::DatasetImpl>> &datasets)
-{
-    local::updateDatasetPickerAction(_clusterDataset1Action,datasets);
-    local::updateDatasetPickerAction(_clusterDataset2Action, datasets);
-}
-
-
-void ClusterDifferentialExpressionWidget::setData(QTableItemModel* newModel)
-{
-    auto* oldModel = _sortFilterProxyModel->sourceModel();
-    bool firstTime = (oldModel == nullptr);
-    _differentialExpressionModel = newModel;
-    _sortFilterProxyModel->setSourceModel(_differentialExpressionModel);
-    if(oldModel)
-        delete oldModel;
-
-	//update header    
-    QHeaderView* horizontalHeader = _tableView->horizontalHeader();
-    if (firstTime)
     {
+
+
+
+        QLabel* infoTextWidget = new QLabel(this);
+        
+        StringAction& infoTextAction = _differentialExpressionPlugin->getInfoTextAction();
+        
+        infoTextWidget->setText(infoTextAction.getString());
+        infoTextWidget->setVisible(infoTextAction.isChecked());
+        
+        connect(&infoTextAction, &StringAction::stringChanged, infoTextWidget, &QLabel::setText);
+        connect(&infoTextAction, &StringAction::toggled, infoTextWidget, &QLabel::setVisible);
+
+        /*
+        const auto debug = [infoTextWidget](bool b) -> void
+        {
+            bool x = b;
+            infoTextWidget->setVisible(b);
+        };
+        */
+        
+        newLayout->addWidget(infoTextWidget, currentRow, 0);
+    	newLayout->setRowStretch(currentRow++, 1);
+    }
+    
+    {// Progress bar and update button
+
+        _buttonProgressBar = new ButtonProgressBar(this, _differentialExpressionPlugin->getUpdateStatisticsWidget(this));
+
+        _buttonProgressBar->setProgressBarText("No Data Available");
+        _buttonProgressBar->setButtonText("No Data Available", Qt::red);
+
+        newLayout->addWidget(_buttonProgressBar, currentRow, 0 );
+        newLayout->setRowStretch(currentRow++, 1);
+
+    }
+}
+
+
+
+void ClusterDifferentialExpressionWidget::setData(QSharedPointer<QTableItemModel> model)
+{
+
+    const auto debug = [](bool b) -> void
+    {
+        bool x = b;
+        if(b)
+        {
+            int x = 0;
+            x++;
+        }
+        else
+        {
+            int x = 0;
+            x++;
+        }
+    };
+
+    const bool firstTime = (_differentialExpressionModel == nullptr);
+    _differentialExpressionModel = model;
+    QHeaderView* horizontalHeader = _tableView->horizontalHeader();
+    if(firstTime)
+    {
+	    // first time
+        connect(_differentialExpressionModel.get(), &QTableItemModel::statusChanged, _buttonProgressBar, &ButtonProgressBar::showStatus);
         horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
         horizontalHeader->setStretchLastSection(true);
     }
+
     
-    
-    emit horizontalHeader->headerDataChanged(Qt::Horizontal, 0, newModel->columnCount());
+        
+        
+	
+    emit horizontalHeader->headerDataChanged(Qt::Horizontal, 0, _differentialExpressionModel->columnCount());
 
     QCoreApplication::processEvents();
     if(firstTime)
         _tableView->resizeColumnsToContents();
     horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
-   
-    
-    
-    ShowProgressBar();
-    
 }
 
-void ClusterDifferentialExpressionWidget::ShowProgressBar()
-{
-    
-    _updateStatisticsButton->hide();
-    _progressBar->show();
-    if(_differentialExpressionModel)
-    {
-        _differentialExpressionModel->setOutDated(false);
-        if (_differentialExpressionModel->rowCount() != 0)
-        {
-            _progressBar->setFormat("Results Up-to-Date");
-        }
-    }
-}
+
 
 QProgressBar* ClusterDifferentialExpressionWidget::getProgressBar()
 {
-    return _progressBar;
+    return _buttonProgressBar->getProgressBar();
 }
 
 void ClusterDifferentialExpressionWidget::setNrOfExtraColumns(std::size_t offset)
@@ -401,94 +296,18 @@ void ClusterDifferentialExpressionWidget::setNrOfExtraColumns(std::size_t offset
 }
 
 
-
-void ClusterDifferentialExpressionWidget::ShowComputeButton()
-{
-    _progressBar->hide();
-    _updateStatisticsButton->show();
-    if (_differentialExpressionModel)
-    {
-        if (_differentialExpressionModel->rowCount() > 0)
-        {
-            _differentialExpressionModel->setOutDated(true);
-            const QString recomputeText = "Out-of-Date - Recalculate";
-            if (_updateStatisticsButton->text() != recomputeText)
-            {
-                QPalette pal = _updateStatisticsButton->palette();
-                // 			QBrush b(Qt::red);
-                // 			pal.setBrush(QPalette::Button, b);
-                pal.setColor(QPalette::Button, Qt::red);
-                pal.setColor(QPalette::ButtonText, Qt::red);
-                _updateStatisticsButton->setPalette(pal);
-                _updateStatisticsButton->setAutoFillBackground(true);
-                _updateStatisticsButton->setText(recomputeText);
-            }
-        }
-    }
-}
-
-void  ClusterDifferentialExpressionWidget::EnableAutoCompute(bool value)
-{
-    if(false == value)
-    {
-        _autoComputeToggleAction.setChecked(false);
-    }
-    _autoComputeToggleAction.setEnabled(value);
-}
-
-void ClusterDifferentialExpressionWidget::clusters1Selection_CurrentIndexChanged(int index)
-{
-    if(index >=0)
-    {
-        QList<int> selection = { index };
-        emit clusters1SelectionChanged(selection);
-      //  if (_autoComputeToggleAction.isChecked())
-       //     updateStatisticsButtonPressed();
-    }
-}
-
-void ClusterDifferentialExpressionWidget::clusters2Selection_CurrentIndexChanged(int index)
-{
-    if(index >=0)
-    {
-        QList<int> selection = { index };
-        emit clusters2SelectionChanged(selection);
-        //if (_autoComputeToggleAction.isChecked())
-          //  updateStatisticsButtonPressed();
-    }
-}
-
-void ClusterDifferentialExpressionWidget::selectClusterDataset1(const hdps::Dataset<hdps::DatasetImpl>&dataset)
-{
-    if(_clusterDataset1Action.getCurrentDataset() != dataset)
-		_clusterDataset1Action.setCurrentDataset(dataset);
-}
-
-void ClusterDifferentialExpressionWidget::selectClusterDataset2(const hdps::Dataset<hdps::DatasetImpl>& dataset)
-{
-    if (_clusterDataset2Action.getCurrentDataset() != dataset)
-		_clusterDataset2Action.setCurrentDataset(dataset);
-}
-
-
-void ClusterDifferentialExpressionWidget::updateStatisticsButtonPressed()
-{
-    ShowProgressBar();
-    emit computeDE();
-}
-
 void ClusterDifferentialExpressionWidget::tableView_Clicked(const QModelIndex &index)
 {
-    if (_differentialExpressionModel->outDated())
+    if (_differentialExpressionModel->status() != QTableItemModel::Status::UpToDate)
         return;
     try
     {
         QModelIndex firstColumn = index.sibling(index.row(), 0);
 
         QString selectedGeneName = firstColumn.data().toString();
-        QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
+        QModelIndex temp = _differentialExpressionPlugin->getSortFiltrProxyModel()->mapToSource(firstColumn);
         auto row = temp.row();
-        _selectedIdAction.setString(selectedGeneName);
+        _differentialExpressionPlugin->getSelectedIdAction().setString(selectedGeneName);
         emit selectedRowChanged(row);
     }
     catch(...)
@@ -502,6 +321,7 @@ void ClusterDifferentialExpressionWidget::tableView_sectionChanged(const QItemSe
 {
     tableView_Clicked(selected.indexes().first());
 }
+
 
 void ClusterDifferentialExpressionWidget::resizeEvent(QResizeEvent* event) 
 {
