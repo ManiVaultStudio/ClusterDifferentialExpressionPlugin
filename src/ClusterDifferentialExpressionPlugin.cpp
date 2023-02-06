@@ -960,7 +960,7 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
      * temporary functions to help create data for simian viewer. won't work with normal HDPS core.
      *
      **
-     **/
+     
 
     const auto& fontAwesome = Application::getIconFont("FontAwesome");
 
@@ -1034,7 +1034,7 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
     
   
    
-    /*
+
     */
         
     
