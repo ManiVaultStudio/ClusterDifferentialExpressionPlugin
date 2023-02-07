@@ -22,7 +22,9 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
         datasetPickerAction.setText(datasetPickerActionName);
         datasetNameStringAction.setString(datasetPickerActionName);
         QString guiName = parent->_plugin->getGuiName() + "::";
+        datasetPickerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
         datasetPickerAction.publish(guiName + QString("Dataset_") + QString::number(index + 1));
+        datasetNameStringAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
         datasetNameStringAction.publish(guiName + QString("DatasetName_") + QString::number(index + 1));
     }
     datasetPickerAction.setDatasetsFilterFunction([](const hdps::Datasets& datasets) -> Datasets {

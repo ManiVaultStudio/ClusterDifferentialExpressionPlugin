@@ -15,7 +15,7 @@
 
 #include "DataHierarchyItem.h"
 #include <actions/PluginTriggerAction.h>
-
+#include <actions/WidgetAction.h>
 
 // QT includes
 
@@ -234,13 +234,19 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     _updateStatisticsAction.setChecked(false);
     
     const auto guiName = getGuiName() + "::";
+    _preInfoVariantAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
     _preInfoVariantAction.publish(guiName + "TableViewLeftSideInfo");
+    _postInfoVariantAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
     _postInfoVariantAction.publish(guiName + "TableViewRightSideInfo");
+    _filterOnIdAction->setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
     _filterOnIdAction->publish(guiName + "FilterOnId");
+    _selectedIdAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
     _selectedIdAction.publish(guiName + "SelectedId");
+    _updateStatisticsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
     _updateStatisticsAction.publish(guiName + "UpdateStatistics");
 
     _infoTextAction.setCheckable(true);
+    _infoTextAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
     _infoTextAction.publish(guiName + "InfoText");
 
     connect(_filterOnIdAction.get(), &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
@@ -261,34 +267,35 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     _settingsAction.addAction(_autoUpdateAction,5);
 
 
-    _meanExpressionDatasetGuidAction.resize(_loadedDatasetsAction->size(), new StringAction(this));
+    _meanExpressionDatasetGuidAction.resize(_loadedDatasetsAction->size(), nullptr);
     std::vector<float> meanExpressionData(1, 0);
     for (qsizetype i = 0; i < _meanExpressionDatasetGuidAction.size(); ++i)
     {
-        
-        _meanExpressionDatasetGuidAction[i]->publish(guiName + "SelectedIDMeanExpressionsDataset " + QString::number(i));
+        _meanExpressionDatasetGuidAction[i] = new StringAction(this);
+
+        _meanExpressionDatasetGuidAction[i]->setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+    	_meanExpressionDatasetGuidAction[i]->publish(guiName + "SelectedIDMeanExpressionsDataset " + QString::number(i));
 
         QString datasetName = guiName + "SelectedIDMeanExpressionsDataset " + QString::number(i);
-        try
+
+        auto &allDatasets = _core->getDataManager().allSets();
+        bool found = false;
+        for(auto d = allDatasets.cbegin(); d!= allDatasets.cend(); ++d)
         {
-            Dataset<Points> meanExpressionDataset = _core->requestDataset(datasetName);
-            if (meanExpressionDataset.isValid())
-            {
-                _meanExpressionDatasetGuidAction[i]->setString(meanExpressionDataset.getDatasetGuid());
-            }
-            else
-            {
-                meanExpressionDataset = _core->addDataset("Points", datasetName);
-                _meanExpressionDatasetGuidAction[i]->setString(meanExpressionDataset.getDatasetGuid());
-            }
-            meanExpressionDataset->setData(meanExpressionData, 1);
+	        if(d->isValid() && ((*d)->getGuiName() == datasetName))
+	        {
+	        	_meanExpressionDatasetGuidAction[i]->setString(d->getDatasetGuid());
+                Dataset<Points> meanExpressionDataset = *d;
+                meanExpressionDataset->setData(meanExpressionData, 1);
+                found = true;
+                break;
+	        }
         }
-        catch (...)
+        if(!found)
         {
             Dataset<Points> meanExpressionDataset = _core->addDataset("Points", datasetName);
             _meanExpressionDatasetGuidAction[i]->setString(meanExpressionDataset.getDatasetGuid());
             meanExpressionDataset->setData(meanExpressionData, 1);
-
         }
     }
 }
@@ -960,6 +967,7 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
      * temporary functions to help create data for simian viewer. won't work with normal HDPS core.
      *
      **
+     **/
      
 
     const auto& fontAwesome = Application::getIconFont("FontAwesome");
@@ -1034,7 +1042,7 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
     
   
    
-
+    /*
     */
         
     
