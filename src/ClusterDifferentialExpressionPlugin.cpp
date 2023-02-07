@@ -968,8 +968,9 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
      *
      **
      **/
+    
      
-
+    /*
     const auto& fontAwesome = Application::getIconFont("FontAwesome");
 
     Datasets clusterDatasets;
@@ -1042,7 +1043,7 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
     
   
    
-    /*
+    
     */
         
     
