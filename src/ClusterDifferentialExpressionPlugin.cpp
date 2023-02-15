@@ -30,6 +30,9 @@
 
 #include <omp.h>
 
+
+
+
 Q_PLUGIN_METADATA(IID "nl.BioVault.ClusterDifferentialExpressionPlugin")
 
 using namespace hdps;
@@ -48,13 +51,14 @@ namespace local
     }
 
 
+    
     bool clusterDatset_has_computed_DE_Statistics(hdps::Dataset<Clusters> clusterDataset)
     {
         if(clusterDataset.isValid())
         {
             const QString child_DE_Statistics_DatasetName = "DE_Statistics";
             const auto& childDatasets = clusterDataset->getChildren({ PointType });
-            for (std::size_t i = 0; i < childDatasets.size(); ++i)
+            for (qsizetype i = 0; i < childDatasets.size(); ++i)
             {
                 if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
                 {
@@ -85,7 +89,7 @@ namespace local
         const QString child_DE_Statistics_DatasetName = "DE_Statistics";
         {
             const auto& childDatasets = clusterDataset->getChildren({ PointType });
-            for (std::size_t i = 0; i < childDatasets.size(); ++i)
+            for (qsizetype i = 0; i < childDatasets.size(); ++i)
             {
                 if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
                 {
@@ -152,7 +156,7 @@ namespace local
             child_DE_Statistics_DatasetIndex = -1;
             {
                 const auto& childDatasets = clusterDataset->getChildren({ PointType });
-                for (std::size_t i = 0; i < childDatasets.size(); ++i)
+                for (qsizetype i = 0; i < childDatasets.size(); ++i)
                 {
                     if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
                     {
@@ -205,6 +209,34 @@ namespace local
         return text;
 	}
 
+
+    QString fromCamelCase(const QString& s, QChar c='_') {
+
+        static QRegularExpression regExp1{ "(.)([A-Z][a-z]+)" };
+        static QRegularExpression regExp2{ "([a-z0-9])([A-Z])" };
+
+        QString result = s;
+        
+        QString s2("\\1");
+    	s2 += QString(c);
+    	s2+= "\\2";
+        result.replace(regExp1, s2);
+        result.replace(regExp2, s2);
+
+        return result.toLower();
+
+    }
+
+    QString toCamelCase(const QString& s, QChar c='_') {
+
+        QStringList parts = s.split(c, Qt::SkipEmptyParts);
+        for (int i = 1; i < parts.size(); ++i)
+            parts[i].replace(0, 1, parts[i][0].toUpper());
+
+        return parts.join("");
+
+    }
+
 }
 ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory)
     : ViewPlugin(factory)
@@ -212,8 +244,8 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _differentialExpressionWidget(nullptr)
     , _dropWidget(nullptr)
     , _identicalDimensions(false)
-    , _preInfoVariantAction(nullptr)
-    , _postInfoVariantAction(nullptr)
+    , _preInfoVariantAction(nullptr, "TableViewLeftSideInfo")
+    , _postInfoVariantAction(nullptr,"TableViewRightSideInfo")
     , _settingsAction(this)
     , _loadedDatasetsAction(new LoadedDatasetsAction(this))
     , _filterOnIdAction(new StringAction(this, "Filter on Id"))
@@ -222,8 +254,9 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _updateStatisticsAction(this, "Calculate Differential Expression")
     , _sortFilterProxyModel(new SortFilterProxyModel)
     , _tableItemModel(new QTableItemModel(nullptr, false))
-	, _infoTextAction(nullptr)
+	, _infoTextAction(nullptr,"IntoText")
 {
+    setSerializationName(getGuiName());
 
     _sortFilterProxyModel->setSourceModel(_tableItemModel.get());
     _filterOnIdAction->setSearchMode(true);
@@ -233,22 +266,19 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     _updateStatisticsAction.setCheckable(false);
     _updateStatisticsAction.setChecked(false);
     
-    const auto guiName = getGuiName() + "::";
-    _preInfoVariantAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    _preInfoVariantAction.publish(guiName + "TableViewLeftSideInfo");
-    _postInfoVariantAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    _postInfoVariantAction.publish(guiName + "TableViewRightSideInfo");
-    _filterOnIdAction->setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    _filterOnIdAction->publish(guiName + "FilterOnId");
-    _selectedIdAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    _selectedIdAction.publish(guiName + "SelectedId");
-    _updateStatisticsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    _updateStatisticsAction.publish(guiName + "UpdateStatistics");
-
+    
+    initAction(&_preInfoVariantAction);
+    initAction(&_postInfoVariantAction);
+    initAction(_filterOnIdAction.get());
+    initAction(&_selectedIdAction);
+    initAction(&_updateStatisticsAction);
+    initAction(&_infoTextAction);
+    initAction(_autoUpdateAction.get());
+    _serializedActions.append(_loadedDatasetsAction.get());
+    
+    
     _infoTextAction.setCheckable(true);
-    _infoTextAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    _infoTextAction.publish(guiName + "InfoText");
-
+    
     connect(_filterOnIdAction.get(), &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
 
     connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
@@ -269,14 +299,14 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
 
     _meanExpressionDatasetGuidAction.resize(_loadedDatasetsAction->size(), nullptr);
     std::vector<float> meanExpressionData(1, 0);
+    const QString guiName = getGuiName();
     for (qsizetype i = 0; i < _meanExpressionDatasetGuidAction.size(); ++i)
     {
-        _meanExpressionDatasetGuidAction[i] = new StringAction(this);
-
-        _meanExpressionDatasetGuidAction[i]->setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    	_meanExpressionDatasetGuidAction[i]->publish(guiName + "SelectedIDMeanExpressionsDataset " + QString::number(i));
-
-        QString datasetName = guiName + "SelectedIDMeanExpressionsDataset " + QString::number(i);
+        QString actionName = "SelectedIDMeanExpressionsDataset " + QString::number(i);
+        _meanExpressionDatasetGuidAction[i] = new StringAction(this, "SelectedIDMeanExpressionsDataset " + QString::number(i));
+        initAction(_meanExpressionDatasetGuidAction[i]);
+        
+        QString datasetName = guiName + QString("::") + actionName;
 
         auto &allDatasets = _core->getDataManager().allSets();
         bool found = false;
@@ -424,6 +454,45 @@ ClusterDifferentialExpressionWidget& ClusterDifferentialExpressionPlugin::getClu
 }
 
 
+void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& variantMap)
+{
+    ViewPlugin::fromVariantMap(variantMap);
+    auto version = variantMap.value("ClusterDifferentialExpressionPluginVersion", QVariant::fromValue(uint(0))).toUInt();
+    if(version > 0)
+    {
+        for (auto action : _serializedActions)
+        {
+            action->fromParentVariantMap(variantMap);
+        }
+    }
+}
+
+QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
+{
+    QVariantMap variantMap = ViewPlugin::toVariantMap();
+    variantMap["ClusterDifferentialExpressionPluginVersion"] = 1;
+    for(auto action : _serializedActions)
+    {
+        action->insertIntoVariantMap(variantMap);
+    }
+    return variantMap;
+}
+
+
+void ClusterDifferentialExpressionPlugin::initAction(WidgetAction* w)
+{
+    assert(w != nullptr);
+    if(w==nullptr)
+        return;
+    QString name = w->text();
+    assert(!name.isEmpty());
+    QString apiName = local::toCamelCase(name,' ');
+    w->setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+    w->publish(getGuiName() + "::" + apiName);
+    w->setSerializationName(apiName);
+    _serializedActions.append(w);
+}
+
 void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(int dataset_index, int index)
 {
     
@@ -448,7 +517,7 @@ void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(int datase
         {
             auto de_Statistics_clusterDataset = (dataset_index == 1) ? get_DE_Statistics_Dataset(getDataset(0)) : get_DE_Statistics_Dataset(getDataset(1));
             const Points* p = de_Statistics_clusterDataset.get();
-            for (std::size_t clusterIndex = 0; clusterIndex < clusters.size(); ++clusterIndex)
+            for (qsizetype clusterIndex = 0; clusterIndex < clusters.size(); ++clusterIndex)
             {
                 std::size_t point_index = (clusterIndex * p->getNumDimensions()) + de_Statistics_dimension;
                 float value = p->getValueAt(point_index);
@@ -586,8 +655,9 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 
     bool identicalDimensionNames = true;
     _progressManager.start(clusterDataset2_dimensionNames.size(), "Matching Dimensions");
+    ptrdiff_t clusterDataset1_dimensionNames_size = (ptrdiff_t) clusterDataset1_dimensionNames.size();
 #pragma omp parallel for schedule(dynamic,1)
-    for (ptrdiff_t i = 0; i < clusterDataset1_dimensionNames.size(); ++i)
+    for (ptrdiff_t i = 0; i < clusterDataset1_dimensionNames_size; ++i)
     {
         QString dimensionName = clusterDataset1_dimensionNames[i];
         if (clusterDataset2_dimensionNames[i] == dimensionName)
@@ -645,7 +715,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
     const QString child_DE_Statistics_DatasetName = "DE_Statistics";
     {
         const auto& childDatasets = clusterDataset->getChildren({ PointType });
-        for (std::size_t i = 0; i < childDatasets.size(); ++i)
+        for (qsizetype i = 0; i < childDatasets.size(); ++i)
         {
             if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
             {
@@ -710,7 +780,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         child_DE_Statistics_DatasetIndex = -1;
         {
             const auto& childDatasets = clusterDataset->getChildren({ PointType });
-            for (std::size_t i = 0; i < childDatasets.size(); ++i)
+            for (qsizetype i = 0; i < childDatasets.size(); ++i)
             {
                 if (childDatasets[i]->getGuiName() == child_DE_Statistics_DatasetName)
                 {
@@ -846,7 +916,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     enum{ID, DE, MEAN1, MEAN2, COLUMN_COUNT};
     auto preInfoMap = _preInfoVariantAction.getVariant().toMap();
     auto postInfoMap = _postInfoVariantAction.getVariant().toMap();
-    std::size_t columnOffset = preInfoMap.size();
+    qsizetype columnOffset =  preInfoMap.size();
     std::size_t totalColumnCount = columnOffset + COLUMN_COUNT + postInfoMap.size();
 
  
@@ -858,7 +928,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         }
 
     std::vector<QString> unifiedDimensionNames = get_DE_Statistics_Dataset(getDataset(0))->getDimensionNames();
-    std::size_t numDimensions = _identicalDimensions ? unifiedDimensionNames.size() : _matchingDimensionNames.size();
+    std::ptrdiff_t numDimensions =(std::ptrdiff_t) (_identicalDimensions ? unifiedDimensionNames.size() : _matchingDimensionNames.size());
    
     
     _tableItemModel->startModelBuilding(totalColumnCount, numDimensions);
@@ -919,7 +989,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
  
     
     _tableItemModel->setHorizontalHeader(ID, "ID");
-    std::size_t columnNr = 1;
+   int columnNr = 1;
     for(auto i  = preInfoMap.constBegin(); i!= preInfoMap.constEnd(); ++i, ++columnNr)
     {
         _tableItemModel->setHorizontalHeader(columnNr, i.key());

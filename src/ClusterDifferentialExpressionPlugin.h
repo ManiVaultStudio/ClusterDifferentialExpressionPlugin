@@ -81,7 +81,24 @@ public:
         return _infoTextAction;
     }
 
+public: // Serialization
+
+/**
+ * Load plugin from variant map
+ * @param Variant map representation of the plugin
+ */
+    void fromVariantMap(const QVariantMap& variantMap) override;
+
+    /**
+     * Save plugin to variant map
+     * @return Variant map representation of the plugin
+     */
+    QVariantMap toVariantMap() const override;
+
+
 private:
+
+    void initAction(WidgetAction* w);
     void createMeanExpressionDataset(int dataset_index, int index);
 
     hdps::Dataset<Clusters> &getDataset(qsizetype index)
@@ -124,7 +141,7 @@ private:
 
     hdps::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
    
-    SettingsAction                              _settingsAction;
+    SettingsAction                              _settingsAction; // not a real action
 
     std::vector<DimensionNameMatch> _matchingDimensionNames;
     ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
@@ -139,12 +156,14 @@ private:
     QSharedPointer<ToggleAction>         _autoUpdateAction;
     StringAction                         _selectedIdAction;
     TriggerAction                        _updateStatisticsAction;
-    StringAction                         _infoTextAction;
     QVector<QPointer<StringAction>>       _meanExpressionDatasetGuidAction;
 
     // Viewer Configuration Options
     VariantAction                       _preInfoVariantAction;
     VariantAction                       _postInfoVariantAction;
+    StringAction                         _infoTextAction;
+
+    QVector<WidgetAction*>              _serializedActions;
 };
     
 

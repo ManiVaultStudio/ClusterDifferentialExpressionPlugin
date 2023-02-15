@@ -18,14 +18,42 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
 {
     if(index >=0)
     {
-        QString datasetPickerActionName = QString("Dataset ") + QString::number(index + 1);
-        datasetPickerAction.setText(datasetPickerActionName);
-        datasetNameStringAction.setString(datasetPickerActionName);
-        QString guiName = parent->_plugin->getGuiName() + "::";
-        datasetPickerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-        datasetPickerAction.publish(guiName + QString("Dataset_") + QString::number(index + 1));
-        datasetNameStringAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-        datasetNameStringAction.publish(guiName + QString("DatasetName_") + QString::number(index + 1));
+        {
+            QString datasetGuiName = QString("Dataset ") + QString::number(index + 1);
+
+            datasetPickerAction.setText(datasetGuiName);
+            datasetNameStringAction.setString(datasetGuiName);
+        }
+
+        {
+            QString guiName = parent->_plugin->getGuiName() + "::";
+            {
+                QString datasetPickerActionName = QString("Dataset") + QString::number(index + 1);
+                datasetPickerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+                datasetPickerAction.publish(guiName + datasetPickerActionName);
+                datasetPickerAction.setSerializationName(datasetPickerActionName);
+            }
+
+            {
+                QString datasetNameStringActionName = QString("DatasetName") + QString::number(index + 1);
+                datasetNameStringAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+                datasetNameStringAction.publish(guiName + datasetNameStringActionName);
+                datasetNameStringAction.setSerializationName(datasetNameStringActionName);
+            }
+
+
+            {
+                QString clusterOptionsActionName = QString("SelectClusters") + QString::number(index + 1);
+                clusterOptionsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+                clusterOptionsAction.publish(guiName + clusterOptionsActionName);
+                clusterOptionsAction.setSerializationName(clusterOptionsActionName);
+            }
+        }
+        
+        
+        
+        
+        
     }
     datasetPickerAction.setDatasetsFilterFunction([](const hdps::Datasets& datasets) -> Datasets {
         Datasets clusterDatasets;
@@ -61,9 +89,9 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
                     clusterNames.append(cluster.getName());
                 }
             }
-            QStringList emptyList;
-            emptyList.append(clusterNames.first());
-            clusterOptionsAction.initialize(clusterNames, emptyList);
+            QStringList firstItemSelectedList;
+            firstItemSelectedList.append(clusterNames.first());
+            clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
 
         
         }
@@ -75,15 +103,62 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
         
 }
 
+
+QVariantMap LoadedDatasetsAction::toVariantMap() const
+{
+    auto variantMap = PluginAction::toVariantMap();
+
+    variantMap["LoadedDatasetsActionVersion"] = 1;
+    variantMap["NrOfDatasets"] = (qsizetype) _data.size();
+    for(qsizetype i =0; i < _data.size(); ++i)
+    {
+        QVariantMap subMap;
+        _data[i]->datasetPickerAction.insertIntoVariantMap(subMap);
+        _data[i]->clusterOptionsAction.insertIntoVariantMap(subMap);
+        _data[i]->datasetNameStringAction.insertIntoVariantMap(subMap);
+
+        QString key = "Data" + QString::number(i);
+        variantMap[key] = subMap;
+    }
+    return variantMap;
+    return variantMap;
+}
+
+void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
+{
+    PluginAction::fromVariantMap(variantMap);
+
+    auto version = variantMap.value("LoadedDatasetsActionVersion", QVariant::fromValue(uint(0))).toUInt();
+    if(version > 0)
+    {
+        auto found = variantMap.find("NrOfDatasets");
+        if (found == variantMap.cend())
+            return;
+
+        _data.resize(found->value<qsizetype>());
+        for (auto i = 0; i < _data.size(); ++i)
+        {
+            QString key = "Data" + QString::number(i);
+            auto found = variantMap.find(key);
+            if (found != variantMap.cend())
+            {
+                QVariantMap subMap = found->value<QVariantMap>();
+                _data[i]->datasetPickerAction.fromParentVariantMap(subMap);
+                _data[i]->clusterOptionsAction.fromParentVariantMap(subMap);
+                _data[i]->datasetNameStringAction.fromParentVariantMap(subMap);
+            }
+        }
+    }
+
+    
+}
+
 LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin) :
     PluginAction(plugin, plugin, "Selected clusters"),
 _data(2)
-	
-   // _dataset1PickerAction(this, "Dataset 1"),
-   // _dataset2PickerAction(this, "Dataset 2"),
-	//_cluster1OptionsAction(this,"Selected Clusters"),
-	//_cluster2OptionsAction(this, "Selected Clusters")
 {
+
+    setSerializationName("LoadedDatasets");
     for (auto i = 0; i < _data.size();++i)
         _data[i].reset(new Data(this,i));
     setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("database"));
