@@ -177,6 +177,7 @@ namespace local
         assert(clusterDataset_DE_Statitstics_Index >= 0);
         const auto& clusterDataset_Children = clusterDataset->getChildren({ PointType });
         Dataset<Points> DE_Statistics = clusterDataset_Children[clusterDataset_DE_Statitstics_Index];
+
         return DE_Statistics;
     }
 
@@ -327,6 +328,14 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
             _meanExpressionDatasetGuidAction[i]->setString(meanExpressionDataset.getDatasetGuid());
             meanExpressionDataset->setData(meanExpressionData, 1);
         }
+    }
+
+    _DE_StatisticsDatasetGuidAction.resize(_loadedDatasetsAction->size(), nullptr);
+    for (qsizetype i = 0; i < _DE_StatisticsDatasetGuidAction.size(); ++i)
+    {
+        QString actionName = "DE_ExpressionsDataset " + QString::number(i);
+        _DE_StatisticsDatasetGuidAction[i] = new StringAction(this, "DE_StatisticsDataset " + QString::number(i));
+        initAction(_DE_StatisticsDatasetGuidAction[i]);
     }
 }
 
@@ -911,6 +920,10 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         QStringList clusterStrings = _loadedDatasetsAction->getClusterOptions(i);
         QStringList clusterSelectionStrings = _loadedDatasetsAction->getClusterSelection(i);
         meanExpressionValues[i] = computeMeanExpressionsForSelectedClusters(getDataset(i), local::getClusterIndices(clusterStrings, clusterSelectionStrings));
+
+        auto DE_StatisticsDataset = get_DE_Statistics_Dataset(_loadedDatasetsAction->getDataset(i));
+        if(DE_StatisticsDataset.isValid())
+			_DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset.getDatasetGuid());
     }
     
     enum{ID, DE, MEAN1, MEAN2, COLUMN_COUNT};

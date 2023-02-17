@@ -157,6 +157,7 @@ private:
     StringAction                         _selectedIdAction;
     TriggerAction                        _updateStatisticsAction;
     QVector<QPointer<StringAction>>       _meanExpressionDatasetGuidAction;
+    QVector<QPointer<StringAction>>       _DE_StatisticsDatasetGuidAction;
 
     // Viewer Configuration Options
     VariantAction                       _preInfoVariantAction;
