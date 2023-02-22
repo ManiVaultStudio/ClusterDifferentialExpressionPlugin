@@ -83,8 +83,8 @@ target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/Cl
 
 if(APPLE)
 	MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
-	target_link_libraries("${TARGET}" debug "/usr/local/lib/libomp.dylib")
-	target_link_libraries("${TARGET}" optimized "/usr/local/lib/libomp.dylib")        
+	target_link_libraries(${PROJECT} debug "/usr/local/lib/libomp.dylib")
+	target_link_libraries(${PROJECT} optimized "/usr/local/lib/libomp.dylib")        
 endif()
 if(OpenMP)
     target_link_libraries(${PROJECT} OpenMP::OpenMP_CXX)
