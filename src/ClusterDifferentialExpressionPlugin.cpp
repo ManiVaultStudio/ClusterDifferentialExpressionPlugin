@@ -45,57 +45,21 @@ using namespace hdps::util;
 
 namespace local
 {
-    bool  callMethods(QObject* object, const QVariantMap& calls)
+
+    template<typename T>
+    T get_strict_value(const QVariant& variant)
     {
-        if (object)
+
+        auto variantType = variant.metaType();
+        auto requestedType = QMetaType::fromType<T>();
+        if (variantType == requestedType)
+            return variant.value<T>();
+        else
         {
-            bool result = true;
-            for (auto item = calls.constBegin(); item != calls.constEnd(); ++item)
-            {
-
-
-                //
-                if (item.value().canConvert<QVariantList>())
-                {
-
-
-                    QVariantList arguments = item.value().value<QVariantList>();
-                    QString method = item.key() + '(';
-                    for (qsizetype i = 0; i < arguments.size(); ++i)
-                    {
-                        if (i > 0)
-                            method += ',';
-                        method += arguments[i].typeName();
-                    }
-                    method += ')';
-
-                    std::cout << "calling " << method.toStdString() << " ";
-                    if ((object->metaObject()->indexOfMethod(method.toLocal8Bit().data()) != -1))
-                    {
-                        std::cout << " OK" << std::endl;
-                        QByteArray methodName = item.key().toLocal8Bit();
-                        switch (arguments.size())
-                        {
-                        case 0:  result &= QMetaObject::invokeMethod(object, methodName.data(), Qt::DirectConnection); break;
-                        case 1:  result &= QMetaObject::invokeMethod(object, methodName.data(), Qt::DirectConnection, QGenericArgument(arguments[0].typeName(), arguments[0].data()));  break;
-                        case 2:  result &= QMetaObject::invokeMethod(object, methodName.data(), Qt::DirectConnection, QGenericArgument(arguments[0].typeName(), arguments[0].data()), QGenericArgument(arguments[1].typeName(), arguments[1].data()));  break;
-                        case 3:  result &= QMetaObject::invokeMethod(object, methodName.data(), Qt::DirectConnection, QGenericArgument(arguments[0].typeName(), arguments[0].data()), QGenericArgument(arguments[1].typeName(), arguments[1].data()), QGenericArgument(arguments[2].typeName(), arguments[2].data()));  break;
-                        default: break;
-                        }
-                    }
-                    else
-                    {
-                        std::cout << " Failed" << std::endl;
-                        result = false;
-                    }
-                        
-                }
-                else
-                    result = false;
-            }
-            return result;
+            qDebug() << "Error: requested " << requestedType.name() << " but value is of type " << variantType.name();
+            return T();
         }
-        return false;
+
     }
 
     template<typename T>
@@ -325,7 +289,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _sortFilterProxyModel(new SortFilterProxyModel)
     , _tableItemModel(new QTableItemModel(nullptr, false))
     , _infoTextAction(this, "IntoText")
-    , _configurationOptionsAction(this, "ConfigurationOptions")
+    , _commandAction(this, "InvokeMethods")
 {
     setSerializationName(getGuiName());
 
@@ -345,7 +309,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     publishAndSerializeAction(&_updateStatisticsAction);
     publishAndSerializeAction(&_infoTextAction);
     publishAndSerializeAction(_autoUpdateAction.get());
-    publishAndSerializeAction(&_configurationOptionsAction);
+    publishAndSerializeAction(&_commandAction, false);
     _serializedActions.append(_loadedDatasetsAction.get());
     
     
@@ -410,7 +374,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     }
 
 
-    connect(&_configurationOptionsAction, &VariantAction::variantChanged, this, &ClusterDifferentialExpressionPlugin::configurationSettingChanged);
+    connect(&_commandAction, &VariantAction::variantChanged, this, &ClusterDifferentialExpressionPlugin::newCommandsReceived);
 }
 
 
@@ -589,7 +553,7 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
 }
 
 
-void ClusterDifferentialExpressionPlugin::publishAndSerializeAction(WidgetAction* w)
+void ClusterDifferentialExpressionPlugin::publishAndSerializeAction(WidgetAction* w, bool serialize)
 {
     assert(w != nullptr);
     if(w==nullptr)
@@ -600,7 +564,8 @@ void ClusterDifferentialExpressionPlugin::publishAndSerializeAction(WidgetAction
     w->setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
     w->publish(getGuiName() + "::" + apiName);
     w->setSerializationName(apiName);
-    _serializedActions.append(w);
+    if(serialize)
+		_serializedActions.append(w);
 }
 
 void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(int dataset_index, int index)
@@ -722,32 +687,31 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
     createMeanExpressionDataset(1, index);
     createMeanExpressionDataset(2, index);
 
-    QVariantMap configurationCalls;
-    QVariantMap TableViewCalls;
-    QVariantMap TableViewClusterSelectionCalls;
+    /*
+    QVariantList commands;
     {
-        QVariantList args;
-        args << int(1) << int(990);
-        TableViewCalls["SLOT_setColumnWidth"] = args;
+        QVariantList command;
+        command << QString("TableView") << QString("SLOT_setColumnWidth") << int(1) << int(20);
+        commands.push_back(command);
     }
     {
-        QVariantList args2;
-        args2 << 1;
-        TableViewCalls["hideColumn"] = args2;
+        QVariantList command;
+        command << QString("TableView") << QString("hideColumn") << int(2);
+        commands.push_back(command);
     }
 
 
     {
-        QVariantList args;
-        args << bool(true);
-        TableViewClusterSelectionCalls["setDisabled"] = args;
-        TableViewClusterSelectionCalls["update"] = QVariantList();
+        QVariantList command;
+        command << QString("TableViewClusterSelection1") << QString("setDisabled") << bool(true);
+        commands.push_back(command);
 
     }
 
-    configurationCalls["TableView"] = TableViewCalls;
-    configurationCalls["TableViewClusterSelection1"] = TableViewClusterSelectionCalls;
-    _configurationOptionsAction.setVariant(configurationCalls);
+    commands.push_back(QString());
+    
+	_commandAction.setVariant(commands);
+	*/
 }
 
 namespace local
@@ -755,28 +719,77 @@ namespace local
     
 }
 
-void ClusterDifferentialExpressionPlugin::configurationSettingChanged(const QVariant& setting)
+void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& variant)
 {
-	if(setting.canConvert(QMetaType::QVariantMap))
-	{
-        QVariantMap map = setting.toMap();
+    if (!variant.isValid())
+        return;
+    enum { OBJECT_ID = 0, METHOD_ID = 1, ARGUMENT_OFFSET=2};
+    QVariantList commands = local::get_strict_value<QVariantList>(variant);
+    if (commands.isEmpty())
+        return;
 
-        for(auto item = map.constBegin(); item != map.constEnd(); ++item)
+    for (auto item : commands)
+    {
+        QVariantList  command = local::get_strict_value<QVariantList>(item);
+
+       
+        
+        if (command.size() >= 2)
         {
-            if (item->canConvert<QVariantMap>())
+            QString objectID = local::get_strict_value<QString>(command[OBJECT_ID]);
+            if (!objectID.isEmpty())
             {
-                QWidget* widget = _differentialExpressionWidget->getConfigurableWidget(item.key());
-                if(widget)
+                QObject* object = _differentialExpressionWidget->getConfigurableWidget(objectID);
+                if (object)
                 {
-                    local::callMethods(widget, item.value().value<QVariantMap>());
+                    QString method = local::get_strict_value<QString>(command[METHOD_ID]);
+                    if (!method.isEmpty())
+                    {
+                        QString method_signature = method + '(';
+                        for (qsizetype i = ARGUMENT_OFFSET; i < command.size(); ++i)
+                        {
+                            if (i > ARGUMENT_OFFSET)
+                                method_signature += ',';
+                            method_signature += command[i].typeName();
+                        }
+                        method_signature += ')';
+
+                        QString message = QString("calling ") + objectID + "->" + method_signature + " ";
+                        if ((object->metaObject()->indexOfMethod(method_signature.toLocal8Bit().data()) != -1))
+                        {
+                            const qsizetype nrOfArguments = command.size() - ARGUMENT_OFFSET;
+                            bool result = false;
+                            switch(nrOfArguments)
+                            {
+	                            case 0:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection); break;
+	                            case 1:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET+0].typeName(), command[ARGUMENT_OFFSET + 0].data()));  break;
+	                            case 2:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()), QGenericArgument(command[ARGUMENT_OFFSET + 1].typeName(), command[ARGUMENT_OFFSET + 1].data()));  break;
+	                            case 3:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()), QGenericArgument(command[ARGUMENT_OFFSET + 1].typeName(), command[ARGUMENT_OFFSET + 1].data()), QGenericArgument(command[ARGUMENT_OFFSET + 2].typeName(), command[ARGUMENT_OFFSET + 2].data()));  break;
+	                            default: break;
+                            }
+
+
+                            if (result)
+                            {
+                                message += " --> OK";
+                            }
+                            else
+                            {
+                                message += " --> Failed";
+                            }
+                        }
+                        else
+                        {
+                            message += " --> signal/slot does not exist";
+
+                        }
+                        qDebug() << message;
+                    }
                 }
             }
-	        
         }
-        //reset
-        _configurationOptionsAction.setVariant(QVariant());
-	}
-    
+    } //for (auto item : commands)
+	_commandAction.setVariant(QVariant());
 }
 
 

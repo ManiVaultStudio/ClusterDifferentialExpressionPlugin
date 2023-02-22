@@ -100,7 +100,7 @@ public: // Serialization
 
 private:
 
-    void publishAndSerializeAction(WidgetAction* w);
+    void publishAndSerializeAction(WidgetAction* w, bool serialize=true);
     void createMeanExpressionDataset(int dataset_index, int index);
 
     hdps::Dataset<Clusters> &getDataset(qsizetype index)
@@ -122,7 +122,7 @@ private:
 protected slots:
     void selectedRowChanged(int index);
 
-    void configurationSettingChanged(const QVariant& setting);
+    void newCommandsReceived(const QVariant& commands);
 public slots:
     
     void selectionChanged(const QStringList&);
@@ -171,7 +171,7 @@ private:
     StringAction                         _infoTextAction;
 
     QVector<WidgetAction*>              _serializedActions;
-    VariantAction                       _configurationOptionsAction;
+    VariantAction                       _commandAction;
 
     QByteArray                          _headerState;
 };
