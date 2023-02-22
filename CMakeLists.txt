@@ -95,7 +95,11 @@ target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 target_link_libraries(${PROJECT} Qt6::Widgets)
 target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
 target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/ClusterData.lib")
-
+if(APPLE)
+    MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
+    target_link_libraries(TARGET debug "/usr/local/lib/libomp.dylib")
+    target_link_libraries(TARGET optimized "/usr/local/lib/libomp.dylib")        
+endif()
 
 if(MSVC)
 	set(LIB_SUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
