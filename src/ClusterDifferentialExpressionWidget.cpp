@@ -100,12 +100,13 @@ void ClusterDifferentialExpressionWidget::initTableViewHeader()
     horizontalHeader->sectionResizeMode(QHeaderView::Stretch);
     horizontalHeader->setSectionResizeMode(QHeaderView::Stretch);
     //horizontalHeader->setSectionResizeMode(0,QHeaderView::Interactive);
-    horizontalHeader->setSortIndicator(0, Qt::AscendingOrder);
+    horizontalHeader->setSortIndicator(1, Qt::AscendingOrder);
     horizontalHeader->setDefaultAlignment(Qt::AlignBottom | Qt::AlignLeft | Qt::Alignment(Qt::TextWordWrap));
     _tableView->setHorizontalHeader(horizontalHeader);
 
     const auto NrOfDatasets = _differentialExpressionPlugin->getLoadedDatasetsAction()->size();
     _datasetLabels.resize(NrOfDatasets);
+    
     for(qsizetype datasetIndex = 0; datasetIndex < NrOfDatasets; ++datasetIndex)
     {
         QWidget* clusterHeaderWidget = new QWidget;
@@ -117,37 +118,16 @@ void ClusterDifferentialExpressionWidget::initTableViewHeader()
 
         {
             QWidget* datasetNameWidget = _differentialExpressionPlugin->getLoadedDatasetsAction()->getDatasetNameWidget(datasetIndex, horizontalHeader, 1);
-            QLineEdit* internalWidget = datasetNameWidget->findChild<hdps::gui::StringAction::LineEditWidget*>();
-            internalWidget->setReadOnly(true);
-            internalWidget->setFrame(false);
-            /*
-            internalWidget->setAttribute(Qt::WA_TranslucentBackground, true);
-            internalWidget->setWindowFlag(Qt::FramelessWindowHint, true);// required on Windows for WA_TranslucentBackground
-            internalWidget->setAlignment(Qt::AlignHCenter);
-            */
+            
             _datasetLabels[datasetIndex] = datasetNameWidget;
             clusterHeaderWidgetLayout->addWidget(datasetNameWidget, 0, 0, Qt::AlignTop);
+
+            _configurableWidgets[QString("TableViewDatasetName") + QString::number(datasetIndex + 1)] = datasetNameWidget;
         }
 
         {
             QWidget* widget = _differentialExpressionPlugin->getLoadedDatasetsAction()->getClusterSelectionWidget(datasetIndex, horizontalHeader, 1);
-            /*
-            QComboBox* internalWidget = widget->findChild<hdps::gui::OptionsAction::ComboBoxWidget*>();
-            
-            if (!internalWidget->lineEdit())
-            {
-                internalWidget->setEditable(true);
-                internalWidget->lineEdit()->setReadOnly(true);
-            }
-        	if (internalWidget->lineEdit())
-            {
-                internalWidget->lineEdit()->setAlignment(Qt::AlignHCenter);
-                for (int i = 0; i < internalWidget->count(); ++i)
-                {
-                    internalWidget->setItemData(i, Qt::AlignHCenter, Qt::TextAlignmentRole);
-                }
-            }
-            */
+            _configurableWidgets[QString("TableViewClusterSelection") + QString::number(datasetIndex + 1)] = widget;
             clusterHeaderWidgetLayout->addWidget(widget, 1, 0,  Qt::AlignTop);
         }
 
@@ -193,6 +173,7 @@ void ClusterDifferentialExpressionWidget::initGui()
         _tableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+        _configurableWidgets["TableView"] = _tableView;
         connect(_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ClusterDifferentialExpressionWidget::tableView_sectionChanged);
 
         initTableViewHeader();
@@ -208,12 +189,12 @@ void ClusterDifferentialExpressionWidget::initGui()
         QLabel* infoTextWidget = new QLabel(this);
         
         StringAction& infoTextAction = _differentialExpressionPlugin->getInfoTextAction();
+        const auto infoTextString = infoTextAction.getString();
+        infoTextWidget->setText(infoTextString);
+        infoTextWidget->setVisible(!infoTextString.isEmpty());
         
-        infoTextWidget->setText(infoTextAction.getString());
-        infoTextWidget->setVisible(infoTextAction.isChecked());
-        
-        connect(&infoTextAction, &StringAction::stringChanged, infoTextWidget, &QLabel::setText);
-        connect(&infoTextAction, &StringAction::toggled, infoTextWidget, &QLabel::setVisible);
+        connect(&infoTextAction, &StringAction::stringChanged, [infoTextWidget](const QString& text) {infoTextWidget->setText(text); infoTextWidget->setVisible(!text.isEmpty()); });
+       
 
         /*
         const auto debug = [infoTextWidget](bool b) -> void
@@ -267,19 +248,20 @@ void ClusterDifferentialExpressionWidget::setData(QSharedPointer<QTableItemModel
     {
 	    // first time
         connect(_differentialExpressionModel.get(), &QTableItemModel::statusChanged, _buttonProgressBar, &ButtonProgressBar::showStatus);
-        horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
+    //    horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
         horizontalHeader->setStretchLastSection(true);
+        
     }
 
     
         
         
 	
-    emit horizontalHeader->headerDataChanged(Qt::Horizontal, 0, _differentialExpressionModel->columnCount());
+     horizontalHeader->headerDataChanged(Qt::Horizontal, 0, _differentialExpressionModel->columnCount());
 
     QCoreApplication::processEvents();
-    if(firstTime)
-        _tableView->resizeColumnsToContents();
+  //  if(firstTime)
+  //      _tableView->resizeColumnsToContents();
     horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
 }
 
@@ -327,7 +309,7 @@ void ClusterDifferentialExpressionWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     QHeaderView* horizontalHeader = _tableView->horizontalHeader();
-    horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
+   // horizontalHeader->setSectionResizeMode(QHeaderView::ResizeToContents);
     QCoreApplication::processEvents();
     horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
 }

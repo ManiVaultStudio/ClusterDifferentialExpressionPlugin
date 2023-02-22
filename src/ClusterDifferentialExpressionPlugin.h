@@ -34,6 +34,8 @@ class ClusterDifferentialExpressionPlugin : public ViewPlugin
     Q_OBJECT
 
         typedef std::pair<QString, std::pair<std::ptrdiff_t, std::ptrdiff_t>> DimensionNameMatch;
+
+		
 public:
     ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory);
 
@@ -98,11 +100,13 @@ public: // Serialization
 
 private:
 
-    void initAction(WidgetAction* w);
+    void publishAndSerializeAction(WidgetAction* w);
     void createMeanExpressionDataset(int dataset_index, int index);
 
     hdps::Dataset<Clusters> &getDataset(qsizetype index)
     {
+        if(_dropWidget)
+			_dropWidget->setShowDropIndicator(false);
         return _loadedDatasetsAction->getDataset(index);
     }
 
@@ -117,6 +121,8 @@ private:
 
 protected slots:
     void selectedRowChanged(int index);
+
+    void configurationSettingChanged(const QVariant& setting);
 public slots:
     
     void selectionChanged(const QStringList&);
@@ -165,6 +171,9 @@ private:
     StringAction                         _infoTextAction;
 
     QVector<WidgetAction*>              _serializedActions;
+    VariantAction                       _configurationOptionsAction;
+
+    QByteArray                          _headerState;
 };
     
 

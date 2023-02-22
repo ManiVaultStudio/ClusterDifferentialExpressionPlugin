@@ -9,6 +9,7 @@ TableView::TableView(QWidget* parent)
 TableView::~TableView()
 {}
 
+
 void TableView::scrollContentsBy(int dx, int dy) 
 {
 	QTableView::scrollContentsBy(dx,dy);

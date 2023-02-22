@@ -69,6 +69,18 @@ public:
     
 
     void setDatasetTooltip(qsizetype index, const QString& label);
+    
+    TableView *getTableView()
+    {
+        return _tableView;
+    }
+
+    QWidget* getConfigurableWidget(const QString &name)
+    {
+        if (_configurableWidgets.contains(name))
+            return _configurableWidgets[name];
+        return nullptr;
+    }
  
 private:
     void initTableViewHeader();
@@ -84,4 +96,6 @@ private:
     
     QPointer<ButtonProgressBar>                 _buttonProgressBar;
     QVector<QWidget*>                           _datasetLabels;
+
+    QMap<QString, QWidget*>                      _configurableWidgets;
 };
