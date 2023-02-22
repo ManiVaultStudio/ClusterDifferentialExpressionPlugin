@@ -45,18 +45,21 @@ using namespace hdps::util;
 
 namespace local
 {
-
+    template<typename T> 
+    bool is_exact_type(const QVariant& variant)
+    {
+        auto variantType = variant.metaType();
+        auto requestedType = QMetaType::fromType<T>();
+        return (variantType == requestedType);
+    }
     template<typename T>
     T get_strict_value(const QVariant& variant)
     {
-
-        auto variantType = variant.metaType();
-        auto requestedType = QMetaType::fromType<T>();
-        if (variantType == requestedType)
+        if(is_exact_type<T>(variant))
             return variant.value<T>();
         else
         {
-            qDebug() << "Error: requested " << requestedType.name() << " but value is of type " << variantType.name();
+            //qDebug() << "Error: requested " << requestedType.name() << " but value is of type " << variantType.name();
             return T();
         }
 
@@ -326,7 +329,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
         connect(&_loadedDatasetsAction->getClusterSelectionAction(i), &OptionsAction::selectedOptionsChanged, this, &ClusterDifferentialExpressionPlugin::selectionChanged);
     }
 
-    _settingsAction.addAction(_filterOnIdAction,100);
+    //_settingsAction.addAction(_filterOnIdAction,100);
     _settingsAction.addAction(_loadedDatasetsAction.objectCast<WidgetAction>(),1);
 
     _autoUpdateAction->setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("check"));
@@ -722,18 +725,24 @@ namespace local
 void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& variant)
 {
     if (!variant.isValid())
+    {
+        _commandAction.setVariant(bool(false)); // return false
         return;
-    enum { OBJECT_ID = 0, METHOD_ID = 1, ARGUMENT_OFFSET=2};
+    }
+
     QVariantList commands = local::get_strict_value<QVariantList>(variant);
     if (commands.isEmpty())
+    {
+        _commandAction.setVariant(bool(false)); // return false
         return;
+    }
 
+    enum { OBJECT_ID = 0, METHOD_ID = 1, ARGUMENT_OFFSET = 2 };
+    qsizetype successfulCommands = 0;
     for (auto item : commands)
     {
         QVariantList  command = local::get_strict_value<QVariantList>(item);
 
-       
-        
         if (command.size() >= 2)
         {
             QString objectID = local::get_strict_value<QString>(command[OBJECT_ID]);
@@ -759,19 +768,20 @@ void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& va
                         {
                             const qsizetype nrOfArguments = command.size() - ARGUMENT_OFFSET;
                             bool result = false;
-                            switch(nrOfArguments)
+                            switch (nrOfArguments)
                             {
-	                            case 0:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection); break;
-	                            case 1:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET+0].typeName(), command[ARGUMENT_OFFSET + 0].data()));  break;
-	                            case 2:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()), QGenericArgument(command[ARGUMENT_OFFSET + 1].typeName(), command[ARGUMENT_OFFSET + 1].data()));  break;
-	                            case 3:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()), QGenericArgument(command[ARGUMENT_OFFSET + 1].typeName(), command[ARGUMENT_OFFSET + 1].data()), QGenericArgument(command[ARGUMENT_OFFSET + 2].typeName(), command[ARGUMENT_OFFSET + 2].data()));  break;
-	                            default: break;
+                            case 0:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection); break;
+                            case 1:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()));  break;
+                            case 2:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()), QGenericArgument(command[ARGUMENT_OFFSET + 1].typeName(), command[ARGUMENT_OFFSET + 1].data()));  break;
+                            case 3:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()), QGenericArgument(command[ARGUMENT_OFFSET + 1].typeName(), command[ARGUMENT_OFFSET + 1].data()), QGenericArgument(command[ARGUMENT_OFFSET + 2].typeName(), command[ARGUMENT_OFFSET + 2].data()));  break;
+                            default: break;
                             }
 
 
                             if (result)
                             {
                                 message += " --> OK";
+                                successfulCommands++;
                             }
                             else
                             {
@@ -788,8 +798,10 @@ void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& va
                 }
             }
         }
+
     } //for (auto item : commands)
-	_commandAction.setVariant(QVariant());
+    
+    _commandAction.setVariant(bool(successfulCommands == commands.size())); // return value ?
 }
 
 

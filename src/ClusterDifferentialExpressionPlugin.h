@@ -68,6 +68,10 @@ public:
         return _updateStatisticsAction.createWidget(parent);
     }
 
+    StringAction &getFilterAction()
+    {
+        return (*_filterOnIdAction.get());
+    }
     StringAction &getSelectedIdAction()
     {
         return _selectedIdAction;
