@@ -15,30 +15,8 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 endif(MSVC)
-
-
-if(APPLE)
-	MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
-	target_link_libraries("${TARGET}" debug "/usr/local/lib/libomp.dylib")
-	target_link_libraries("${TARGET}" optimized "/usr/local/lib/libomp.dylib")        
-endif()
-
-
 find_package(OpenMP)
-if(OpenMP)
-    target_link_libraries(${PROJECT} OpenMP::OpenMP_CXX)
-endif()
-
-if (OpenMP_CXX_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-
-
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
-
-
 
 set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
@@ -102,6 +80,21 @@ target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 target_link_libraries(${PROJECT} Qt6::Widgets)
 target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
 target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/ClusterData.lib")
+
+if(APPLE)
+	MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
+	target_link_libraries("${TARGET}" debug "/usr/local/lib/libomp.dylib")
+	target_link_libraries("${TARGET}" optimized "/usr/local/lib/libomp.dylib")        
+endif()
+if(OpenMP)
+    target_link_libraries(${PROJECT} OpenMP::OpenMP_CXX)
+endif()
+
+if (OpenMP_CXX_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 if(MSVC)
 	set(LIB_SUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
