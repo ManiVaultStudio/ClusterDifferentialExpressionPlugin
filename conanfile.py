@@ -1,6 +1,7 @@
 from conans import ConanFile
 from conan.tools.cmake import CMakeDeps, CMake, CMakeToolchain
 from conans.tools import save, load
+from conans.tools import os_info, SystemPackageTool
 import os
 import shutil
 import pathlib
@@ -71,8 +72,11 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
         pass
 
     def system_requirements(self):
-        #  May be needed for macOS or Linux
-        pass
+        if os_info.is_macos:
+            installer = SystemPackageTool()
+            installer.install("libomp")
+            proc = subprocess.run("brew --prefix libomp",  shell=True, capture_output=True)
+            subprocess.run(f"ln {proc.stdout.decode('UTF-8').strip()}/lib/libomp.dylib /usr/local/lib/libomp.dylib", shell=True)
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -94,6 +98,10 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             tc.variables["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
         tc.variables["CMAKE_PREFIX_PATH"] = qt_root
+        prefix_path = qt_root
+        if os_info.is_macos:
+            proc = subprocess.run("brew --prefix libomp",  shell=True, capture_output=True)
+            prefix_path = prefix_path + f";{proc.stdout.decode('UTF-8').strip()}"
         tc.generate()
 
     def _configure_cmake(self):

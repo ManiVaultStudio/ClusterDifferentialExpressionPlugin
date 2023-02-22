@@ -160,8 +160,14 @@ void ClusterDifferentialExpressionWidget::initGui()
     int currentRow = 0;
   
     {
-        QWidget* w = _differentialExpressionPlugin->getSettingsAction().createWidget(this);
-        newLayout->addWidget(w, currentRow,0);
+        QWidget *f = _differentialExpressionPlugin->getFilterAction().createWidget(this);
+        QWidget* s = _differentialExpressionPlugin->getSettingsAction().createWidget(this);
+        _configurableWidgets["FilterOnId"] = f;
+        _configurableWidgets["LoadedDataSettings"] = s;
+        QHBoxLayout* h = new QHBoxLayout(this);
+        h->addWidget(f);
+        h->addWidget(s);
+        newLayout->addLayout(h, currentRow,0);
         newLayout->setRowStretch(currentRow++, 1);
     }
 
