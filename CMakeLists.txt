@@ -16,13 +16,13 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 endif(MSVC)
 
-macro(set_omp_project_link_libraries TARGET)
-	if(APPLE)
-		MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
-		target_link_libraries("${TARGET}" debug "/usr/local/lib/libomp.dylib")
-		target_link_libraries("${TARGET}" optimized "/usr/local/lib/libomp.dylib")        
-	endif()
-endmacro()
+
+if(APPLE)
+	MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
+	target_link_libraries("${TARGET}" debug "/usr/local/lib/libomp.dylib")
+	target_link_libraries("${TARGET}" optimized "/usr/local/lib/libomp.dylib")        
+endif()
+
 
 find_package(OpenMP)
 if(OpenMP)
