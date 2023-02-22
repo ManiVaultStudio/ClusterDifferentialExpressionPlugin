@@ -45,6 +45,7 @@ using namespace hdps::util;
 
 namespace local
 {
+
     template<typename T> 
     bool is_exact_type(const QVariant& variant)
     {
@@ -62,7 +63,6 @@ namespace local
             //qDebug() << "Error: requested " << requestedType.name() << " but value is of type " << variantType.name();
             return T();
         }
-
     }
 
     template<typename T>
@@ -293,6 +293,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _tableItemModel(new QTableItemModel(nullptr, false))
     , _infoTextAction(this, "IntoText")
     , _commandAction(this, "InvokeMethods")
+
 {
     setSerializationName(getGuiName());
 
@@ -377,7 +378,9 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     }
 
 
+
     connect(&_commandAction, &VariantAction::variantChanged, this, &ClusterDifferentialExpressionPlugin::newCommandsReceived);
+
 }
 
 
@@ -514,6 +517,7 @@ void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& vari
         {
             if(variantMap.contains(action->getSerializationName()))
 				action->fromParentVariantMap(variantMap);
+
         }
     }
 
@@ -532,6 +536,7 @@ void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& vari
             
         }
     }
+
     */
     
 }
@@ -554,6 +559,7 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
     return variantMap;
     
 }
+
 
 
 void ClusterDifferentialExpressionPlugin::publishAndSerializeAction(WidgetAction* w, bool serialize)
@@ -690,6 +696,7 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
     createMeanExpressionDataset(1, index);
     createMeanExpressionDataset(2, index);
 
+
     /*
     QVariantList commands;
     {
@@ -701,6 +708,7 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
         QVariantList command;
         command << QString("TableView") << QString("hideColumn") << int(2);
         commands.push_back(command);
+
     }
 
 
@@ -715,12 +723,14 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
     
 	_commandAction.setVariant(commands);
 	*/
+
 }
 
 namespace local
 {
     
 }
+
 
 void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& variant)
 {

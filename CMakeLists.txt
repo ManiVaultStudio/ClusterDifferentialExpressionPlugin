@@ -4,8 +4,6 @@ set(PROJECT "ClusterDifferentialExpressionPlugin")
 
 PROJECT(${PROJECT})
 
-
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -23,6 +21,7 @@ endif(MSVC)
 
 
 
+
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
 
 #OpenMP
@@ -33,7 +32,6 @@ message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
 else(OpenMP_CXX_FOUND)
 message(WARNING, "OpenMP not found!") 
 endif(OpenMP_CXX_FOUND)
-
 
 set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
@@ -94,18 +92,14 @@ add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
 
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
-
-
 target_link_libraries(${PROJECT} Qt6::Widgets)
 target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
+
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT}  OpenMP::OpenMP_CXX)
     target_compile_options(${PROJECT} PRIVATE "${OpenMP_CXX_FLAGS}")
 endif()
-
-
-
 
 
 if(MSVC)
@@ -136,6 +130,21 @@ set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY $<IF:$<CON
 set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_COMMAND $<IF:$<CONFIG:DEBUG>,$ENV{HDPS_INSTALL_DIR}/debug/HDPS.exe,$ENV{HDPS_INSTALL_DIR}/release/HDPS.exe>)
 
 set_target_properties(${PROJECT} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=%PATH%;${Qt6_DIR}/../../../bin;$<$<CONFIG:DEBUG>:$ENV{HDPS_INSTALL_DIR}/debug>; $<$<CONFIG:RELEASE>:$ENV{HDPS_INSTALL_DIR}/release>")
+
+if(APPLE)
+	MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
+	target_link_libraries("${TARGET}" debug "/usr/local/lib/libomp.dylib")
+	target_link_libraries("${TARGET}" optimized "/usr/local/lib/libomp.dylib")        
+endif()
+if(OpenMP)
+    target_link_libraries("${TARGET}" OpenMP::OpenMP_CXX)
+endif()
+
+if (OpenMP_CXX_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 
  macro(print_all_variables)
