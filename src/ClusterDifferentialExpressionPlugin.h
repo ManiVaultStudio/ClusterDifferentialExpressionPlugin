@@ -110,7 +110,7 @@ private:
         return _loadedDatasetsAction->getDataset(index);
     }
 
-    const QStringList& getClusterSelection(qsizetype index)
+    QStringList getClusterSelection(qsizetype index)
     {
         return _loadedDatasetsAction->getClusterSelection(index);
     }

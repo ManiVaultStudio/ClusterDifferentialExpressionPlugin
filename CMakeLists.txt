@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.13.0)
 
 set(PROJECT "ClusterDifferentialExpressionPlugin")
 
@@ -18,17 +18,21 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 endif(MSVC)
 
-find_package(OpenMP)
 
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
+
+
 
 
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
 
+#OpenMP
+find_package(OpenMP)
+
+if(OpenMP_CXX_FOUND)
+message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
+else(OpenMP_CXX_FOUND)
+message(WARNING, "OpenMP not found!") 
+endif(OpenMP_CXX_FOUND)
 
 
 set(PLUGIN
@@ -94,7 +98,14 @@ target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
 target_link_libraries(${PROJECT} Qt6::Widgets)
 target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
-target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/ClusterData.lib")
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT}  OpenMP::OpenMP_CXX)
+    target_compile_options(${PROJECT} PRIVATE "${OpenMP_CXX_FLAGS}")
+endif()
+
+
+
 
 
 if(MSVC)
@@ -105,6 +116,7 @@ endif()
 
 target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}HDPS_Public${LIB_SUFFIX}")
 target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}PointData${LIB_SUFFIX}")
+target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}ClusterData${LIB_SUFFIX}")
 
 install(TARGETS ${PROJECT}
    RUNTIME DESTINATION Plugins COMPONENT SHAREDLIB
