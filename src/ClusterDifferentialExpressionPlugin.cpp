@@ -6,6 +6,7 @@
 #include "ProgressManager.h"
 #include "QTableItemModel.h"
 #include "SortFilterProxyModel.h"
+#include "WordWrapHeaderView.h"
 
 // HDPS includes
 #include "PointData.h"
@@ -29,8 +30,9 @@
 
 
 #include <omp.h>
+#include <QHeaderView>
 
-
+#include "TableView.h"
 
 
 Q_PLUGIN_METADATA(IID "nl.BioVault.ClusterDifferentialExpressionPlugin")
@@ -43,6 +45,73 @@ using namespace hdps::util;
 
 namespace local
 {
+    bool  callMethods(QObject* object, const QVariantMap& calls)
+    {
+        if (object)
+        {
+            bool result = true;
+            for (auto item = calls.constBegin(); item != calls.constEnd(); ++item)
+            {
+
+
+                //
+                if (item.value().canConvert<QVariantList>())
+                {
+
+
+                    QVariantList arguments = item.value().value<QVariantList>();
+                    QString method = item.key() + '(';
+                    for (qsizetype i = 0; i < arguments.size(); ++i)
+                    {
+                        if (i > 0)
+                            method += ',';
+                        method += arguments[i].typeName();
+                    }
+                    method += ')';
+
+                    std::cout << "calling " << method.toStdString() << " ";
+                    if ((object->metaObject()->indexOfMethod(method.toLocal8Bit().data()) != -1))
+                    {
+                        std::cout << " OK" << std::endl;
+                        QByteArray methodName = item.key().toLocal8Bit();
+                        switch (arguments.size())
+                        {
+                        case 0:  result &= QMetaObject::invokeMethod(object, methodName.data(), Qt::DirectConnection); break;
+                        case 1:  result &= QMetaObject::invokeMethod(object, methodName.data(), Qt::DirectConnection, QGenericArgument(arguments[0].typeName(), arguments[0].data()));  break;
+                        case 2:  result &= QMetaObject::invokeMethod(object, methodName.data(), Qt::DirectConnection, QGenericArgument(arguments[0].typeName(), arguments[0].data()), QGenericArgument(arguments[1].typeName(), arguments[1].data()));  break;
+                        case 3:  result &= QMetaObject::invokeMethod(object, methodName.data(), Qt::DirectConnection, QGenericArgument(arguments[0].typeName(), arguments[0].data()), QGenericArgument(arguments[1].typeName(), arguments[1].data()), QGenericArgument(arguments[2].typeName(), arguments[2].data()));  break;
+                        default: break;
+                        }
+                    }
+                    else
+                    {
+                        std::cout << " Failed" << std::endl;
+                        result = false;
+                    }
+                        
+                }
+                else
+                    result = false;
+            }
+            return result;
+        }
+        return false;
+    }
+
+    template<typename T>
+    QPair<bool,T> findAndGetAs(const QVariantMap &map, const QString & key)
+    {
+        auto found = map.constFind(key);
+        if(found != map.constEnd())
+        {
+	       if(found->canConvert<T>())
+	       {
+               return QPair<bool, T>(true, found->value<T>());
+	       }
+        }
+        return QPair<bool, T>(false, T());
+    }
+
     template <typename T>
     float fround(T n, int d)
     {
@@ -245,17 +314,18 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _differentialExpressionWidget(nullptr)
     , _dropWidget(nullptr)
     , _identicalDimensions(false)
-    , _preInfoVariantAction(nullptr, "TableViewLeftSideInfo")
-    , _postInfoVariantAction(nullptr,"TableViewRightSideInfo")
+    , _preInfoVariantAction(this, "TableViewLeftSideInfo")
+    , _postInfoVariantAction(this, "TableViewRightSideInfo")
     , _settingsAction(this)
     , _loadedDatasetsAction(new LoadedDatasetsAction(this))
     , _filterOnIdAction(new StringAction(this, "Filter on Id"))
-    , _autoUpdateAction(new ToggleAction(this, "auto update", true, true))
+    , _autoUpdateAction(new ToggleAction(this, "auto update", false, false))
     , _selectedIdAction(this, "Last selected Id")
     , _updateStatisticsAction(this, "Calculate Differential Expression")
     , _sortFilterProxyModel(new SortFilterProxyModel)
     , _tableItemModel(new QTableItemModel(nullptr, false))
-	, _infoTextAction(nullptr,"IntoText")
+    , _infoTextAction(this, "IntoText")
+    , _configurationOptionsAction(this, "ConfigurationOptions")
 {
     setSerializationName(getGuiName());
 
@@ -268,17 +338,18 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     _updateStatisticsAction.setChecked(false);
     
     
-    initAction(&_preInfoVariantAction);
-    initAction(&_postInfoVariantAction);
-    initAction(_filterOnIdAction.get());
-    initAction(&_selectedIdAction);
-    initAction(&_updateStatisticsAction);
-    initAction(&_infoTextAction);
-    initAction(_autoUpdateAction.get());
+    publishAndSerializeAction(&_preInfoVariantAction);
+    publishAndSerializeAction(&_postInfoVariantAction);
+    publishAndSerializeAction(_filterOnIdAction.get());
+    publishAndSerializeAction(&_selectedIdAction);
+    publishAndSerializeAction(&_updateStatisticsAction);
+    publishAndSerializeAction(&_infoTextAction);
+    publishAndSerializeAction(_autoUpdateAction.get());
+    publishAndSerializeAction(&_configurationOptionsAction);
     _serializedActions.append(_loadedDatasetsAction.get());
     
     
-    _infoTextAction.setCheckable(true);
+    
     
     connect(_filterOnIdAction.get(), &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
 
@@ -305,7 +376,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     {
         QString actionName = "SelectedIDMeanExpressionsDataset " + QString::number(i);
         _meanExpressionDatasetGuidAction[i] = new StringAction(this, "SelectedIDMeanExpressionsDataset " + QString::number(i));
-        initAction(_meanExpressionDatasetGuidAction[i]);
+        publishAndSerializeAction(_meanExpressionDatasetGuidAction[i]);
         
         QString datasetName = guiName + QString("::") + actionName;
 
@@ -335,8 +406,11 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     {
         QString actionName = "DE_ExpressionsDataset " + QString::number(i);
         _DE_StatisticsDatasetGuidAction[i] = new StringAction(this, "DE_StatisticsDataset " + QString::number(i));
-        initAction(_DE_StatisticsDatasetGuidAction[i]);
+        publishAndSerializeAction(_DE_StatisticsDatasetGuidAction[i]);
     }
+
+
+    connect(&_configurationOptionsAction, &VariantAction::variantChanged, this, &ClusterDifferentialExpressionPlugin::configurationSettingChanged);
 }
 
 
@@ -386,7 +460,7 @@ void ClusterDifferentialExpressionPlugin::init()
             {
                 dropRegions << new gui::DropWidget::DropRegion(this, "First Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
                     
-                    _dropWidget->setShowDropIndicator(false);
+                   // _dropWidget->setShowDropIndicator(false);
                     getDataset(0) = candidateDataset;
                     getDataset(1) = candidateDataset;
                     });
@@ -395,14 +469,14 @@ void ClusterDifferentialExpressionPlugin::init()
             {
                 dropRegions << new gui::DropWidget::DropRegion(this, " First Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
                 
-                    _dropWidget->setShowDropIndicator(false);
+                  //  _dropWidget->setShowDropIndicator(false);
                     getDataset(0) = candidateDataset;
                     });
 
                 dropRegions << new gui::DropWidget::DropRegion(this, " Second Clusters Dataset", description, "th-large", true, [this, candidateDataset]() {
                     
                    
-                    _dropWidget->setShowDropIndicator(false);
+                  //  _dropWidget->setShowDropIndicator(false);
                     getDataset(1) = candidateDataset;
                     });
 
@@ -471,24 +545,51 @@ void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& vari
     {
         for (auto action : _serializedActions)
         {
-            action->fromParentVariantMap(variantMap);
+            if(variantMap.contains(action->getSerializationName()))
+				action->fromParentVariantMap(variantMap);
         }
     }
+
+    /*
+    if(version > 1)
+    {
+        QVariantMap propertiesMap = variantMap.value("#Properties", QVariantMap()).toMap();
+        if(!propertiesMap.isEmpty())
+        {
+            auto found = propertiesMap.constFind("header");
+            if(found != propertiesMap.constEnd())
+            {
+
+                _headerState = found.value().toByteArray();
+            }
+            
+        }
+    }
+    */
+    
 }
 
 QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
 {
     QVariantMap variantMap = ViewPlugin::toVariantMap();
-    variantMap["ClusterDifferentialExpressionPluginVersion"] = 1;
+    variantMap["ClusterDifferentialExpressionPluginVersion"] = 2;
     for(auto action : _serializedActions)
     {
+        assert(action->getSerializationName()!="#Properties");
         action->insertIntoVariantMap(variantMap);
     }
+    /*
+    // properties map
+    QVariantMap propertiesMap;
+    propertiesMap["header"] = _differentialExpressionWidget->getTableView()->horizontalHeader()->saveState();
+    variantMap["#Properties"] = propertiesMap;
+    */
     return variantMap;
+    
 }
 
 
-void ClusterDifferentialExpressionPlugin::initAction(WidgetAction* w)
+void ClusterDifferentialExpressionPlugin::publishAndSerializeAction(WidgetAction* w)
 {
     assert(w != nullptr);
     if(w==nullptr)
@@ -621,6 +722,61 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
     createMeanExpressionDataset(1, index);
     createMeanExpressionDataset(2, index);
 
+    QVariantMap configurationCalls;
+    QVariantMap TableViewCalls;
+    QVariantMap TableViewClusterSelectionCalls;
+    {
+        QVariantList args;
+        args << int(1) << int(990);
+        TableViewCalls["SLOT_setColumnWidth"] = args;
+    }
+    {
+        QVariantList args2;
+        args2 << 1;
+        TableViewCalls["hideColumn"] = args2;
+    }
+
+
+    {
+        QVariantList args;
+        args << bool(true);
+        TableViewClusterSelectionCalls["setDisabled"] = args;
+        TableViewClusterSelectionCalls["update"] = QVariantList();
+
+    }
+
+    configurationCalls["TableView"] = TableViewCalls;
+    configurationCalls["TableViewClusterSelection1"] = TableViewClusterSelectionCalls;
+    _configurationOptionsAction.setVariant(configurationCalls);
+}
+
+namespace local
+{
+    
+}
+
+void ClusterDifferentialExpressionPlugin::configurationSettingChanged(const QVariant& setting)
+{
+	if(setting.canConvert(QMetaType::QVariantMap))
+	{
+        QVariantMap map = setting.toMap();
+
+        for(auto item = map.constBegin(); item != map.constEnd(); ++item)
+        {
+            if (item->canConvert<QVariantMap>())
+            {
+                QWidget* widget = _differentialExpressionWidget->getConfigurableWidget(item.key());
+                if(widget)
+                {
+                    local::callMethods(widget, item.value().value<QVariantMap>());
+                }
+            }
+	        
+        }
+        //reset
+        _configurationOptionsAction.setVariant(QVariant());
+	}
+    
 }
 
 
@@ -881,7 +1037,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             return;
     }
     
-
+    /*
     static bool demo = false;
     if (demo)
     {
@@ -912,6 +1068,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         emptColumn[""] = QVariantMap();
         _postInfoVariantAction.setVariant(emptColumn);
     }
+    */
     
 
     std::vector<std::vector<double>> meanExpressionValues(NrOfDatasets);
@@ -1021,6 +1178,17 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     _differentialExpressionWidget->setNrOfExtraColumns(columnOffset);
     
     _differentialExpressionWidget->setData(_tableItemModel);
+
+    /*
+    if (!_headerState.isEmpty())
+    {
+        bool res = _differentialExpressionWidget->getTableView()->horizontalHeader()->restoreState(_headerState);
+        if(res)
+			_headerState.clear();
+
+    }
+    */
+    
 }
 
 QIcon ClusterDifferentialExpressionFactory::getIcon(const QColor& color /*= Qt::black*/) const
@@ -1044,8 +1212,7 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
 {
 
     PluginTriggerActions pluginTriggerActions;
-
-    
+   
     /*
      * temporary functions to help create data for simian viewer. won't work with normal HDPS core.
      *

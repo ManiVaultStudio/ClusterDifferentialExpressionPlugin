@@ -82,7 +82,7 @@ void WordWrapHeaderView::setExtraLeftSideColumns(std::size_t offset)
     }
     _widgets = newMap;
     _columnOffset = offset;
-    emit headerDataChanged(Qt::Horizontal, 0, count());
+	headerDataChanged(Qt::Horizontal, 0, count());
 }
 
 
