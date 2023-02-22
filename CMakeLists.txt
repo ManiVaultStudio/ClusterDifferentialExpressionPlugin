@@ -4,8 +4,6 @@ set(PROJECT "ClusterDifferentialExpressionPlugin")
 
 PROJECT(${PROJECT})
 
-
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -26,11 +24,10 @@ macro(set_omp_project_link_libraries TARGET)
 	endif()
 endmacro()
 
-if(OpenMP_CXX_FOUND)
+find_package(OpenMP)
+if(OpenMP)
     target_link_libraries(${PROJECT} OpenMP::OpenMP_CXX)
 endif()
-
-find_package(OpenMP)
 
 if (OpenMP_CXX_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -101,8 +98,6 @@ include_directories("$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/include/")
 add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
 
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
-
-
 
 target_link_libraries(${PROJECT} Qt6::Widgets)
 target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
