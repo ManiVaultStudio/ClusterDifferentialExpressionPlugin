@@ -111,7 +111,18 @@ set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_COMMAND $<IF:$<CONFIG:DEBUG>
 
 set_target_properties(${PROJECT} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=%PATH%;${Qt6_DIR}/../../../bin;$<$<CONFIG:DEBUG>:$ENV{HDPS_INSTALL_DIR}/debug>; $<$<CONFIG:RELEASE>:$ENV{HDPS_INSTALL_DIR}/release>")
 
+
 if(APPLE)
+    set(OpenMP_C "${CMAKE_C_COMPILER}")
+    set(OpenMP_C_FLAGS "-Xclang -fopenmp -I/usr/local/Cellar/libomp/14.0.0/include")
+    set(OpenMP_C_LIB_NAMES "libomp")
+    set(OpenMP_libomp_LIBRARY "omp")
+    set(OpenMP_CXX "${CMAKE_CXX_COMPILER}")
+    set(OpenMP_CXX_FLAGS "-Xclang -fopenmp -I/usr/local/Cellar/libomp/14.0.0/include")
+    set(OpenMP_CXX_LIB_NAMES "libomp")
+    set(OpenMP_libomp_LIBRARY "omp")
+    link_directories("/usr/local/Cellar/libomp/14.0.0/lib/")
+    target_link_directories(${PROJECT_NAME} PRIVATE "/usr/local/Cellar/libomp/14.0.0/lib/")
     MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
     target_link_libraries("${PROJECT}" debug "/usr/local/lib/libomp.dylib")
     target_link_libraries("${PROJECT}" optimized "/usr/local/lib/libomp.dylib")        
