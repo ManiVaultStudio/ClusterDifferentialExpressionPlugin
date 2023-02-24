@@ -26,15 +26,15 @@
 #include <iostream>
 #include <cassert>
 
-#ifdef __APPLE__
-#include "/usr/local/Cellar/libomp/14.0.0/include/omp.h"
-//#include </opt/homebrew/opt/libomp/include/omp.h>
-#else
+//#ifdef __APPLE__
+//#include "omp.h"
+////#include </opt/homebrew/opt/libomp/include/omp.h>
+//#else
+//#include <omp.h>
+//#endif
+
+
 #include <omp.h>
-#endif
-
-
-//include <omp.h>
 #include <QHeaderView>
 
 #include "TableView.h"
