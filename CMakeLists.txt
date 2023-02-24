@@ -19,6 +19,16 @@ endif(MSVC)
 
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
 
+#OpenMP
+find_package(OpenMP REQUIRED)
+
+if(OpenMP_CXX_FOUND)
+message (STATUS "OpenMP Found ${OpenMP_CXX_LIB_NAMES}")
+MESSAGE( STATUS "OpenMP Include Dirs =" ${OpenMP_CXX_INCLUDE_DIRS})
+else(OpenMP_CXX_FOUND)
+message(WARNING, "OpenMP not found!") 
+endif(OpenMP_CXX_FOUND)
+
 set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
     src/ClusterDifferentialExpressionPlugin.cpp
@@ -82,6 +92,14 @@ target_link_libraries(${PROJECT} Qt6::Widgets)
 target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
 
 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT}  OpenMP::OpenMP_CXX)
+    target_compile_options(${PROJECT} PRIVATE "${OpenMP_CXX_FLAGS}")
+    target_include_directories(${PROJECT} PRIVATE ${OpenMP_CXX_INCLUDE_DIRS})
+    MESSAGE( STATUS "OpenMP Include Dirs =" ${OpenMP_CXX_INCLUDE_DIRS})
+endif()
+
+
 if(MSVC)
 	set(LIB_SUFFIX "${CMAKE_STATIC_LIBRARY_SUFFIX}")
 else()
@@ -112,20 +130,20 @@ set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_COMMAND $<IF:$<CONFIG:DEBUG>
 set_target_properties(${PROJECT} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=%PATH%;${Qt6_DIR}/../../../bin;$<$<CONFIG:DEBUG>:$ENV{HDPS_INSTALL_DIR}/debug>; $<$<CONFIG:RELEASE>:$ENV{HDPS_INSTALL_DIR}/release>")
 
 
-if(APPLE)
-    MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
-    target_link_libraries(${PROJECT}  debug "/usr/local/lib/libomp.dylib")
-    target_link_libraries(${PROJECT}  optimized "/usr/local/lib/libomp.dylib")        
-endif()
+#if(APPLE)
+#    MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
+#    target_link_libraries(${PROJECT}  debug "/usr/local/lib/libomp.dylib")
+#    target_link_libraries(${PROJECT}  optimized "/usr/local/lib/libomp.dylib")        
+#endif()
 
-find_package(OpenMP)
+#find_package(OpenMP)
 
-if(OpenMP_CXX_FOUND)
-    message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
-    target_link_libraries(${PROJECT}  OpenMP::OpenMP_CXX)
-else(OpenMP_CXX_FOUND)
-    message(WARNING "OpenMP not found!") 
-endif()
+#if(OpenMP_CXX_FOUND)
+#    message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
+#    target_link_libraries(${PROJECT}  OpenMP::OpenMP_CXX)
+#else(OpenMP_CXX_FOUND)
+#    message(WARNING "OpenMP not found!") 
+#endif()
 
  macro(print_all_variables)
     message(STATUS "print_all_variables------------------------------------------{")

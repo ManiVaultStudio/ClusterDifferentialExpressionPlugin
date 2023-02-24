@@ -66,9 +66,7 @@ public slots:
     void resizeEvent(QResizeEvent* event) override;
 
 public:
-    
-
-    void setDatasetTooltip(qsizetype index, const QString& label);
+   
     
     TableView *getTableView()
     {

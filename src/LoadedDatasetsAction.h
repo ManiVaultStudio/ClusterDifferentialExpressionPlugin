@@ -69,6 +69,8 @@ public:
 
     QWidget* getDatasetNameWidget(std::size_t index, QWidget* parent, const std::int32_t& flags);
 
+    StringAction& getDatasetNameAction(std::size_t index) const;
+
     qsizetype size() const;
 
 protected:

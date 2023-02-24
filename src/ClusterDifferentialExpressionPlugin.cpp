@@ -642,7 +642,6 @@ void ClusterDifferentialExpressionPlugin::updateWindowTitle()
 void ClusterDifferentialExpressionPlugin::datasetChanged(qsizetype index, const hdps::Dataset<hdps::DatasetImpl>& dataset)
 {
     _tableItemModel->invalidate();
-    _differentialExpressionWidget->setDatasetTooltip(index, local::getFullGuiName(dataset));
     updateWindowTitle();
 
     _identicalDimensions = false;
@@ -728,7 +727,18 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
     
 	_commandAction.setVariant(commands);
 	*/
+    /*
+    QVariantList commands;
+    {
+        QVariantList command;
+        Qt::SortOrder sortOrder = Qt::AscendingOrder;
+        QVariant sortOrderVariant(QMetaType::fromType<Qt::SortOrder>(), &sortOrder);
+        command << QString("TableView") << QString("sortByColumn") << int(3) << sortOrderVariant;
+        commands.push_back(command);
 
+    }
+    _commandAction.setVariant(commands);
+    */
 }
 
 namespace local
@@ -1076,6 +1086,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         if (_loadedDatasetsAction->getClusterSelection(i).size() == 0)
             return;
     }
+
     
     /*
     static bool demo = false;

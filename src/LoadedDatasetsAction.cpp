@@ -23,6 +23,7 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
 
             datasetPickerAction.setText(datasetGuiName);
             datasetNameStringAction.setString(datasetGuiName);
+            datasetNameStringAction.setText(datasetGuiName);
         }
 
         {
@@ -49,8 +50,7 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
                 clusterOptionsAction.setSerializationName(clusterOptionsActionName);
             }
         }
-        
-        
+        QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
         
         
         
@@ -197,6 +197,10 @@ QWidget* LoadedDatasetsAction::getDatasetNameWidget(std::size_t index, QWidget* 
     return _data.at(index)->datasetNameStringAction.createWidget(parent, flags);
 }
 
+StringAction& LoadedDatasetsAction::getDatasetNameAction(std::size_t index) const
+{
+    return _data.at(index)->datasetNameStringAction;
+}
 
 
 qsizetype LoadedDatasetsAction::size() const
