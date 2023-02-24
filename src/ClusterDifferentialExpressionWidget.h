@@ -68,7 +68,7 @@ public slots:
 public:
     
 
-    void setDatasetTooltip(qsizetype index, const QString& label);
+    
     
     TableView *getTableView()
     {

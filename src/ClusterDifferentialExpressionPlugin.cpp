@@ -642,7 +642,7 @@ void ClusterDifferentialExpressionPlugin::updateWindowTitle()
 void ClusterDifferentialExpressionPlugin::datasetChanged(qsizetype index, const hdps::Dataset<hdps::DatasetImpl>& dataset)
 {
     _tableItemModel->invalidate();
-    _differentialExpressionWidget->setDatasetTooltip(index, local::getFullGuiName(dataset));
+    
     updateWindowTitle();
 
     _identicalDimensions = false;

@@ -84,11 +84,6 @@ ClusterDifferentialExpressionWidget::ClusterDifferentialExpressionWidget(Cluster
 }
 
 
-void ClusterDifferentialExpressionWidget::setDatasetTooltip(qsizetype index, const QString& label)
-{
-    if (index < _datasetLabels.size())
-        _datasetLabels[index]->setToolTip(label);
-}
 
 void ClusterDifferentialExpressionWidget::initTableViewHeader()
 {

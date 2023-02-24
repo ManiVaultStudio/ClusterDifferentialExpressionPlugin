@@ -23,6 +23,7 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
 
             datasetPickerAction.setText(datasetGuiName);
             datasetNameStringAction.setString(datasetGuiName);
+            datasetNameStringAction.setText(datasetGuiName);
         }
 
         {
@@ -49,8 +50,7 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
                 clusterOptionsAction.setSerializationName(clusterOptionsActionName);
             }
         }
-        
-        
+        QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
         
         
         
