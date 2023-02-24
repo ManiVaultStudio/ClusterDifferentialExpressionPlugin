@@ -123,7 +123,7 @@ find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
     target_link_libraries(${PROJECT}  OpenMP::OpenMP_CXX)
-else(OpenMP_FOUND)
+else(OpenMP_CXX_FOUND)
     message(WARNING "OpenMP not found!") 
 endif()
 
