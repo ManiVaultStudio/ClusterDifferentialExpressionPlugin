@@ -1,5 +1,13 @@
 #include "ProgressManager.h"
+#ifdef __APPLE__
+//#include “/usr/local/opt/libomp/include/omp.h”
+#include </opt/homebrew/opt/libomp/include/omp.h>
+#else
 #include <omp.h>
+#endif
+
+
+//include <omp.h>
 #include <QProgressDialog>
 #include <iostream>
 #include <iomanip>
