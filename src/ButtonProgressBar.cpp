@@ -8,6 +8,12 @@
 
 #include "QTableItemModel.h"
 
+class InvalidProgressBarException : public std::runtime_error {
+public:
+    explicit InvalidProgressBarException(const std::string& message) : std::runtime_error(message) {}
+};
+
+
 ButtonProgressBar::ButtonProgressBar(QWidget *parent, QWidget* button, QWidget* progressBar)
 	:QWidget(parent)
 	, _button(nullptr)
@@ -38,7 +44,8 @@ ButtonProgressBar::ButtonProgressBar(QWidget *parent, QWidget* button, QWidget* 
             else
             {
                 delete newLayout;
-                throw std::exception("button is not a type of QPushButton and does not contain a QPushButton");
+                //throw std::exception("button is not a type of QPushButton and does not contain a QPushButton");
+                throw InvalidProgressBarException("progressBar is not a type of QProgressBar and does not contain a QProgressBar");
             }
         }
     }
@@ -62,7 +69,8 @@ ButtonProgressBar::ButtonProgressBar(QWidget *parent, QWidget* button, QWidget* 
             else
             {
                 delete newLayout;
-                throw std::exception("progressBar is not a type of QProgressBar and does not contain a QProgressBar");
+                //throw std::exception("progressBar is not a type of QProgressBar and does not contain a QProgressBar");
+                throw InvalidProgressBarException("progressBar is not a type of QProgressBar and does not contain a QProgressBar");
             }
             
         }
