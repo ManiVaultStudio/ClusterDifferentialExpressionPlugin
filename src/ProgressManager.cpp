@@ -1,6 +1,6 @@
 #include "ProgressManager.h"
 #ifdef __APPLE__
-#include "/usr/local/opt/libomp/include/omp.h"
+#include "/usr/local/Cellar/libomp/14.0.0/include/omp.h"
 //#include </opt/homebrew/opt/libomp/include/omp.h>
 #else
 #include <omp.h>
