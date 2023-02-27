@@ -189,10 +189,10 @@ private:
 
 class ClusterDifferentialExpressionFactory : public ViewPluginFactory
 {
-    Q_INTERFACES(hdps::plugin::ViewPluginFactory hdps::plugin::PluginFactory)
         Q_OBJECT
         Q_PLUGIN_METADATA(IID   "nl.BioVault.ClusterDifferentialExpressionPlugin"
             FILE  "ClusterDifferentialExpressionPlugin.json")
+        Q_INTERFACES(hdps::plugin::ViewPluginFactory hdps::plugin::PluginFactory)
 
 public:
     ClusterDifferentialExpressionFactory() {}

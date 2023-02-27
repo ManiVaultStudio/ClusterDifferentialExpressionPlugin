@@ -78,8 +78,8 @@ add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
 
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
-target_link_libraries(${PROJECT} Qt6::Widgets)
-target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
+target_link_libraries(${PROJECT} PRIVATE Qt6::Widgets)
+target_link_libraries(${PROJECT} PRIVATE Qt6::WebEngineWidgets)
 
 
 if(MSVC)
@@ -88,9 +88,9 @@ else()
 	set(LIB_SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 endif()
 
-target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}HDPS_Public${LIB_SUFFIX}")
-target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}PointData${LIB_SUFFIX}")
-target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}ClusterData${LIB_SUFFIX}")
+target_link_libraries(${PROJECT} PRIVATE "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}HDPS_Public${LIB_SUFFIX}")
+target_link_libraries(${PROJECT} PRIVATE "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}PointData${LIB_SUFFIX}")
+target_link_libraries(${PROJECT} PRIVATE "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}ClusterData${LIB_SUFFIX}")
 
 install(TARGETS ${PROJECT}
    RUNTIME DESTINATION Plugins COMPONENT SHAREDLIB
@@ -111,20 +111,29 @@ set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_COMMAND $<IF:$<CONFIG:DEBUG>
 
 set_target_properties(${PROJECT} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=%PATH%;${Qt6_DIR}/../../../bin;$<$<CONFIG:DEBUG>:$ENV{HDPS_INSTALL_DIR}/debug>; $<$<CONFIG:RELEASE>:$ENV{HDPS_INSTALL_DIR}/release>")
 
-
 if(APPLE)
+    set(OpenMP_C "${CMAKE_C_COMPILER}")
+    set(OpenMP_C_FLAGS "-Xclang -fopenmp -I/usr/local/include")
+    set(OpenMP_C_LIB_NAMES "libomp")
+    set(OpenMP_libomp_LIBRARY "omp")
+    set(OpenMP_CXX "${CMAKE_CXX_COMPILER}")
+    set(OpenMP_CXX_FLAGS "-Xclang -fopenmp -I/usr/local/include")
+    set(OpenMP_CXX_LIB_NAMES "libomp")
+    set(OpenMP_libomp_LIBRARY "omp")
+    link_directories("/usr/local/lib/")
+    target_link_directories(${PROJECT} PRIVATE "/usr/local/lib/")
     MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
-    target_link_libraries(${PROJECT}  debug "/usr/local/lib/libomp.dylib")
-    target_link_libraries(${PROJECT}  optimized "/usr/local/lib/libomp.dylib")        
+    target_link_libraries("${PROJECT}" PUBLIC debug "/usr/local/lib/libomp.dylib")
+    target_link_libraries("${PROJECT}" PUBLIC optimized "/usr/local/lib/libomp.dylib")       
 endif()
 
-find_package(OpenMP)
-
-if(OpenMP_CXX_FOUND)
-    message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
-    target_link_libraries(${PROJECT}  OpenMP::OpenMP_CXX)
-else(OpenMP_CXX_FOUND)
-    message(WARNING "OpenMP not found!") 
+find_package(OpenMP REQUIRED)
+if(OpenMP_FOUND)
+    message(STATUS "OpenMP found")
+    target_link_libraries(${PROJECT} PUBLIC OpenMP::OpenMP_CXX)
+    target_compile_options(${PROJECT} PRIVATE ${OpenMP_CXX_FLAGS})
+else()
+    message(WARNING "OpenMP not found!")
 endif()
 
  macro(print_all_variables)
