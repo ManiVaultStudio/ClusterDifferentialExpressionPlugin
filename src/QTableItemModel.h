@@ -52,8 +52,12 @@ public:
 
 	
 	void startModelBuilding(qsizetype columns, qsizetype rows);
+
 	void endModelBuilding();
-	void setHorizontalHeader(int index, const QString &value);
+	void setHorizontalHeader(int index, QVariant &value);
+	void setHorizontalHeader(int index, const QString& value);
+	void setHorizontalHeader(int index, QWidget *widget);
+	
 
 	void copyToClipboard() const;
 
@@ -69,7 +73,8 @@ signals:
 private:
 	
 	std::vector < Row > m_data;
-	std::vector < QString> m_horizontalHeader;
+	std::vector < QVariant> m_horizontalHeader;
+	std::vector < QWidget*> m_horizontalHeaderWidgets;
 	bool m_checkable;
 	std::size_t m_columns;
 	Status m_status;

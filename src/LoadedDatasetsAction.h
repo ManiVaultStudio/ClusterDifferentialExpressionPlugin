@@ -13,6 +13,7 @@ class Clusters;
 
 class LoadedDatasetsAction : public PluginAction
 {
+    Q_OBJECT
 protected:
 
     struct Data
@@ -71,7 +72,12 @@ public:
 
     qsizetype size() const;
 
+public slots:
+    void addDataset();
+signals:
+    void datasetAdded(int index);
+
 protected:
-    QVector<QSharedPointer<Data>> _data;
+    std::vector<QSharedPointer<Data>> _data;
     friend class Widget;
 };

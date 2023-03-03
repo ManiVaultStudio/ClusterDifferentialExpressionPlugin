@@ -67,10 +67,10 @@ public:
 
     QMenu* getContextMenu();
 
-    void addAction(QSharedPointer<WidgetAction> action, qsizetype priority=0);
+    void addAction(WidgetAction &action, qsizetype priority=0);
 
 protected:
-    QVector<QSharedPointer<WidgetAction>>   _actions;
+    QVector<WidgetAction*>   _actions;
     QVector<qsizetype> _priorities;
     
 };

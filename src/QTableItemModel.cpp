@@ -221,11 +221,25 @@ void QTableItemModel::endModelBuilding()
 	endResetModel();
 }
 
-void QTableItemModel::setHorizontalHeader(int index, const QString &value)
+void QTableItemModel::setHorizontalHeader(int index, QVariant &value)
 {
 	if (index >= m_horizontalHeader.size())
 		m_horizontalHeader.resize(index);
 	m_horizontalHeader[index] = value;
+}
+
+void QTableItemModel::setHorizontalHeader(int index, const QString& value)
+{
+	if (index >= m_horizontalHeader.size())
+		m_horizontalHeader.resize(index);
+	m_horizontalHeader[index] = value;
+}
+
+void QTableItemModel::setHorizontalHeader(int index, QWidget* widget)
+{
+	if (index >= m_horizontalHeaderWidgets.size())
+		m_horizontalHeaderWidgets.resize(index);
+	m_horizontalHeaderWidgets[index] = widget;
 }
 
 void QTableItemModel::copyToClipboard() const
@@ -236,13 +250,18 @@ void QTableItemModel::copyToClipboard() const
 	{
 		if (c != 0)
 			result += "\t";
-		QString header = m_horizontalHeader[c];
-		if (header != "_hidden_")
+		QVariant headerVariant  = m_horizontalHeader[c];
+		if (headerVariant.metaType() == QMetaType::fromType<QString>())
 		{
-			header.replace("\n", "_");
-			header.replace(" ", "_");
-			result += quote + header + quote;
+			QString header = headerVariant.toString();
+			if (header != "_hidden_")
+			{
+				header.replace("\n", "_");
+				header.replace(" ", "_");
+				result += quote + header + quote;
+			}
 		}
+		
 	}
 	result += "\n";
 
@@ -251,11 +270,16 @@ void QTableItemModel::copyToClipboard() const
 	{
 		for (std::size_t c = 0; c < m_columns; ++c)
 		{
-			if (m_horizontalHeader[c] != "_hidden_")
+			if (m_horizontalHeader[c].metaType() == QMetaType::fromType<QString>())
 			{
-				if (c != 0)
-					result += "\t";
-				result += m_data[r].data[c].toString();
+				QString header = m_horizontalHeader[c].toString();
+
+				if (header != "_hidden_")
+				{
+					if (c != 0)
+						result += "\t";
+					result += m_data[r].data[c].toString();
+				}
 			}
 		}
 		result += "\n";

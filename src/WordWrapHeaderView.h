@@ -5,13 +5,15 @@ class WordWrapHeaderView : public QHeaderView
 {
 	Q_OBJECT
 public:
-	WordWrapHeaderView(Qt::Orientation orientation, QWidget* parent = nullptr);
+	WordWrapHeaderView(Qt::Orientation orientation, QWidget* parent = nullptr, bool widgetSupport=true);
 	virtual ~WordWrapHeaderView();
 	void enableWidgetSupport(bool value);
 	void setWidget(unsigned, QWidget*);
 	void clearWidgets();
 	void setExtraLeftSideColumns(std::size_t offset);
 private:
+	QWidget* getWidget(int logicalIndex) const;
+	QWidget* getWidget(int logicalIndex);
 	void fixWidgetPosition(int logicalIndex);
 
 public:
@@ -27,6 +29,6 @@ protected:
 	virtual void updateGeometries() override;
 private:
 	bool _widgetSupportEnabled;
-	QMap<unsigned, QWidget*> _widgets;
+//	QMap<unsigned, QWidget*> _widgets;
 	std::size_t _columnOffset;
 };

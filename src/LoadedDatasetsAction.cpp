@@ -134,9 +134,12 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
         auto found = variantMap.find("NrOfDatasets");
         if (found == variantMap.cend())
             return;
-
-        _data.resize(found->value<qsizetype>());
-        for (auto i = 0; i < _data.size(); ++i)
+        const qsizetype NrOfDatasets = found->value<qsizetype>();
+        
+        const qsizetype datasetsToBeAdded = NrOfDatasets - _data.size();
+        for (qsizetype i = 0; i < datasetsToBeAdded; ++i)
+            addDataset();
+        for (auto i = 0; i < NrOfDatasets; ++i)
         {
             QString key = "Data" + QString::number(i);
             auto found = variantMap.find(key);
@@ -204,6 +207,14 @@ qsizetype LoadedDatasetsAction::size() const
     return _data.size();
 }
 
+void LoadedDatasetsAction::addDataset()
+{
+    int currentSize = _data.size();
+    _data.resize(currentSize + 1);
+    _data[currentSize].reset(new Data(this, currentSize));
+    emit datasetAdded(currentSize);
+}
+
 
 LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* currentDatasetAction, const std::int32_t& widgetFlags) :
     WidgetActionWidget(parent, currentDatasetAction)
@@ -214,14 +225,29 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
         setFixedWidth(600);
         auto layout = new QGridLayout();
 
+        QPushButton* addButton = new QPushButton("+");
+        layout->addWidget(addButton,0,0);
+        //connect(addButton, &QPushButton::pressed, currentDatasetAction, &LoadedDatasetsAction::addDataset);
+        connect(addButton, &QPushButton::pressed, this,[this,layout,currentDatasetAction]()->void
+        {
+                currentDatasetAction->addDataset();
+                int i = currentDatasetAction->size()-1;
+                layout->addWidget(currentDatasetAction->_data[i]->datasetPickerAction.createLabelWidget(this), i + 1, 0);
+                layout->addWidget(currentDatasetAction->_data[i]->datasetPickerAction.createWidget(this), i + 1, 1);
+                layout->addWidget(currentDatasetAction->_data[i]->clusterOptionsAction.createLabelWidget(this), i + 1, 2);
+                layout->addWidget(currentDatasetAction->_data[i]->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox | OptionsAction::Selection), i + 1, 3);
+        });
+
         for(qsizetype i = 0; i < currentDatasetAction->_data.size(); ++i)
         {
-            layout->addWidget(currentDatasetAction->_data[i]->datasetPickerAction.createLabelWidget(this), i, 0);
-            layout->addWidget(currentDatasetAction->_data[i]->datasetPickerAction.createWidget(this), i, 1);
-            layout->addWidget(currentDatasetAction->_data[i]->clusterOptionsAction.createLabelWidget(this), i, 2);
-            layout->addWidget(currentDatasetAction->_data[i]->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox | OptionsAction::Selection), i, 3);
+            layout->addWidget(currentDatasetAction->_data[i]->datasetPickerAction.createLabelWidget(this), i+1, 0);
+            layout->addWidget(currentDatasetAction->_data[i]->datasetPickerAction.createWidget(this), i+1, 1);
+            layout->addWidget(currentDatasetAction->_data[i]->clusterOptionsAction.createLabelWidget(this), i+1, 2);
+            layout->addWidget(currentDatasetAction->_data[i]->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox | OptionsAction::Selection), i+1, 3);
         }
+
        
+        
 
         setPopupLayout(layout);
             

@@ -52,9 +52,9 @@ QMenu* SettingsAction::getContextMenu()
     return menu;
 }
 
-void SettingsAction::addAction(QSharedPointer<WidgetAction> action, qsizetype priority)
+void SettingsAction::addAction(WidgetAction &action, qsizetype priority)
 {
-    _actions.push_back(action);
+    _actions.push_back(&action);
     _priorities.push_back(priority);
 }
 
@@ -74,7 +74,7 @@ SettingsAction::Widget::Widget(QWidget* parent, SettingsAction* settingsAction) 
 
     for(qsizetype i=0; i < settingsAction->_actions.size(); ++i)
     {
-        addStateWidget(settingsAction->_actions[i].get(), settingsAction->_priorities[i]);
+        addStateWidget(settingsAction->_actions[i], settingsAction->_priorities[i]);
     }
     //addStateWidget(&settingsAction->_currentDatasetAction, 0);
   
