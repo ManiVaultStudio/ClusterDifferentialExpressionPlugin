@@ -58,56 +58,6 @@ void WordWrapHeaderView::enableWidgetSupport(bool enabled)
     }
 }
 
-void WordWrapHeaderView::setWidget(unsigned i, QWidget *w)
-{
-   // delete w;
-    /*
-    w->setParent(this);
-    w->raise();
-    auto found = _widgets.find(i);
-    if (found != _widgets.end())
-    {
-        delete (*found);
-        *found = w;
-    }
-    else
-        _widgets[i] = w;
-        */
-}
-
-
-void WordWrapHeaderView::setExtraLeftSideColumns(std::size_t offset)
-{
-    /*
-    long long offsetChange = offset - _columnOffset;
-    if (offsetChange == 0)
-        return;
-    QMap<unsigned, QWidget*> newMap;
-    for(QMap<unsigned, QWidget*>::iterator i=_widgets.begin(); i != _widgets.end(); ++i)
-    {
-        if (i.key() == 0)
-            newMap[0] = i.value();
-        else
-            newMap[i.key() + offsetChange] = i.value();
-    }
-    _widgets = newMap;
-    _columnOffset = offset;
-    */
-	headerDataChanged(Qt::Horizontal, 0, count());
-}
-
-
-void WordWrapHeaderView::clearWidgets()
-{
-    /*
-	for(auto w : _widgets)
-	{
-       
-        delete w;
-	}
-    _widgets.clear();
-    */
-}
 
 QWidget* WordWrapHeaderView::getWidget(int logicalIndex) const
 {
@@ -278,6 +228,8 @@ QSize WordWrapHeaderView::sectionSizeFromContents(int logicalIndex) const
         int maxWidth = this->sectionSize(logicalIndex);
         int height = foundWidget->height();
         QSize result(maxWidth+2, height+5);
+
+        //qDebug() << "sectionSizeFromContents" << logicalIndex << "\t" << result;
         return result;
 	    
     }
@@ -307,19 +259,23 @@ QSize WordWrapHeaderView::sectionSizeFromContents(int logicalIndex) const
             if ((maxWidth - (rect.right() + correction)) <= 0)
             {
 
-
-                rect.setHeight(rect.height() + metrics.height());
-
+                auto newHeight = rect.height() + metrics.height();
+              //  qDebug() << "sectionSizeFromContents " << logicalIndex << "\t corrected height " << newHeight;
+                rect.setHeight(newHeight);
             }
             rect.setHeight(rect.height() + metrics.capHeight());// auto-correct the height a bit for letters like 'p' so the bottom part doesn't get chopped off
 
 
+            auto result = rect.size() + textMarginBuffer;
+            //qDebug() << "sectionSizeFromContents" << logicalIndex << "\t" << result;
 
-            return rect.size() + textMarginBuffer;
+            return result;
         }
         else
         {
-            return QHeaderView::sectionSizeFromContents(logicalIndex);
+            auto result = QHeaderView::sectionSizeFromContents(logicalIndex);
+            //qDebug() << "sectionSizeFromContents" << logicalIndex << "\t" << result;
+            return result;
         }
     }
     

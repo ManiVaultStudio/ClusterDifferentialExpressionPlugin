@@ -8,9 +8,7 @@ public:
 	WordWrapHeaderView(Qt::Orientation orientation, QWidget* parent = nullptr, bool widgetSupport=true);
 	virtual ~WordWrapHeaderView();
 	void enableWidgetSupport(bool value);
-	void setWidget(unsigned, QWidget*);
-	void clearWidgets();
-	void setExtraLeftSideColumns(std::size_t offset);
+	
 private:
 	QWidget* getWidget(int logicalIndex) const;
 	QWidget* getWidget(int logicalIndex);

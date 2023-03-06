@@ -1,7 +1,7 @@
 #include "ClusterDifferentialExpressionPlugin.h"
 
 // CDE includes
-#include "ClusterDifferentialExpressionWidget.h"
+
 #include "SettingsAction.h"
 #include "ProgressManager.h"
 #include "QTableItemModel.h"
@@ -1276,11 +1276,13 @@ void ClusterDifferentialExpressionPlugin::computeDE()
 			_DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset.getDatasetGuid());
     }
     
-    enum{ID, MEAN_DE, MEANS_OFFSET,  COLUMN_COUNT};
+    enum{ID, MEAN_DE};
     auto preInfoMap = _preInfoVariantAction.getVariant().toMap();
     auto postInfoMap = _postInfoVariantAction.getVariant().toMap();
     qsizetype columnOffset =  preInfoMap.size();
-    std::size_t totalColumnCount = columnOffset + MEANS_OFFSET + NrOfDatasets + postInfoMap.size();
+    std::size_t totalColumnCount = columnOffset + 2 + NrOfDatasets + postInfoMap.size();
+    if (NrOfDatasets > 2)
+        totalColumnCount += 2; // for min and max DE
 
  
     if(!_identicalDimensions)
@@ -1323,21 +1325,36 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         }
 
         double mean_DE = 0;
-        std::size_t counter=0;
-        for (qsizetype datasetIndex1 = 0; datasetIndex1 < NrOfDatasets; ++datasetIndex1)
+        double min_DE = std::numeric_limits<double >::max();
+        double max_DE = std::numeric_limits<double>::lowest();
+        if(NrOfDatasets > 2)
         {
-            double mean1 = mean[datasetIndex1];
-            if(!isnan(mean1))
+            std::size_t counter = 0;
+            for (qsizetype datasetIndex1 = 0; datasetIndex1 < NrOfDatasets; ++datasetIndex1)
             {
-                for (qsizetype datasetIndex2 = (datasetIndex1 + 1); datasetIndex2 < NrOfDatasets; ++datasetIndex2)
+                double mean1 = mean[datasetIndex1];
+                if (!isnan(mean1))
                 {
-                    mean_DE += fabs(mean1 - mean[datasetIndex2]);
-                    ++counter;
+                    for (qsizetype datasetIndex2 = (datasetIndex1 + 1); datasetIndex2 < NrOfDatasets; ++datasetIndex2)
+                    {
+                        const double diffExp = fabs(mean1 - mean[datasetIndex2]);
+                        if (diffExp > max_DE)
+                            max_DE = diffExp;
+                        if (diffExp < min_DE)
+                            min_DE = diffExp;
+                        mean_DE += diffExp;
+                        ++counter;
+                    }
                 }
             }
+            mean_DE /= counter;
+        }
+        else
+        {
+            if(NrOfDatasets ==2)
+				mean_DE = mean[0] - mean[1]; // no fabs since we want to preserve the sign
         }
         
-        mean_DE /= counter;
 
         dataVector[ID] = dimensionName;
         std::size_t columnNr = 1;
@@ -1350,24 +1367,29 @@ void ClusterDifferentialExpressionPlugin::computeDE()
                 dataVector[columnNr] = found.value();
             }
         }
-        dataVector[columnOffset + MEAN_DE] = local::fround(mean_DE, 3);
+
+        dataVector[columnNr++] = local::fround(mean_DE, 3);
+        if(NrOfDatasets >2)
+        {
+            dataVector[columnNr++] = local::fround(min_DE, 3);
+            dataVector[columnNr++] = local::fround(max_DE, 3);
+        }
+       
         for (qsizetype datasetIndex = 0; datasetIndex < NrOfDatasets; ++datasetIndex)
         {
             double meanValue = mean[datasetIndex];
             if(isnan(meanValue))
             {
-                dataVector[columnOffset + MEANS_OFFSET + datasetIndex] = "N/A";
+                dataVector[columnNr++] = "N/A";
             }
             else
             {
-                dataVector[columnOffset + MEANS_OFFSET + datasetIndex] = local::fround(meanValue, 3);
+                dataVector[columnNr++] = local::fround(meanValue, 3);
             }
             
         }
-			
+		
         
-
-        columnNr = columnOffset + MEANS_OFFSET + NrOfDatasets;
         for (auto info = postInfoMap.cbegin(); info != postInfoMap.cend(); ++info, ++columnNr)
         {
             auto infoMap = info.value().toMap();
@@ -1393,7 +1415,18 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     {
         _tableItemModel->setHorizontalHeader(columnNr, i.key());
     }
-    _tableItemModel->setHorizontalHeader(columnOffset+MEAN_DE, "Mean Differential Expression");
+
+    int means_offset = MEAN_DE + 1;
+    if (NrOfDatasets > 2)
+    {
+        _tableItemModel->setHorizontalHeader(columnNr++, "Mean Differential Expression");
+        _tableItemModel->setHorizontalHeader(columnNr++, "Min Differential Expression");
+        _tableItemModel->setHorizontalHeader(columnNr++, "Max Differential Expression");
+    }
+    else
+        _tableItemModel->setHorizontalHeader(columnNr++, "Differential Expression");
+
+    
     for (qsizetype datasetIndex = 0; datasetIndex < NrOfDatasets; ++datasetIndex)
     {
         //_datasetTableViewHeader[datasetIndex]->setParent(_differentialExpressionWidget->getTableView()->horizontalHeader());
@@ -1402,10 +1435,9 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         QVariant variant = QVariant::fromValue((QObject*)_datasetTableViewHeader[datasetIndex].get());
      //   qDebug() << columnOffset + MEANS_OFFSET + datasetIndex << " _datasetTableViewHeader[" << datasetIndex << "]." << _datasetTableViewHeader[datasetIndex].get();
         if(variant.isValid())
-    		_tableItemModel->setHorizontalHeader(columnOffset + MEANS_OFFSET + datasetIndex, variant);
+    		_tableItemModel->setHorizontalHeader(columnNr++, variant);
     }
     
-    columnNr = columnOffset + MEANS_OFFSET + NrOfDatasets;
     for (auto i = postInfoMap.constBegin(); i != postInfoMap.constEnd(); ++i, ++columnNr)
     {
         _tableItemModel->setHorizontalHeader(columnNr, i.key());
