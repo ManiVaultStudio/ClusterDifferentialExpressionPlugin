@@ -317,9 +317,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _commandAction(this, "InvokeMethods")
 	, _tableView(nullptr)
 	, _buttonProgressBar(nullptr)
-	//, _selectedDatasetsAction(this)
-	
-
+	, _pairwiseDiffExpResultsAction(this, "PairwiseDifferentialExpressionResults")
 {
     setSerializationName(getGuiName());
 
@@ -340,6 +338,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     publishAndSerializeAction(&_infoTextAction);
     publishAndSerializeAction(&_autoUpdateAction);
     publishAndSerializeAction(&_commandAction, false);
+    publishAndSerializeAction(&_pairwiseDiffExpResultsAction, false);
     _serializedActions.append(&_loadedDatasetsAction);
     
     
@@ -748,7 +747,123 @@ void ClusterDifferentialExpressionPlugin::datasetChanged(qsizetype index, const 
     }
 }
 
+void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qsizetype dimension, const QString &nameToCheck)
+{
 
+    if (_pairwiseDiffExpResultsAction.getVariant().toString() != "json")
+        return;
+    const qsizetype NrOfDatasets = _loadedDatasetsAction.size();
+
+    if (!_identicalDimensions)
+        if (_matchingDimensionNames.empty())
+        {
+            _identicalDimensions = matchDimensionNames();
+            assert(_identicalDimensions || (!_matchingDimensionNames.empty()));
+        }
+
+    std::vector<QString> unifiedDimensionNames;
+    if (_identicalDimensions)
+        for (qsizetype i = 0; i < NrOfDatasets; ++i)
+        {
+            if (_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
+            {
+                unifiedDimensionNames = get_DE_Statistics_Dataset(getDataset(0))->getDimensionNames();
+                break;
+            }
+        }
+
+    const QString dimensionName = _identicalDimensions ? unifiedDimensionNames[dimension] : _matchingDimensionNames[dimension].first;
+
+    assert(nameToCheck.isEmpty() || (nameToCheck == dimensionName));
+
+    std::vector<std::vector<double>> meanExpressionValues(NrOfDatasets);
+    
+    for (qsizetype i = 0; i < NrOfDatasets; ++i)
+    {
+        if (_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
+        {
+            QStringList clusterStrings = _loadedDatasetsAction.getClusterOptions(i);
+            QStringList clusterSelectionStrings = _loadedDatasetsAction.getClusterSelection(i);
+            meanExpressionValues[i] = computeMeanExpressionsForSelectedClusters(getDataset(i), local::getClusterIndices(clusterStrings, clusterSelectionStrings));
+
+            auto DE_StatisticsDataset = get_DE_Statistics_Dataset(_loadedDatasetsAction.getDataset(i));
+            if (DE_StatisticsDataset.isValid())
+                _DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset.getDatasetGuid());
+        }
+    }
+
+
+    std::vector<double> mean(NrOfDatasets);
+    if (_identicalDimensions)
+    {
+        for (qsizetype datasetIndex = 0; datasetIndex < NrOfDatasets; ++datasetIndex)
+        {
+            if (_loadedDatasetsAction.data(datasetIndex)->datasetSelectedAction.isChecked())
+            {
+                mean[datasetIndex] = meanExpressionValues[datasetIndex][dimension];
+            }
+        }
+    }
+    else
+    {
+        for (qsizetype datasetIndex = 0; datasetIndex < NrOfDatasets; ++datasetIndex)
+        {
+            if (_loadedDatasetsAction.data(datasetIndex)->datasetSelectedAction.isChecked())
+            {
+                qsizetype dimensionIndex = _matchingDimensionNames[dimension].second[datasetIndex];
+                if (dimensionIndex >= 0)
+                    mean[datasetIndex] = meanExpressionValues[datasetIndex][dimensionIndex];
+                else
+                    mean[datasetIndex] = std::numeric_limits<double>::quiet_NaN();
+            }
+        }
+    }
+    
+
+  
+    
+    QString json = "{";
+    std::size_t counter = 0;
+    bool addComma = false;
+    for (qsizetype datasetIndex1 = 0; datasetIndex1 < NrOfDatasets; ++datasetIndex1)
+    {
+        if (_loadedDatasetsAction.data(datasetIndex1)->datasetSelectedAction.isChecked())
+        {
+            double mean1 = mean[datasetIndex1];
+            if (!isnan(mean1))
+            {
+                if (addComma)
+                    json += ',';
+                else
+                    addComma = true;
+                json += _loadedDatasetsAction.data((datasetIndex1))->datasetNameStringAction.getString() + ": {";
+                bool firstTime = true;
+                for (qsizetype datasetIndex2 = 0; datasetIndex2 < NrOfDatasets; ++datasetIndex2)
+                {
+                    if (datasetIndex1 != datasetIndex2)
+                    {
+                        if (_loadedDatasetsAction.data(datasetIndex2)->datasetSelectedAction.isChecked())
+                        {
+                            if (!isnan(mean[datasetIndex2]))
+                            {
+
+                                const double diffExp = (mean1 - mean[datasetIndex2]);
+                                if (firstTime)
+                                    firstTime = false;
+                                else
+                                    json += ",";
+                                json += _loadedDatasetsAction.data((datasetIndex2))->datasetNameStringAction.getString() + ": " + QString::number(local::fround(diffExp, 3));
+                            }
+                        }
+                    }
+                }
+                json += "}";
+            }
+        }
+    }
+    json += "}";
+    _pairwiseDiffExpResultsAction.setVariant(json);
+}
 
 
 void ClusterDifferentialExpressionPlugin::clusterSelectionChanged(const QStringList&)
@@ -911,6 +1026,10 @@ void ClusterDifferentialExpressionPlugin::tableView_clicked(const QModelIndex& i
         QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
         auto row = temp.row();
        _selectedIdAction.setString(selectedGeneName);
+
+       update_pairwiseDiffExpResultsAction(row, selectedGeneName);
+
+
         emit selectedRowChanged(row);
     }
     catch (...)

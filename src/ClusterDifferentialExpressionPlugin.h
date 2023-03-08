@@ -90,6 +90,7 @@ private:
     void updateWindowTitle();
     void datasetChanged(qsizetype index, const hdps::Dataset<hdps::DatasetImpl>& dataset);
    
+    void update_pairwiseDiffExpResultsAction(qsizetype dimension, const QString& nameToCheck);
 
 protected slots:
     void selectedRowChanged(int index);
@@ -159,6 +160,9 @@ private:
     QVector<QPointer<QWidget>>          _datasetTableViewHeader;
     QMap<QString, QWidget*>             _configurableWidgets;
     QByteArray                          _headerState;
+
+    
+    VariantAction                       _pairwiseDiffExpResultsAction;
     
 };
     
