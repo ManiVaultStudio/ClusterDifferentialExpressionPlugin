@@ -2,8 +2,8 @@
 #include <QApplication>
 #include <QClipboard>
 #include <assert.h>
-#include <iostream>
 #include <QMetaType>
+#include <QWidget>
 
 //#define TESTING
 
@@ -174,7 +174,7 @@ void QTableItemModel::setRow(std::size_t row, const std::vector<QVariant> &data,
 
 QVariant QTableItemModel::headerData(int section, Qt::Orientation orientation, int role) const 
 {
-	if (section >= 0)
+	if (section >= 0 && section < m_horizontalHeader.size())
 	{
 		if (role == Qt::DisplayRole)
 		{
@@ -209,7 +209,21 @@ void QTableItemModel::startModelBuilding(qsizetype columns, qsizetype rows)
 {
 	beginResetModel();
 	m_columns = columns;
-	m_horizontalHeader.resize(columns);
+	for(qsizetype i=0; i < m_horizontalHeader.size(); ++i)
+	{
+		QVariant variant = m_horizontalHeader[i];
+		if (variant.metaType() == QMetaType::fromType<QObject*>())
+		{
+			QObject* result = variant.value<QObject*>();
+
+			QWidget* widget = qobject_cast<QWidget*>(result);
+
+			widget->lower();
+			widget->hide();
+			widget->setParent(nullptr);
+		}
+	}
+	m_horizontalHeader.assign(m_columns, QVariant());
 	resize(rows);
 	setStatus(Status::Updating);
 }
@@ -217,30 +231,22 @@ void QTableItemModel::startModelBuilding(qsizetype columns, qsizetype rows)
 void QTableItemModel::endModelBuilding()
 {
 	setStatus(Status::UpToDate);
-	emit headerDataChanged(Qt::Horizontal, 0, m_columns - 1);
+	emit headerDataChanged(Qt::Horizontal, 0, m_columns-1 );
 	endResetModel();
 }
 
 void QTableItemModel::setHorizontalHeader(int index, QVariant &value)
 {
 	if (index >= m_horizontalHeader.size())
-		m_horizontalHeader.resize(index);
+		m_horizontalHeader.resize(index+1);
 	m_horizontalHeader[index] = value;
 }
-
 void QTableItemModel::setHorizontalHeader(int index, const QString& value)
 {
-	if (index >= m_horizontalHeader.size())
-		m_horizontalHeader.resize(index);
-	m_horizontalHeader[index] = value;
+	QVariant variant(value);
+	setHorizontalHeader(index,variant);
 }
 
-void QTableItemModel::setHorizontalHeader(int index, QWidget* widget)
-{
-	if (index >= m_horizontalHeaderWidgets.size())
-		m_horizontalHeaderWidgets.resize(index);
-	m_horizontalHeaderWidgets[index] = widget;
-}
 
 void QTableItemModel::copyToClipboard() const
 {

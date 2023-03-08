@@ -151,7 +151,7 @@ private:
     VariantAction                       _preInfoVariantAction;
     VariantAction                       _postInfoVariantAction;
     StringAction                         _infoTextAction;
-
+    //OptionsAction                        _selectedDatasetsAction;
     QVector<WidgetAction*>              _serializedActions;
 
     VariantAction                       _commandAction;
@@ -159,6 +159,7 @@ private:
     QVector<QPointer<QWidget>>          _datasetTableViewHeader;
     QMap<QString, QWidget*>             _configurableWidgets;
     QByteArray                          _headerState;
+    
 };
     
 
