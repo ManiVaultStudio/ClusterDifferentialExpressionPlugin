@@ -11,6 +11,19 @@ using namespace hdps;
 using namespace hdps::gui;
 
 
+namespace localNamespace
+{
+    QString toCamelCase(const QString& s, QChar c = '_') {
+
+        QStringList parts = s.split(c, Qt::SkipEmptyParts);
+        for (int i = 1; i < parts.size(); ++i)
+            parts[i].replace(0, 1, parts[i][0].toUpper());
+
+        return parts.join("");
+
+    }
+}
+
 LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
 	:QStandardItem()
     ,datasetPickerAction(parent, "Dataset")
@@ -244,11 +257,9 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
 LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin)
     : PluginAction(plugin, plugin, "Selected clusters")
 //    , _data(2)
-    , _addDatasetTriggerAction(nullptr, "+")
+    , _addDatasetTriggerAction(nullptr, "addDataset")
 {
-
-
-    _addDatasetTriggerAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("plus"));
+    
     setSerializationName("LoadedDatasets");
     for (auto i = 0; i < 2; ++i)
     {
@@ -259,8 +270,16 @@ LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* 
     setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("database"));
     setToolTip("Manage clusters");
 
+
     connect(&_addDatasetTriggerAction, &TriggerAction::triggered, this, &LoadedDatasetsAction::addDataset);
-        
+    _addDatasetTriggerAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("plus"));
+    QString name = _addDatasetTriggerAction.text();
+    assert(!name.isEmpty());
+    QString apiName = localNamespace::toCamelCase(name, ' ');
+    _addDatasetTriggerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+    _addDatasetTriggerAction.publish(plugin->getGuiName() + "::" + apiName);
+    _addDatasetTriggerAction.setSerializationName(apiName);
+    
 }
 
 hdps::gui::ToggleAction& LoadedDatasetsAction::getDatasetSelectedAction(const std::size_t index)
