@@ -136,39 +136,10 @@ void WordWrapHeaderView::fixWidgetPositions()
         {
 
             fixWidgetPosition(logicalIdx);
-            /*
-            QWidget* foundWidget = getWidget(logicalIdx);
-            if (foundWidget)
-            {
-                foundWidget->setParent(this);
-                foundWidget->raise();
-                foundWidget->show();
-                QRect geom(sectionViewportPosition(logicalIdx), 0, sectionSize(logicalIdx) - 5, height());
-                qDebug() << "fixWidgetPositions " << logicalIdx << "\t" << geom;
-                
-                foundWidget->setGeometry(geom);
-            }
-            */
+           
         }
     }
-    /*
-    if(this->model())
-    {
-        const auto  nrOfColumns = this->model()->columnCount();
-        for (int column = 0; column < nrOfColumns; ++column)
-        {
-            fixWidgetPosition(column);
-        }
-    }
-    */
-    
-    /*
-    for (auto widget_iterator = _widgets.begin(); widget_iterator != _widgets.end(); ++widget_iterator)
-    {
-        unsigned index = widget_iterator.key();
-        fixWidgetPosition(index);
-    }
-    */
+   
 }
 
 void WordWrapHeaderView::handleSectionResized(int i)
@@ -177,23 +148,9 @@ void WordWrapHeaderView::handleSectionResized(int i)
     for (int j = visualIndex(i); j < count(); j++) {
         int logicalIdx = logicalIndex(j);
         fixWidgetPosition(logicalIdx);
-        /*
-        QWidget* foundWidget = getWidget(logicalIdx);
-        if (foundWidget)
-        {
-            QRect geom(sectionViewportPosition(logicalIdx), 0, sectionSize(logicalIdx) - 5, height());
-            qDebug() << "handleSectionResized " << logicalIdx << "\t" << geom;
-            foundWidget->setGeometry(geom);
-        }
-        */
+       
     }
-    /*
-    for (int j = visualIndex(i); j < count(); j++) {
-
-        int logical = logicalIndex(j);
-        fixWidgetPosition(logical);
-    }
-    */
+   
 }
 
 void WordWrapHeaderView::handleSectionMoved(int logical, int oldVisualIndex, int newVisualIndex)
@@ -204,16 +161,7 @@ void WordWrapHeaderView::handleSectionMoved(int logical, int oldVisualIndex, int
 
         int logicalIdx = logicalIndex(i);
         fixWidgetPosition(logicalIdx);
-        /*
-        QWidget* foundWidget = getWidget(logicalIdx);
-        if (foundWidget)
-        {
-            
-            QRect geom(sectionViewportPosition(logicalIdx), 0, sectionSize(logicalIdx) - 5, height());
-            qDebug() << "handleSectionMoved " << logical << "\t" << geom;
-            foundWidget->setGeometry(geom);
-        }
-        */
+       
     }
 
 }
@@ -260,21 +208,21 @@ QSize WordWrapHeaderView::sectionSizeFromContents(int logicalIndex) const
             {
 
                 auto newHeight = rect.height() + metrics.height();
-              //  qDebug() << "sectionSizeFromContents " << logicalIndex << "\t corrected height " << newHeight;
+             
                 rect.setHeight(newHeight);
             }
             rect.setHeight(rect.height() + metrics.capHeight());// auto-correct the height a bit for letters like 'p' so the bottom part doesn't get chopped off
 
 
             auto result = rect.size() + textMarginBuffer;
-            //qDebug() << "sectionSizeFromContents" << logicalIndex << "\t" << result;
+           
 
             return result;
         }
         else
         {
             auto result = QHeaderView::sectionSizeFromContents(logicalIndex);
-            //qDebug() << "sectionSizeFromContents" << logicalIndex << "\t" << result;
+          
             return result;
         }
     }
@@ -310,11 +258,5 @@ void WordWrapHeaderView::updateGeometries()
 {
     QHeaderView::updateGeometries();
     fixWidgetPositions();
-    /*
-    for (auto widget_iterator = _widgets.begin(); widget_iterator != _widgets.end(); ++widget_iterator)
-    {
-        unsigned index = widget_iterator.key();
-        fixWidgetPosition(index);
-    }
-    */
+    
 }

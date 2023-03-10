@@ -56,6 +56,8 @@ public:
 	void endModelBuilding();
 	void setHorizontalHeader(int index, QVariant &value);
 	void setHorizontalHeader(int index, const QString& value);
+	
+	bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role = Qt::EditRole) override;
 
 	void copyToClipboard() const;
 

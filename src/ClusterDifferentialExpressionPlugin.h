@@ -40,6 +40,8 @@ class ClusterDifferentialExpressionPlugin : public ViewPlugin
 public:
     ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory);
 
+    QString getOriginalName() const;
+
     void init() override;
 
     void onDataEvent(hdps::DataEvent* dataEvent);
@@ -122,7 +124,7 @@ public slots:
 
 
 private:
-
+    const QString                       _originalName;
     TableView* _tableView;
     QPointer<ButtonProgressBar>                 _buttonProgressBar;
     hdps::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
@@ -160,9 +162,10 @@ private:
     QVector<QPointer<QWidget>>          _datasetTableViewHeader;
     QMap<QString, QWidget*>             _configurableWidgets;
     QByteArray                          _headerState;
-
     
     VariantAction                       _pairwiseDiffExpResultsAction;
+
+    
     
 };
     

@@ -5,6 +5,7 @@
 #include "actions/DatasetPickerAction.h"
 #include "actions/OptionsAction.h"
 #include "actions/TriggerAction.h"
+#include "actions/VariantAction.h"
 
 
 using namespace hdps::gui;
@@ -36,8 +37,6 @@ protected:
         hdps::Dataset<Clusters>   currentDataset;
         StringAction              datasetNameStringAction;
         ToggleAction              datasetSelectedAction;
-
-
     };
 
     class Widget : public WidgetActionWidget {

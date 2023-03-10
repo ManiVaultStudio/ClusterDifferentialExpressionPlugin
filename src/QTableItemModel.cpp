@@ -176,14 +176,9 @@ QVariant QTableItemModel::headerData(int section, Qt::Orientation orientation, i
 {
 	if (section >= 0 && section < m_horizontalHeader.size())
 	{
-		if (role == Qt::DisplayRole)
-		{
-
-			if (orientation == Qt::Horizontal)
-			{
+		if(orientation == Qt::Horizontal)
+			if(role == Qt::DisplayRole)
 				return m_horizontalHeader[section];
-			}
-		}
 	}
 	
     return QVariant();
@@ -223,7 +218,7 @@ void QTableItemModel::startModelBuilding(qsizetype columns, qsizetype rows)
 			widget->setParent(nullptr);
 		}
 	}
-	m_horizontalHeader.assign(m_columns, QVariant());
+	m_horizontalHeader.assign(m_columns, QVariantMap());
 	resize(rows);
 	setStatus(Status::Updating);
 }
@@ -239,17 +234,35 @@ void QTableItemModel::setHorizontalHeader(int index, QVariant &value)
 {
 	if (index >= m_horizontalHeader.size())
 		m_horizontalHeader.resize(index+1);
-	m_horizontalHeader[index] = value;
+	setHeaderData(index, Qt::Horizontal, value, Qt::DisplayRole);
 }
 void QTableItemModel::setHorizontalHeader(int index, const QString& value)
 {
 	QVariant variant(value);
-	setHorizontalHeader(index,variant);
+	setHeaderData(index, Qt::Horizontal, variant, Qt::DisplayRole);
+}
+
+
+
+bool QTableItemModel::setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role)
+{
+	assert(orientation == Qt::Horizontal);
+	if(orientation == Qt::Horizontal)
+	{
+		if (section >= m_horizontalHeader.size())
+			m_horizontalHeader.resize(section + 1);
+
+		m_horizontalHeader[section] = value;
+		return true;
+	}
+	return false;
 }
 
 
 void QTableItemModel::copyToClipboard() const
 {
+	const QString DisplayRoleKey = QString::number(Qt::DisplayRole);
+
 	QString result;
 	QChar quote = '"';
 	for (std::size_t c = 0; c < m_columns; ++c)

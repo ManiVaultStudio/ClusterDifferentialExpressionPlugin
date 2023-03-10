@@ -29,7 +29,11 @@
 #include <cassert>
 #include <set>
 #include <algorithm>
+
+
+#ifdef __cpp_lib_parallel_algorithm
 #include <execution>
+#endif
 
 //#ifdef __APPLE__
 //#include "omp.h"
@@ -82,7 +86,9 @@ namespace local
             return variant.value<T>();
         else
         {
+#ifdef _DEBUG
             qDebug() << "Error: requested " << QMetaType::fromType<T>().name() << " but value is of type " << variant.metaType().name();
+#endif
             return T();
         }
     }
@@ -175,7 +181,7 @@ namespace local
             points->visitData([&clusters, &meanExpressions, numClusters, numDimensions](auto vec)
                 {
 
-#pragma omp parallel for schedule(dynamic, 1)
+					#pragma omp parallel for schedule(dynamic, 1)
                     for (int dimension = 0; dimension < numDimensions; ++dimension)
                     {
                         //#pragma omp parallel for schedule(dynamic, 1)
@@ -299,8 +305,7 @@ namespace local
 }
 ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory)
     : ViewPlugin(factory)
-
-    
+    , _originalName(getGuiName())
     , _dropWidget(nullptr)
     , _identicalDimensions(false)
     , _preInfoVariantAction(this, "TableViewLeftSideInfo")
@@ -320,6 +325,8 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
 	, _pairwiseDiffExpResultsAction(this, "PairwiseDifferentialExpressionResults")
 {
     setSerializationName(getGuiName());
+
+    
 
     _sortFilterProxyModel->setSourceModel(_tableItemModel.get());
     _filterOnIdAction.setSearchMode(true);
@@ -369,6 +376,10 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     //_selectedDatasetsAction.setOptionsModel(&_loadedDatasetsAction.model());
 }
 
+QString ClusterDifferentialExpressionPlugin::getOriginalName() const
+{
+    return _originalName;
+}
 
 
 void ClusterDifferentialExpressionPlugin::init()
@@ -416,6 +427,7 @@ void ClusterDifferentialExpressionPlugin::init()
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
         //_tableView->setStyleSheet("QTableView::item:selected { background-color: #2c56ba; }");
         addConfigurableWidget("TableView", _tableView);
+        
         connect(_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ClusterDifferentialExpressionPlugin::tableView_selectionChanged);
 
 
@@ -430,7 +442,7 @@ void ClusterDifferentialExpressionPlugin::init()
         horizontalHeader->setSortIndicator(1, Qt::AscendingOrder);
         horizontalHeader->setDefaultAlignment(Qt::AlignBottom | Qt::AlignLeft | Qt::Alignment(Qt::TextWordWrap));
         _tableView->setHorizontalHeader(horizontalHeader);
-        
+        addConfigurableWidget("TableViewHeader", _tableView->horizontalHeader());
         mainLayout->addWidget(_tableView, currentRow, 0);
         mainLayout->setRowStretch(currentRow++, 97);
     }
@@ -656,7 +668,7 @@ void ClusterDifferentialExpressionPlugin::publishAndSerializeAction(WidgetAction
     assert(!name.isEmpty());
     QString apiName = local::toCamelCase(name,' ');
     w->setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    w->publish(getGuiName() + "::" + apiName);
+    w->publish(getOriginalName() + "::" + apiName);
     w->setSerializationName(apiName);
     if(serialize)
 		_serializedActions.append(w);
@@ -898,8 +910,12 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
         createMeanExpressionDataset(i, index);
     }
     
-
-
+   
+    QVariantList commands;
+    QVariantList command;
+    command << QString("TableView") << QString("setStyleSheet") << QString("QHeaderView::section{ background - color:red }");
+    commands.push_back(command);
+    _commandAction.setVariant(commands);
     /*
     QVariantList commands;
     {
@@ -942,7 +958,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
 
     _meanExpressionDatasetGuidAction.resize(_loadedDatasetsAction.size(), nullptr);
     std::vector<float> meanExpressionData(1, 0);
-    const QString guiName = getGuiName();
+    const QString baseName = getOriginalName();
     
    
     {
@@ -950,7 +966,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         _meanExpressionDatasetGuidAction[index] = new StringAction(this, "SelectedIDMeanExpressionsDataset " + QString::number(index));
         publishAndSerializeAction(_meanExpressionDatasetGuidAction[index]);
 
-        QString datasetName = guiName + QString("::") + actionName;
+        QString datasetName = baseName + QString("::") + actionName;
 
         auto& allDatasets = _core->getDataManager().allSets();
         bool found = false;
@@ -1151,7 +1167,12 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 	            dimensionNames[datasetIndex] = parentDataset->getDimensionNames();
         }
         sortedDimensionNames[datasetIndex]= std::move(QVector<QString>(dimensionNames[datasetIndex].cbegin(), dimensionNames[datasetIndex].cend()));
+
+#ifdef __cpp_lib_parallel_algorithm
         std::sort(std::execution::par_unseq, sortedDimensionNames[datasetIndex].begin(), sortedDimensionNames[datasetIndex].end());
+#else
+        std::sort(sortedDimensionNames[datasetIndex].begin(), sortedDimensionNames[datasetIndex].end());
+#endif
     }
 
     bool identicalOrder = true;
@@ -1170,8 +1191,13 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     for (qsizetype datasetIndex = 1; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
         QVector<QString>result;
+#ifdef __cpp_lib_parallel_algorithm
         std::merge(std::execution::par_unseq, allDimensionNames.cbegin(), allDimensionNames.cend(), sortedDimensionNames[datasetIndex].cbegin(), sortedDimensionNames[datasetIndex].cend(), result.begin());
-        std::unique(std::execution::par_unseq, result.begin(), result.end());
+        auto dummy = std::unique(std::execution::par_unseq, result.begin(), result.end());
+#else
+        std::merge(allDimensionNames.cbegin(), allDimensionNames.cend(), sortedDimensionNames[datasetIndex].cbegin(), sortedDimensionNames[datasetIndex].cend(), result.begin());
+        std::unique(result.begin(), result.end());
+#endif
         allDimensionNames = std::move(result);
         
 
@@ -1198,7 +1224,11 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 		value.resize(nrOfDatasets, -1);
         for (qsizetype datasetIndex = 0; datasetIndex < nrOfDatasets; ++datasetIndex)
         {
+#ifdef __cpp_lib_parallel_algorithm
             auto found  = std::find(std::execution::par_unseq, begin[datasetIndex], end[datasetIndex],name);
+#else
+            auto found = std::find(begin[datasetIndex], end[datasetIndex], name);
+#endif
             if(found != end[datasetIndex])
             {
                 value[datasetIndex] = found - begin[datasetIndex];
@@ -1389,7 +1419,16 @@ void ClusterDifferentialExpressionPlugin::computeDE()
                 return;
         }
     }
-    
+
+    enum { ID, MEAN_DE };
+    auto preInfoMap = _preInfoVariantAction.getVariant().toMap();
+    auto postInfoMap = _postInfoVariantAction.getVariant().toMap();
+    qsizetype columnOffset = preInfoMap.size();
+    std::size_t totalColumnCount = columnOffset + 2 + NrOfSelectedDatasets + postInfoMap.size();
+    if (NrOfSelectedDatasets > 2)
+        totalColumnCount += 2; // for min and max DE
+
+  
     /*
     static bool demo = false;
     if (demo)
@@ -1440,13 +1479,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         }
     }
     
-    enum{ID, MEAN_DE};
-    auto preInfoMap = _preInfoVariantAction.getVariant().toMap();
-    auto postInfoMap = _postInfoVariantAction.getVariant().toMap();
-    qsizetype columnOffset =  preInfoMap.size();
-    std::size_t totalColumnCount = columnOffset + 2 + NrOfSelectedDatasets + postInfoMap.size();
-    if (NrOfSelectedDatasets > 2)
-        totalColumnCount += 2; // for min and max DE
+   
 
  
     if(!_identicalDimensions)
@@ -1592,11 +1625,10 @@ void ClusterDifferentialExpressionPlugin::computeDE()
    
     
     QString emptyString;
-
- 
     
     _tableItemModel->setHorizontalHeader(ID, QString("ID"));
-   int columnNr = 1;
+
+    int columnNr = 1;
     for(auto i  = preInfoMap.constBegin(); i!= preInfoMap.constEnd(); ++i, ++columnNr)
     {
         _tableItemModel->setHorizontalHeader(columnNr, i.key());
@@ -1610,12 +1642,14 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         _tableItemModel->setHorizontalHeader(columnNr++, "Max Differential Expression");
     }
     else
+    {
         _tableItemModel->setHorizontalHeader(columnNr++, "Differential Expression");
+    }
 
     
     for (qsizetype datasetIndex = 0; datasetIndex < NrOfDatasets; ++datasetIndex)
     {
-       
+
         if (_loadedDatasetsAction.data(datasetIndex)->datasetSelectedAction.isChecked())
         {
             //_datasetTableViewHeader[datasetIndex]->setParent(_differentialExpressionWidget->getTableView()->horizontalHeader());
@@ -1626,8 +1660,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             widget->hide();
             QVariant variant = QVariant::fromValue((QObject*)widget);
             //   qDebug() << columnOffset + MEANS_OFFSET + datasetIndex << " _datasetTableViewHeader[" << datasetIndex << "]." << _datasetTableViewHeader[datasetIndex].get();
-            if (variant.isValid())
-                _tableItemModel->setHorizontalHeader(columnNr++, variant);
+            _tableItemModel->setHorizontalHeader(columnNr++, variant);
         }
     }
     
