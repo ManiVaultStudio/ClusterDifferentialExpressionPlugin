@@ -17,21 +17,7 @@ if(MSVC)
 endif(MSVC)
 
 
-
-
-
-
-
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
-
-#OpenMP
-find_package(OpenMP)
-
-if(OpenMP_CXX_FOUND)
-message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
-else(OpenMP_CXX_FOUND)
-message(WARNING, "OpenMP not found!") 
-endif(OpenMP_CXX_FOUND)
 
 set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
@@ -57,8 +43,7 @@ set(ACTIONS
 )
 
 set(WIDGETS
-    src/ClusterDifferentialExpressionWidget.h
-    src/ClusterDifferentialExpressionWidget.cpp
+    
     src/WordWrapHeaderView.h
     src/WordWrapHeaderView.cpp
     src/TableView.h
@@ -92,14 +77,8 @@ add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
 
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
-target_link_libraries(${PROJECT} Qt6::Widgets)
-target_link_libraries(${PROJECT} Qt6::WebEngineWidgets)
-
-
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(${PROJECT}  OpenMP::OpenMP_CXX)
-    target_compile_options(${PROJECT} PRIVATE "${OpenMP_CXX_FLAGS}")
-endif()
+target_link_libraries(${PROJECT} PRIVATE Qt6::Widgets)
+target_link_libraries(${PROJECT} PRIVATE Qt6::WebEngineWidgets)
 
 
 if(MSVC)
@@ -108,9 +87,9 @@ else()
 	set(LIB_SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 endif()
 
-target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}HDPS_Public${LIB_SUFFIX}")
-target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}PointData${LIB_SUFFIX}")
-target_link_libraries(${PROJECT} "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}ClusterData${LIB_SUFFIX}")
+target_link_libraries(${PROJECT} PRIVATE "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}HDPS_Public${LIB_SUFFIX}")
+target_link_libraries(${PROJECT} PRIVATE "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}PointData${LIB_SUFFIX}")
+target_link_libraries(${PROJECT} PRIVATE "$ENV{HDPS_INSTALL_DIR}/$<CONFIGURATION>/lib/${CMAKE_SHARED_LIBRARY_PREFIX}ClusterData${LIB_SUFFIX}")
 
 install(TARGETS ${PROJECT}
    RUNTIME DESTINATION Plugins COMPONENT SHAREDLIB
@@ -132,20 +111,18 @@ set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_COMMAND $<IF:$<CONFIG:DEBUG>
 set_target_properties(${PROJECT} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=%PATH%;${Qt6_DIR}/../../../bin;$<$<CONFIG:DEBUG>:$ENV{HDPS_INSTALL_DIR}/debug>; $<$<CONFIG:RELEASE>:$ENV{HDPS_INSTALL_DIR}/release>")
 
 if(APPLE)
-	MESSAGE( STATUS "Linking PREBUILT OpenMP libraries...")
-	target_link_libraries("${TARGET}" debug "/usr/local/lib/libomp.dylib")
-	target_link_libraries("${TARGET}" optimized "/usr/local/lib/libomp.dylib")        
-endif()
-if(OpenMP)
-    target_link_libraries("${TARGET}" OpenMP::OpenMP_CXX)
+    target_link_libraries("${PROJECT}" PUBLIC debug "/usr/local/lib/libomp.dylib")
+    target_link_libraries("${PROJECT}" PUBLIC optimized "/usr/local/lib/libomp.dylib")       
 endif()
 
-if (OpenMP_CXX_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+find_package(OpenMP REQUIRED)
+if(OpenMP_FOUND)
+    message(STATUS "OpenMP found")
+    target_link_libraries(${PROJECT} PUBLIC OpenMP::OpenMP_CXX)
+    target_compile_options(${PROJECT} PRIVATE ${OpenMP_CXX_FLAGS})
+else()
+    message(WARNING "OpenMP not found!")
 endif()
-
 
  macro(print_all_variables)
     message(STATUS "print_all_variables------------------------------------------{")

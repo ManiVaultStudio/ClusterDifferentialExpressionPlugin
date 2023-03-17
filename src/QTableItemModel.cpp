@@ -2,8 +2,8 @@
 #include <QApplication>
 #include <QClipboard>
 #include <assert.h>
-#include <iostream>
 #include <QMetaType>
+#include <QWidget>
 
 //#define TESTING
 
@@ -174,16 +174,11 @@ void QTableItemModel::setRow(std::size_t row, const std::vector<QVariant> &data,
 
 QVariant QTableItemModel::headerData(int section, Qt::Orientation orientation, int role) const 
 {
-	if (section >= 0)
+	if (section >= 0 && section < m_horizontalHeader.size())
 	{
-		if (role == Qt::DisplayRole)
-		{
-
-			if (orientation == Qt::Horizontal)
-			{
+		if(orientation == Qt::Horizontal)
+			if(role == Qt::DisplayRole)
 				return m_horizontalHeader[section];
-			}
-		}
 	}
 	
     return QVariant();
@@ -209,7 +204,21 @@ void QTableItemModel::startModelBuilding(qsizetype columns, qsizetype rows)
 {
 	beginResetModel();
 	m_columns = columns;
-	m_horizontalHeader.resize(columns);
+	for(qsizetype i=0; i < m_horizontalHeader.size(); ++i)
+	{
+		QVariant variant = m_horizontalHeader[i];
+		if (variant.metaType() == QMetaType::fromType<QObject*>())
+		{
+			QObject* result = variant.value<QObject*>();
+
+			QWidget* widget = qobject_cast<QWidget*>(result);
+
+			widget->lower();
+			widget->hide();
+			widget->setParent(nullptr);
+		}
+	}
+	m_horizontalHeader.assign(m_columns, QVariantMap());
 	resize(rows);
 	setStatus(Status::Updating);
 }
@@ -217,32 +226,61 @@ void QTableItemModel::startModelBuilding(qsizetype columns, qsizetype rows)
 void QTableItemModel::endModelBuilding()
 {
 	setStatus(Status::UpToDate);
-	emit headerDataChanged(Qt::Horizontal, 0, m_columns - 1);
+	emit headerDataChanged(Qt::Horizontal, 0, m_columns-1 );
 	endResetModel();
 }
 
-void QTableItemModel::setHorizontalHeader(int index, const QString &value)
+void QTableItemModel::setHorizontalHeader(int index, QVariant &value)
 {
 	if (index >= m_horizontalHeader.size())
-		m_horizontalHeader.resize(index);
-	m_horizontalHeader[index] = value;
+		m_horizontalHeader.resize(index+1);
+	setHeaderData(index, Qt::Horizontal, value, Qt::DisplayRole);
 }
+void QTableItemModel::setHorizontalHeader(int index, const QString& value)
+{
+	QVariant variant(value);
+	setHeaderData(index, Qt::Horizontal, variant, Qt::DisplayRole);
+}
+
+
+
+bool QTableItemModel::setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role)
+{
+	assert(orientation == Qt::Horizontal);
+	if(orientation == Qt::Horizontal)
+	{
+		if (section >= m_horizontalHeader.size())
+			m_horizontalHeader.resize(section + 1);
+
+		m_horizontalHeader[section] = value;
+		return true;
+	}
+	return false;
+}
+
 
 void QTableItemModel::copyToClipboard() const
 {
+	const QString DisplayRoleKey = QString::number(Qt::DisplayRole);
+
 	QString result;
 	QChar quote = '"';
 	for (std::size_t c = 0; c < m_columns; ++c)
 	{
 		if (c != 0)
 			result += "\t";
-		QString header = m_horizontalHeader[c];
-		if (header != "_hidden_")
+		QVariant headerVariant  = m_horizontalHeader[c];
+		if (headerVariant.metaType() == QMetaType::fromType<QString>())
 		{
-			header.replace("\n", "_");
-			header.replace(" ", "_");
-			result += quote + header + quote;
+			QString header = headerVariant.toString();
+			if (header != "_hidden_")
+			{
+				header.replace("\n", "_");
+				header.replace(" ", "_");
+				result += quote + header + quote;
+			}
 		}
+		
 	}
 	result += "\n";
 
@@ -251,11 +289,16 @@ void QTableItemModel::copyToClipboard() const
 	{
 		for (std::size_t c = 0; c < m_columns; ++c)
 		{
-			if (m_horizontalHeader[c] != "_hidden_")
+			if (m_horizontalHeader[c].metaType() == QMetaType::fromType<QString>())
 			{
-				if (c != 0)
-					result += "\t";
-				result += m_data[r].data[c].toString();
+				QString header = m_horizontalHeader[c].toString();
+
+				if (header != "_hidden_")
+				{
+					if (c != 0)
+						result += "\t";
+					result += m_data[r].data[c].toString();
+				}
 			}
 		}
 		result += "\n";

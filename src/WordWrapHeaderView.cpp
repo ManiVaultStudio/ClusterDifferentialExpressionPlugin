@@ -3,12 +3,15 @@
 #include <qlayout.h>
 #include <qtextoption.h>
 
-WordWrapHeaderView::WordWrapHeaderView(Qt::Orientation orientation, QWidget* parent)
+WordWrapHeaderView::WordWrapHeaderView(Qt::Orientation orientation, QWidget* parent, bool widgetSupport)
  : QHeaderView(orientation,parent)
 , _widgetSupportEnabled(false)
 , _columnOffset(0)
 {
-    
+	if(widgetSupport)
+	{
+		 enableWidgetSupport(widgetSupport);
+	}
 }
 
 WordWrapHeaderView::~WordWrapHeaderView()
@@ -19,7 +22,9 @@ WordWrapHeaderView::~WordWrapHeaderView()
 
 void WordWrapHeaderView::enableWidgetSupport(bool enabled)
 {
-
+    if (enabled == _widgetSupportEnabled)
+        return; // nothing to change
+    
     if(this->orientation() == Qt::Horizontal)
     {
         _widgetSupportEnabled = enabled;
@@ -39,6 +44,7 @@ void WordWrapHeaderView::enableWidgetSupport(bool enabled)
         }
         else
         {
+            
             disconnect(this, SIGNAL(sectionResized(int, int, int)), this,
 
                 SLOT(handleSectionResized(int)));
@@ -52,110 +58,128 @@ void WordWrapHeaderView::enableWidgetSupport(bool enabled)
     }
 }
 
-void WordWrapHeaderView::setWidget(unsigned i, QWidget *w)
+
+QWidget* WordWrapHeaderView::getWidget(int logicalIndex) const
 {
-    w->setParent(this);
-    w->raise();
-    auto found = _widgets.find(i);
-    if (found != _widgets.end())
+    //return nullptr;
+    if (_widgetSupportEnabled && (this->model()))
     {
-        delete (*found);
-        *found = w;
+        QVariant variant = this->model()->headerData(logicalIndex, Qt::Horizontal, Qt::DisplayRole);
+        if(variant.metaType() == QMetaType::fromType<QObject*>())
+        {
+            QObject *result = variant.value<QObject*>();
+      
+            QWidget* widget = qobject_cast<QWidget*>(result);
+
+            widget->show();
+            return widget;
+        }
     }
-    else
-        _widgets[i] = w;
+    return nullptr;
 }
 
-
-void WordWrapHeaderView::setExtraLeftSideColumns(std::size_t offset)
+QWidget* WordWrapHeaderView::getWidget(int logicalIndex)
 {
-    long long offsetChange = offset - _columnOffset;
-    if (offsetChange == 0)
-        return;
-    QMap<unsigned, QWidget*> newMap;
-    for(QMap<unsigned, QWidget*>::iterator i=_widgets.begin(); i != _widgets.end(); ++i)
+    QWidget* result = static_cast<const WordWrapHeaderView*>(this)->getWidget(logicalIndex);
+    if (result)
     {
-        if (i.key() == 0)
-            newMap[0] = i.value();
-        else
-            newMap[i.key() + offsetChange] = i.value();
+        if (result->parent() != this)
+        {
+            result->setParent(this);
+            result->raise();
+        }
+        return result;
     }
-    _widgets = newMap;
-    _columnOffset = offset;
-	headerDataChanged(Qt::Horizontal, 0, count());
+    return nullptr;
 }
-
-
-void WordWrapHeaderView::clearWidgets()
-{
-	for(auto w : _widgets)
-	{
-       
-        delete w;
-	}
-    _widgets.clear();
-}
-
 void WordWrapHeaderView::fixWidgetPosition(int logicalIndex)
 {
-    auto found = _widgets.find(logicalIndex);
-    if (found != _widgets.end())
+    
+    //qDebug() << "fixWidgetPosition " << logicalIndex << " start";
+    QWidget* foundWidget = getWidget(logicalIndex);
+    if(foundWidget)
     {
-        auto x = sectionViewportPosition(logicalIndex);
-        auto y = sectionSize(logicalIndex);
-        auto h = height();
-        auto o = horizontalOffset();
-        auto s = sectionSizeFromContents(logicalIndex);
+        auto sectionPosition = sectionViewportPosition(logicalIndex);
+        auto secSize = sectionSize(logicalIndex);
+        auto sectionHeight = height();
+        auto sectionOffset = horizontalOffset();
+        auto sectionSizeContents = sectionSizeFromContents(logicalIndex);
+        /*
+        qDebug() << "sectionPosition: " << sectionPosition;
+        qDebug() << "sectionSize: " << secSize;
+        qDebug() << "sectionHeight: " << sectionHeight;
+        qDebug() << "sectionOffset: " << sectionHeight;
+        qDebug() << "sectionSizeContents: " << sectionHeight;
+        */
+        if(foundWidget->parent() != this)
+        {
+            foundWidget->setParent(this);
+            foundWidget->raise();
+        }
+        foundWidget->setFixedWidth(sectionSizeContents.width() - 5);
         
-        QWidget *foundWidget = found.value();
-        foundWidget->setFixedWidth(s.width()-5);
-        foundWidget->setGeometry(sectionViewportPosition(logicalIndex), 5,   s.width()-5, height()+5);
+        foundWidget->setGeometry(sectionPosition, 5, sectionSizeContents.width() - 5, sectionHeight + 5);
+
+      //  qDebug() << "Geometry: (" << sectionPosition << "," << 5 << "," << sectionSizeContents.width() - 5 << "," << sectionHeight + 5 << ")";
     }
+
+   // qDebug() << "fixWidgetPosition " << logicalIndex << " end";
+   
 }
 
 void WordWrapHeaderView::fixWidgetPositions()
 {
-   
-    for (auto widget_iterator = _widgets.begin(); widget_iterator != _widgets.end(); ++widget_iterator)
+    if (this->model())
     {
-        unsigned index = widget_iterator.key();
-        fixWidgetPosition(index);
+        const auto  nrOfColumns = this->model()->columnCount();
+        for (int logicalIdx = 0; logicalIdx < nrOfColumns; ++logicalIdx)
+        {
+
+            fixWidgetPosition(logicalIdx);
+           
+        }
     }
+   
 }
 
 void WordWrapHeaderView::handleSectionResized(int i)
 {
     
     for (int j = visualIndex(i); j < count(); j++) {
-
-        int logical = logicalIndex(j);
-        fixWidgetPosition(logical);
+        int logicalIdx = logicalIndex(j);
+        fixWidgetPosition(logicalIdx);
+       
     }
+   
 }
 
 void WordWrapHeaderView::handleSectionMoved(int logical, int oldVisualIndex, int newVisualIndex)
 
 {
-    
+   
     for (int i = qMin(oldVisualIndex, newVisualIndex); i < count(); i++) {
 
-        int logical = logicalIndex(i);
-
-        fixWidgetPosition(logical);
+        int logicalIdx = logicalIndex(i);
+        fixWidgetPosition(logicalIdx);
+       
     }
 
 }
 
 QSize WordWrapHeaderView::sectionSizeFromContents(int logicalIndex) const 
 {
-
-    auto found = _widgets.find(logicalIndex);
-    if(found != _widgets.end())
+   
+    QWidget* foundWidget = getWidget(logicalIndex);
+    if(foundWidget)
     {
+        foundWidget->show();
         int maxWidth = this->sectionSize(logicalIndex);
-        int height = found.value()->height();
-       
-        return QSize(maxWidth+2, height+5);
+        int height = foundWidget->height();
+        QSize result(maxWidth+2, height+5);
+
+        //qDebug() << "sectionSizeFromContents" << logicalIndex << "\t" << result;
+        return result;
+	    
     }
     else
     {
@@ -183,19 +207,23 @@ QSize WordWrapHeaderView::sectionSizeFromContents(int logicalIndex) const
             if ((maxWidth - (rect.right() + correction)) <= 0)
             {
 
-
-                rect.setHeight(rect.height() + metrics.height());
-
+                auto newHeight = rect.height() + metrics.height();
+             
+                rect.setHeight(newHeight);
             }
             rect.setHeight(rect.height() + metrics.capHeight());// auto-correct the height a bit for letters like 'p' so the bottom part doesn't get chopped off
 
 
+            auto result = rect.size() + textMarginBuffer;
+           
 
-            return rect.size() + textMarginBuffer;
+            return result;
         }
         else
         {
-            return QHeaderView::sectionSizeFromContents(logicalIndex);
+            auto result = QHeaderView::sectionSizeFromContents(logicalIndex);
+          
+            return result;
         }
     }
     
@@ -207,25 +235,28 @@ void WordWrapHeaderView::showEvent(QShowEvent* event)
 {
     if(_widgetSupportEnabled)
     {
-        for(auto widget_iterator = _widgets.begin(); widget_iterator != _widgets.end(); ++widget_iterator)
+        if (this->model())
         {
-            unsigned index = widget_iterator.key();
-            QWidget* widget = widget_iterator.value();
-            fixWidgetPosition(index);
+            const auto  nrOfColumns = this->model()->columnCount();
+            for (int logicalIndex = 0; logicalIndex < nrOfColumns; ++logicalIndex)
+            {
+                QWidget* foundWidget = getWidget(logicalIndex);
+                if (foundWidget)
+                {
+                    foundWidget->setGeometry(sectionViewportPosition(logicalIndex), 0, sectionSize(logicalIndex) - 5, height());
+                    foundWidget->show();
+                }
+            }
         }
-        QHeaderView::showEvent(event);
     }
-    else
-        QHeaderView::showEvent(event);
+    
+	QHeaderView::showEvent(event);
     
 }
 
 void WordWrapHeaderView::updateGeometries()
 {
     QHeaderView::updateGeometries();
-    for (auto widget_iterator = _widgets.begin(); widget_iterator != _widgets.end(); ++widget_iterator)
-    {
-        unsigned index = widget_iterator.key();
-        fixWidgetPosition(index);
-    }
+    fixWidgetPositions();
+    
 }

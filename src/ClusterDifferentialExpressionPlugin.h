@@ -15,7 +15,8 @@
 using hdps::plugin::ViewPluginFactory;
 using hdps::plugin::ViewPlugin;
 
-class ClusterDifferentialExpressionWidget;
+class TableView;
+class ButtonProgressBar;
 class QTableItemModel;
 class SortFilterProxyModel;
 
@@ -33,11 +34,13 @@ class ClusterDifferentialExpressionPlugin : public ViewPlugin
 {
     Q_OBJECT
 
-        typedef std::pair<QString, std::pair<std::ptrdiff_t, std::ptrdiff_t>> DimensionNameMatch;
+        typedef std::pair<QString, std::vector<ptrdiff_t>> DimensionNameMatch;
 
 		
 public:
     ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory);
+
+    QString getOriginalName() const;
 
     void init() override;
 
@@ -49,43 +52,9 @@ public:
     */
     void loadData(const hdps::Datasets& datasets) override;
 
-    // get functions. Some might be deleted later.
-    ClusterDifferentialExpressionWidget& getClusterDifferentialExpressionWidget();
-  
-
-    QSharedPointer<LoadedDatasetsAction> getLoadedDatasetsAction()
-    {
-        return _loadedDatasetsAction;
-    }
-
-    QPointer<SortFilterProxyModel> &getSortFiltrProxyModel()
-    {
-        return _sortFilterProxyModel;
-    }
-
-    QWidget *getUpdateStatisticsWidget(QWidget *parent)
-    {
-        return _updateStatisticsAction.createWidget(parent);
-    }
-
-    StringAction &getFilterAction()
-    {
-        return (*_filterOnIdAction.get());
-    }
-    StringAction &getSelectedIdAction()
-    {
-        return _selectedIdAction;
-    }
-
-    SettingsAction & getSettingsAction()
-    {
-        return _settingsAction;
-    }
-
-    StringAction& getInfoTextAction()
-    {
-        return _infoTextAction;
-    }
+    
+    void addConfigurableWidget(const QString& name, QWidget* widget);
+    QWidget* getConfigurableWidget(const QString& name);
 
 public: // Serialization
 
@@ -106,23 +75,24 @@ private:
 
 
     void publishAndSerializeAction(WidgetAction* w, bool serialize=true);
-    void createMeanExpressionDataset(int dataset_index, int index);
+    void createMeanExpressionDataset(qsizetype dataset_index, qsizetype index);
 
     hdps::Dataset<Clusters> &getDataset(qsizetype index)
     {
         if(_dropWidget)
 			_dropWidget->setShowDropIndicator(false);
-        return _loadedDatasetsAction->getDataset(index);
+        return _loadedDatasetsAction.getDataset(index);
     }
 
     QStringList getClusterSelection(qsizetype index)
     {
-        return _loadedDatasetsAction->getClusterSelection(index);
+        return _loadedDatasetsAction.getClusterSelection(index);
     }
 
     void updateWindowTitle();
     void datasetChanged(qsizetype index, const hdps::Dataset<hdps::DatasetImpl>& dataset);
    
+    void update_pairwiseDiffExpResultsAction(qsizetype dimension, const QString& nameToCheck);
 
 protected slots:
     void selectedRowChanged(int index);
@@ -130,9 +100,14 @@ protected slots:
 
     void newCommandsReceived(const QVariant& commands);
 
+    void datasetAdded(int index);
+
+    void tableView_clicked(const QModelIndex& index);
+    void tableView_selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+
 public slots:
     
-    void selectionChanged(const QStringList&);
+    void clusterSelectionChanged(const QStringList&);
 
 private:
     
@@ -149,24 +124,27 @@ public slots:
 
 
 private:
-    ClusterDifferentialExpressionWidget* _differentialExpressionWidget;      /** differential expression widget providing the GUI */
-    
-
+    const QString                       _originalName;
+    TableView* _tableView;
+    QPointer<ButtonProgressBar>                 _buttonProgressBar;
     hdps::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
-   
+    ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
+
+
+
     SettingsAction                              _settingsAction; // not a real action
 
-    std::vector<DimensionNameMatch> _matchingDimensionNames;
-    ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
+   std::vector<std::pair<QString, QVector<qsizetype>>> _matchingDimensionNames;
+
     bool                            _identicalDimensions;
   
     QSharedPointer<QTableItemModel>   _tableItemModel;
     QPointer<SortFilterProxyModel>      _sortFilterProxyModel;
 
     //actions
-    QSharedPointer<LoadedDatasetsAction> _loadedDatasetsAction;
-    QSharedPointer<StringAction>         _filterOnIdAction;
-    QSharedPointer<ToggleAction>         _autoUpdateAction;
+    LoadedDatasetsAction                 _loadedDatasetsAction;
+    StringAction                         _filterOnIdAction;
+    ToggleAction                         _autoUpdateAction;
     StringAction                         _selectedIdAction;
     TriggerAction                        _updateStatisticsAction;
     QVector<QPointer<StringAction>>       _meanExpressionDatasetGuidAction;
@@ -176,23 +154,29 @@ private:
     VariantAction                       _preInfoVariantAction;
     VariantAction                       _postInfoVariantAction;
     StringAction                         _infoTextAction;
-
+    //OptionsAction                        _selectedDatasetsAction;
     QVector<WidgetAction*>              _serializedActions;
 
     VariantAction                       _commandAction;
 
-
+    QVector<QPointer<QWidget>>          _datasetTableViewHeader;
+    QMap<QString, QWidget*>             _configurableWidgets;
     QByteArray                          _headerState;
+    
+    VariantAction                       _pairwiseDiffExpResultsAction;
+
+    
+    
 };
     
 
 
 class ClusterDifferentialExpressionFactory : public ViewPluginFactory
 {
-    Q_INTERFACES(hdps::plugin::ViewPluginFactory hdps::plugin::PluginFactory)
         Q_OBJECT
         Q_PLUGIN_METADATA(IID   "nl.BioVault.ClusterDifferentialExpressionPlugin"
             FILE  "ClusterDifferentialExpressionPlugin.json")
+        Q_INTERFACES(hdps::plugin::ViewPluginFactory hdps::plugin::PluginFactory)
 
 public:
     ClusterDifferentialExpressionFactory() {}

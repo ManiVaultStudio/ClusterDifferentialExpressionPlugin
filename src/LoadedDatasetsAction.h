@@ -4,7 +4,8 @@
 
 #include "actions/DatasetPickerAction.h"
 #include "actions/OptionsAction.h"
-
+#include "actions/TriggerAction.h"
+#include "actions/VariantAction.h"
 
 
 using namespace hdps::gui;
@@ -13,23 +14,31 @@ class Clusters;
 
 class LoadedDatasetsAction : public PluginAction
 {
+    Q_OBJECT
 protected:
 
-    struct Data
+    struct Data : QStandardItem
     {
     public:
         Data() = delete;
-        Data(const Data&) = default;
+       // Data(const Data&) = default;
+	        
         ~Data() = default;
 
         explicit Data(LoadedDatasetsAction* parent, int index = -1);
+
+        
+        virtual QStandardItem* clone() const;
+        virtual QVariant data(int role = Qt::UserRole + 1) const override;
+        virtual void 	setData(const QVariant& value, int role = Qt::UserRole + 1) override;
 
         DatasetPickerAction	      datasetPickerAction;
         OptionsAction             clusterOptionsAction;
         hdps::Dataset<Clusters>   currentDataset;
         StringAction              datasetNameStringAction;
-        
+        ToggleAction              datasetSelectedAction;
     };
+
     class Widget : public WidgetActionWidget {
     public:
         Widget(QWidget* parent, LoadedDatasetsAction* currentDatasetAction, const std::int32_t& widgetFlags);
@@ -57,6 +66,7 @@ public:
    
     LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin);
 
+    hdps::gui::ToggleAction& getDatasetSelectedAction(const std::size_t index);
     hdps::gui::OptionsAction& getClusterSelectionAction(const std::size_t index);
 
     hdps::Dataset<Clusters>& getDataset(std::size_t index) const;
@@ -71,7 +81,19 @@ public:
 
     qsizetype size() const;
 
+    Data* data(qsizetype index) const;
+
+
+    QStandardItemModel& model();
+
+public slots:
+    void addDataset();
+signals:
+    void datasetAdded(int index);
+
 protected:
-    QVector<QSharedPointer<Data>> _data;
+    TriggerAction   _addDatasetTriggerAction;
+    QStandardItemModel  _model;
+    //std::vector<QSharedPointer<Data>> _data;
     friend class Widget;
 };

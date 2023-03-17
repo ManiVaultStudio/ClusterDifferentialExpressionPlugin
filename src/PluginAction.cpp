@@ -1,7 +1,7 @@
 #include "PluginAction.h"
 
 #include "ClusterDifferentialExpressionPlugin.h"
-#include "ClusterDifferentialExpressionWidget.h"
+
 
 using namespace hdps::gui;
 
@@ -13,11 +13,4 @@ PluginAction::PluginAction(QObject* parent, ClusterDifferentialExpressionPlugin*
 
     setText(title);
     setToolTip(title);
-}
-
-ClusterDifferentialExpressionWidget& PluginAction::getClusterDifferentialExpressionWidget()
-{
-    Q_ASSERT(_plugin != nullptr);
-
-    return _plugin->getClusterDifferentialExpressionWidget();
 }
