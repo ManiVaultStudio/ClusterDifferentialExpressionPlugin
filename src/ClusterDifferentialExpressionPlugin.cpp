@@ -910,12 +910,13 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
         createMeanExpressionDataset(i, index);
     }
     
-   
+   /*
     QVariantList commands;
     QVariantList command;
     command << QString("TableView") << QString("setStyleSheet") << QString("QHeaderView::section{ background - color:red }");
     commands.push_back(command);
     _commandAction.setVariant(commands);
+    */
     /*
     QVariantList commands;
     {
