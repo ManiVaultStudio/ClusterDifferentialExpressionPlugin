@@ -346,6 +346,8 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     publishAndSerializeAction(&_autoUpdateAction);
     publishAndSerializeAction(&_commandAction, false);
     publishAndSerializeAction(&_pairwiseDiffExpResultsAction, false);
+    serializeAction(&_settingsAction);
+
     _serializedActions.append(&_loadedDatasetsAction);
     
     
@@ -658,7 +660,17 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
 }
 
 
-
+void ClusterDifferentialExpressionPlugin::serializeAction(WidgetAction* w)
+{
+    assert(w != nullptr);
+    if (w == nullptr)
+        return;
+    QString name = w->text();
+    assert(!name.isEmpty());
+    QString apiName = local::toCamelCase(name, ' ');
+    w->setSerializationName(apiName);
+	_serializedActions.append(w);
+}
 void ClusterDifferentialExpressionPlugin::publishAndSerializeAction(WidgetAction* w, bool serialize)
 {
     assert(w != nullptr);

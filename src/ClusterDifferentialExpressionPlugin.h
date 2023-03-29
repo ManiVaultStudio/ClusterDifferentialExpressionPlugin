@@ -73,7 +73,7 @@ public: // Serialization
 
 private:
 
-
+    void serializeAction(WidgetAction* w);
     void publishAndSerializeAction(WidgetAction* w, bool serialize=true);
     void createMeanExpressionDataset(qsizetype dataset_index, qsizetype index);
 
