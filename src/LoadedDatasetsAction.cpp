@@ -2,7 +2,7 @@
 #include "ClusterDifferentialExpressionPlugin.h"
 
 
-#include <ClusterData.h>
+#include <ClusterData/ClusterData.h>
 #include <cstdint>
 #include <QMenu>
 
