@@ -323,10 +323,23 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
 	, _tableView(nullptr)
 	, _buttonProgressBar(nullptr)
 	, _pairwiseDiffExpResultsAction(this, "PairwiseDifferentialExpressionResults")
+	, _copyToClipboardAction(&getWidget(), "Copy")
 {
     setSerializationName(getGuiName());
 
+    getWidget().addAction(&_copyToClipboardAction);
+
+    _copyToClipboardAction.setIcon(Application::getIconFont("FontAwesome").getIcon("copy"));
+    _copyToClipboardAction.setShortcut(tr("Ctrl+C"));
+    _copyToClipboardAction.setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    _copyToClipboardAction.setConfigurationFlag(WidgetAction::ConfigurationFlag::VisibleInMenu);
     
+    connect(&_copyToClipboardAction, &TriggerAction::triggered, this, [this]() -> void {
+        this->_tableItemModel->copyToClipboard();
+        });
+
+    
+
 
     _sortFilterProxyModel->setSourceModel(_tableItemModel.get());
     _filterOnIdAction.setSearchMode(true);
@@ -347,7 +360,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     publishAndSerializeAction(&_commandAction, false);
     publishAndSerializeAction(&_pairwiseDiffExpResultsAction, false);
     serializeAction(&_settingsAction);
-
+    serializeAction(&_copyToClipboardAction);
     _serializedActions.append(&_loadedDatasetsAction);
     
     

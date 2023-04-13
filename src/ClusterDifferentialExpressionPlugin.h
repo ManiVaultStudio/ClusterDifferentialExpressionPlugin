@@ -149,6 +149,7 @@ private:
     TriggerAction                        _updateStatisticsAction;
     QVector<QPointer<StringAction>>       _meanExpressionDatasetGuidAction;
     QVector<QPointer<StringAction>>       _DE_StatisticsDatasetGuidAction;
+    TriggerAction                        _copyToClipboardAction;
 
     // Viewer Configuration Options
     VariantAction                       _preInfoVariantAction;

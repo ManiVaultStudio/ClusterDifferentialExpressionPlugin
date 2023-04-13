@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <QMetaType>
 #include <QWidget>
+#include <QLabel>
 
 //#define TESTING
 
@@ -280,6 +281,30 @@ void QTableItemModel::copyToClipboard() const
 				result += quote + header + quote;
 			}
 		}
+		else if(headerVariant.metaType() == QMetaType::fromType<QObject*>())
+		{
+			QObject* object = headerVariant.value<QObject*>();
+
+			QWidget* widget = qobject_cast<QWidget*>(object);
+			QList<QLabel*> children = widget->findChildren<QLabel*>(Qt::FindChildrenRecursively);
+			if(!children.isEmpty())
+			{
+				QString header;
+				for (QLabel* c : children)
+				{
+
+
+					QString text = c->text();
+					text.replace("\n", "_");
+					text.replace(" ", "_");
+					if (header.isEmpty())
+						header = text;
+					else
+						header += "_" + text;
+				}
+				result += quote + header + quote;
+			}
+		}
 		
 	}
 	result += "\n";
@@ -299,6 +324,12 @@ void QTableItemModel::copyToClipboard() const
 						result += "\t";
 					result += m_data[r].data[c].toString();
 				}
+			}
+			else
+			{
+				if (c != 0)
+					result += "\t";
+				result += m_data[r].data[c].toString();
 			}
 		}
 		result += "\n";
