@@ -11,9 +11,8 @@
 #include "TableView.h"
 
 // HDPS includes
-#include "PointData.h"
-#include <QDebug>
-#include "ClusterData.h"
+#include "PointData/PointData.h"
+#include "ClusterData/ClusterData.h"
 #include "event/Event.h"
 
 #include "DataHierarchyItem.h"
@@ -23,7 +22,7 @@
 // QT includes
 
 #include <QMimeData>
-
+#include <QDebug>
 
 #include <iostream>
 #include <cassert>
