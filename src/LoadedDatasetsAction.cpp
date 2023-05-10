@@ -147,6 +147,7 @@ QStandardItem* LoadedDatasetsAction::Data::clone() const
     {
         return new Data(parent, parent->size());
     }
+    return nullptr;
 }
 
 

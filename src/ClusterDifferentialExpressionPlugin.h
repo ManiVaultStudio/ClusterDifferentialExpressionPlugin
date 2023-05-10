@@ -105,6 +105,8 @@ protected slots:
     void tableView_clicked(const QModelIndex& index);
     void tableView_selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
+    void writeToCSV();
+
 public slots:
     
     void clusterSelectionChanged(const QStringList&);
@@ -150,6 +152,7 @@ private:
     QVector<QPointer<StringAction>>       _meanExpressionDatasetGuidAction;
     QVector<QPointer<StringAction>>       _DE_StatisticsDatasetGuidAction;
     TriggerAction                        _copyToClipboardAction;
+    TriggerAction                        _saveToCsvAction;
 
     // Viewer Configuration Options
     VariantAction                       _preInfoVariantAction;

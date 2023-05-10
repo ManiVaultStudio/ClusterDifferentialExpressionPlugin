@@ -29,6 +29,8 @@ public:
 private:
 	void clear();
 	void resize(std::size_t size);
+	
+
 public:
 	QTableItemModel(QObject *parent, bool checkable);
 	virtual int	rowCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -59,8 +61,9 @@ public:
 	
 	bool setHeaderData(int section, Qt::Orientation orientation, const QVariant& value, int role = Qt::EditRole) override;
 
-	void copyToClipboard() const;
-
+	QString createCSVString(const QChar separatorChar = '\t') const;
+	void copyToClipboard(const QChar separatorChar='\t') const;
+	
 	void invalidate();
 
 	void setStatus(Status status);

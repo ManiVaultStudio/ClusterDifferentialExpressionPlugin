@@ -22,6 +22,8 @@
 // QT includes
 
 #include <QMimeData>
+#include <QFileDialog>
+#include <QSettings>
 #include <QDebug>
 
 #include <iostream>
@@ -323,19 +325,36 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
 	, _buttonProgressBar(nullptr)
 	, _pairwiseDiffExpResultsAction(this, "PairwiseDifferentialExpressionResults")
 	, _copyToClipboardAction(&getWidget(), "Copy")
+	, _saveToCsvAction(&getWidget(),"Save As...")
 {
     setSerializationName(getGuiName());
 
-    getWidget().addAction(&_copyToClipboardAction);
+    { // copy to Clipboard
+        getWidget().addAction(&_saveToCsvAction);
+        addTitleBarMenuAction(&_saveToCsvAction);
+        _saveToCsvAction.setIcon(Application::getIconFont("FontAwesome").getIcon("file-csv"));
+        _saveToCsvAction.setShortcut(tr("Ctrl+S"));
+        _saveToCsvAction.setShortcutContext(Qt::WidgetWithChildrenShortcut);
+        _saveToCsvAction.setConfigurationFlag(WidgetAction::ConfigurationFlag::VisibleInMenu);
 
-    _copyToClipboardAction.setIcon(Application::getIconFont("FontAwesome").getIcon("copy"));
-    _copyToClipboardAction.setShortcut(tr("Ctrl+C"));
-    _copyToClipboardAction.setShortcutContext(Qt::WidgetWithChildrenShortcut);
-    _copyToClipboardAction.setConfigurationFlag(WidgetAction::ConfigurationFlag::VisibleInMenu);
+        connect(&_saveToCsvAction, &TriggerAction::triggered, this, [this]() -> void {
+            this->writeToCSV();
+            });
+    }
+
+    { // copy to Clipboard
+        getWidget().addAction(&_copyToClipboardAction);
+        addTitleBarMenuAction(&_copyToClipboardAction);
+        _copyToClipboardAction.setIcon(Application::getIconFont("FontAwesome").getIcon("copy"));
+        _copyToClipboardAction.setShortcut(tr("Ctrl+C"));
+        _copyToClipboardAction.setShortcutContext(Qt::WidgetWithChildrenShortcut);
+        _copyToClipboardAction.setConfigurationFlag(WidgetAction::ConfigurationFlag::VisibleInMenu);
+
+        connect(&_copyToClipboardAction, &TriggerAction::triggered, this, [this]() -> void {
+            this->_tableItemModel->copyToClipboard();
+            });
+    }
     
-    connect(&_copyToClipboardAction, &TriggerAction::triggered, this, [this]() -> void {
-        this->_tableItemModel->copyToClipboard();
-        });
 
     
 
@@ -1082,6 +1101,41 @@ void ClusterDifferentialExpressionPlugin::tableView_clicked(const QModelIndex& i
 void ClusterDifferentialExpressionPlugin::tableView_selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
     tableView_clicked(selected.indexes().first());
+}
+
+void ClusterDifferentialExpressionPlugin::writeToCSV()
+{
+    if (_tableItemModel.isNull())
+        return;
+    // Let the user chose the save path
+    QSettings settings(QLatin1String{ "HDPS" }, QLatin1String{ "Plugins/" } + getKind());
+    const QLatin1String directoryPathKey("directoryPath");
+    const auto directoryPath = settings.value(directoryPathKey).toString() + "/";
+
+    QString fileName = QFileDialog::getSaveFileName(
+        nullptr, tr("Save data set"), directoryPath + "ClusterDifferentialExpression.csv", tr("CSV file (*.csv);;All Files (*)"));
+
+    // Only continue when the dialog has not been not canceled and the file name is non-empty.
+    if (fileName.isNull() || fileName.isEmpty())
+    {
+        qDebug() << "ClusterDifferentialExpressionPlugin: No data written to disk - File name empty";
+        return;
+    }
+    else
+    {
+        // store the directory name
+        settings.setValue(directoryPathKey, QFileInfo(fileName).absolutePath());
+    }
+
+    QString csvString = _tableItemModel->createCSVString(',');
+    if (csvString.isEmpty())
+        return;
+    QFile file(fileName);
+    if (!file.open(QFile::WriteOnly | QFile::Truncate))
+        return;
+    QTextStream output(&file);
+    output << csvString;
+    file.close();
 }
 
 void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& variant)
