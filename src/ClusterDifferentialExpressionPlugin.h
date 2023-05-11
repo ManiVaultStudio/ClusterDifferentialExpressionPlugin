@@ -73,7 +73,7 @@ public: // Serialization
 
 private:
 
-
+    void serializeAction(WidgetAction* w);
     void publishAndSerializeAction(WidgetAction* w, bool serialize=true);
     void createMeanExpressionDataset(qsizetype dataset_index, qsizetype index);
 
@@ -104,6 +104,8 @@ protected slots:
 
     void tableView_clicked(const QModelIndex& index);
     void tableView_selectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
+
+    void writeToCSV();
 
 public slots:
     
@@ -149,6 +151,8 @@ private:
     TriggerAction                        _updateStatisticsAction;
     QVector<QPointer<StringAction>>       _meanExpressionDatasetGuidAction;
     QVector<QPointer<StringAction>>       _DE_StatisticsDatasetGuidAction;
+    TriggerAction                        _copyToClipboardAction;
+    TriggerAction                        _saveToCsvAction;
 
     // Viewer Configuration Options
     VariantAction                       _preInfoVariantAction;

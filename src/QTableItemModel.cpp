@@ -3,9 +3,25 @@
 #include <QClipboard>
 #include <assert.h>
 #include <QMetaType>
-#include <QWidget>
+#include <QLabel>
 
 //#define TESTING
+
+namespace 
+{
+	namespace local
+	{
+		void fixQStringForClipboard(QString& s, QChar separator)
+		{
+			QChar defaultReplaceChar = ' ';
+			if (separator == defaultReplaceChar)
+				defaultReplaceChar = '_';
+			s.replace('\n', defaultReplaceChar);
+			s.replace('\t', defaultReplaceChar);
+			s.replace(separator, ' ');
+		}
+	}
+}
 
 QTableItemModel::QTableItemModel(QObject *parent /*= Q_NULLPTR*/, bool checkable)
 	:QAbstractTableModel(parent)
@@ -46,7 +62,8 @@ QVariant QTableItemModel::data(const QModelIndex &index, int role /*= Qt::Displa
 		return QVariant();
 
 	auto data = m_data[index.row()].data[index.column()];
-	if(data.type() == QMetaType::QVariantMap)
+	
+	if(data.metaType().id() == QMetaType::QVariantMap/*QMetaType::fromType<QVariantMap>().id()*/)
 	{
 		QVariantMap map = data.toMap();
 		QString roleString = QString::number(role);
@@ -207,7 +224,7 @@ void QTableItemModel::startModelBuilding(qsizetype columns, qsizetype rows)
 	for(qsizetype i=0; i < m_horizontalHeader.size(); ++i)
 	{
 		QVariant variant = m_horizontalHeader[i];
-		if (variant.metaType() == QMetaType::fromType<QObject*>())
+		if (variant.metaType().id() == QMetaType::QObjectStar)
 		{
 			QObject* result = variant.value<QObject*>();
 
@@ -258,29 +275,49 @@ bool QTableItemModel::setHeaderData(int section, Qt::Orientation orientation, co
 	return false;
 }
 
-
-void QTableItemModel::copyToClipboard() const
+QString QTableItemModel::createCSVString(const QChar separatorChar) const
 {
 	const QString DisplayRoleKey = QString::number(Qt::DisplayRole);
+
 
 	QString result;
 	QChar quote = '"';
 	for (std::size_t c = 0; c < m_columns; ++c)
 	{
 		if (c != 0)
-			result += "\t";
-		QVariant headerVariant  = m_horizontalHeader[c];
-		if (headerVariant.metaType() == QMetaType::fromType<QString>())
+			result += separatorChar;
+		QVariant headerVariant = m_horizontalHeader[c];
+		if (headerVariant.metaType().id() == QMetaType::QString)
 		{
 			QString header = headerVariant.toString();
 			if (header != "_hidden_")
 			{
-				header.replace("\n", "_");
-				header.replace(" ", "_");
+				local::fixQStringForClipboard(header, separatorChar);
 				result += quote + header + quote;
 			}
 		}
-		
+		else if (headerVariant.metaType().id() == QMetaType::QObjectStar)
+		{
+			QObject* object = headerVariant.value<QObject*>();
+
+			QWidget* widget = qobject_cast<QWidget*>(object);
+			QList<QLabel*> children = widget->findChildren<QLabel*>(Qt::FindChildrenRecursively);
+			if (!children.isEmpty())
+			{
+				QString header;
+				for (QLabel* c : children)
+				{
+					QString text = c->text();
+					local::fixQStringForClipboard(text, separatorChar);
+
+					if (header.isEmpty())
+						header = text;
+					else
+						header += "_" + text;
+				}
+				result += quote + header + quote;
+			}
+		}
 	}
 	result += "\n";
 
@@ -289,23 +326,76 @@ void QTableItemModel::copyToClipboard() const
 	{
 		for (std::size_t c = 0; c < m_columns; ++c)
 		{
-			if (m_horizontalHeader[c].metaType() == QMetaType::fromType<QString>())
+			
+			QString header;
+			if (m_horizontalHeader[c].metaType().id() == QMetaType::QString)
 			{
-				QString header = m_horizontalHeader[c].toString();
-
-				if (header != "_hidden_")
+				header = m_horizontalHeader[c].toString();
+			}
+			if (header != "_hidden_")
+			{
+				if (c != 0)
+					result += separatorChar;
+				QVariant variant = m_data[r].data[c];
+				
+				if (variant.canConvert<QString>())
 				{
-					if (c != 0)
-						result += "\t";
-					result += m_data[r].data[c].toString();
+					QString text = m_data[r].data[c].toString();
+					local::fixQStringForClipboard(text, separatorChar);
+					result += text;
+				}
+				else if (variant.metaType().id() == QMetaType::QVariantMap)
+				{
+					QVariantMap map = variant.toMap();
+					QString displayRoleString = QString::number(Qt::DisplayRole);
+					bool hasDisplayText = false;
+					if (map.contains(displayRoleString))
+					{
+						QString displayText = map[displayRoleString].toString();
+						if (!displayText.isEmpty() && displayText != " ")
+						{
+							hasDisplayText = true;
+							local::fixQStringForClipboard(displayText, separatorChar);
+							result += displayText;
+						}
+					}
+					if (!hasDisplayText)
+					{
+						QString tooltipRoleString = QString::number(Qt::ToolTipRole);
+						if (map.contains(tooltipRoleString))
+						{
+							QString tooltipText = map[tooltipRoleString].toString();
+							local::fixQStringForClipboard(tooltipText, separatorChar);
+							result += tooltipText;
+						}
+						else
+						{
+							QString decorationRoleString = QString::number(Qt::DecorationRole);
+							if (map.contains(decorationRoleString))
+								result += "*";
+							else
+								result += "";
+						}
+					}
 				}
 			}
+			
 		}
 		result += "\n";
 	}
+
+	return result;
+}
+
+void QTableItemModel::copyToClipboard(const QChar separatorChar) const
+{
+	QString result = createCSVString(separatorChar);
 	QClipboard *clipboard = QApplication::clipboard();
 	clipboard->setText(result);
 }
+
+
+
 
 void QTableItemModel::invalidate()
 {

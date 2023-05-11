@@ -1,7 +1,7 @@
 #include "SettingsAction.h"
 #include "Application.h"
 #include "ClusterDifferentialExpressionPlugin.h"
-#include "PointData.h"
+#include "PointData/PointData.h"
 
 #include <QMenu>
 
