@@ -1325,14 +1325,10 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 
 std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset)
 {
-    const auto& clusters = clusterDataset->getClusters();
-    const auto numClusters = clusters.size();
-
-    hdps::Dataset<Points> points = clusterDataset->getParent<Points>();
-    const std::ptrdiff_t numDimensions = points->getNumDimensions();
-
-    // check if the basic DE_Statistics for the cluster dataset has already been computed
     std::ptrdiff_t child_DE_Statistics_DatasetIndex = -1;
+    
+    // check if the basic DE_Statistics for the cluster dataset has already been computed
+   
     const QString child_DE_Statistics_DatasetName = "DE_Statistics";
     {
         const auto& childDatasets = clusterDataset->getChildren({ PointType });
@@ -1349,7 +1345,23 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
     // if they are not available compute them now
     if (child_DE_Statistics_DatasetIndex < 0)
     {
+        const auto& clusters = clusterDataset->getClusters();
+        const auto numClusters = clusters.size();
 
+        hdps::Dataset<Points> points;
+        DataHierarchyItems parents;
+        DataHierarchyItem::getParents(clusterDataset->getDataHierarchyItem(), parents);
+        for(auto parent : parents )
+        {
+            points = parent->getDataset<Points>();
+            if(points.isValid())
+                break;
+        }
+        if (!points.isValid())
+            return child_DE_Statistics_DatasetIndex; // return -1
+
+        //hdps::Dataset<Points> points = clusterDataset->getParent<Points>();
+        const std::ptrdiff_t numDimensions = points->getNumDimensions();
 
         //compute the DE statistics for this cluster
 
