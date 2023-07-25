@@ -29,7 +29,7 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
     ,datasetPickerAction(parent, "Dataset")
     ,clusterOptionsAction(parent, "Selected Clusters")
 	,datasetNameStringAction(parent, "Dataset")
-	,datasetSelectedAction(parent, "Active Dataset",true,true)
+	,datasetSelectedAction(parent, "Active Dataset",true)
 {
     
     
@@ -41,7 +41,7 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
             datasetPickerAction.setText(datasetGuiName);
             datasetNameStringAction.setString(datasetGuiName);
             datasetNameStringAction.setText(datasetGuiName);
-            datasetSelectedAction.setText("");
+            datasetSelectedAction.setText(" ");
         }
 
         {
@@ -404,8 +404,8 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
 
         
-
-        setPopupLayout(layout);
+        setLayout(layout);
+        //setPopupLayout(layout);
             
     } else {
 

@@ -9,7 +9,8 @@
 #include <Dataset.h>
 #include "widgets/DropWidget.h"
 #include "actions/VariantAction.h"
-
+#include "actions/HorizontalToolbarAction.h"
+#include "LoadedDatasetsAction.h"
 
 
 using hdps::plugin::ViewPluginFactory;
@@ -44,7 +45,7 @@ public:
 
     void init() override;
 
-    void onDataEvent(hdps::DataEvent* dataEvent);
+   
 
     /**
     * Load one (or more datasets in the view)
@@ -133,8 +134,8 @@ private:
     ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
 
 
-
-    SettingsAction                              _settingsAction; // not a real action
+    hdps::gui::HorizontalToolbarAction                     _primaryToolbarAction;
+   
 
    std::vector<std::pair<QString, QVector<qsizetype>>> _matchingDimensionNames;
 

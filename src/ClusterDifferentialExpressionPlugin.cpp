@@ -214,7 +214,7 @@ namespace local
             newDataset->setData(std::move(meanExpressions), numDimensions);
             newDataset->setDimensionNames(points->getDimensionNames());
 
-            events().notifyDatasetChanged(newDataset);
+            events().notifyDatasetDataChanged(newDataset);
 
 
             // now fild the child indices for this dataset
@@ -311,10 +311,10 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _identicalDimensions(false)
     , _preInfoVariantAction(this, "TableViewLeftSideInfo")
     , _postInfoVariantAction(this, "TableViewRightSideInfo")
-    , _settingsAction(this)
+    , _primaryToolbarAction(this, "Primary Toolbar")
     , _loadedDatasetsAction(this)
     , _filterOnIdAction(this, "Filter on Id")
-    , _autoUpdateAction(this, "auto update", false, false)
+    , _autoUpdateAction(this, "auto update", false)
     , _selectedIdAction(this, "Last selected Id")
     , _updateStatisticsAction(this, "Calculate Differential Expression")
     , _sortFilterProxyModel(new SortFilterProxyModel)
@@ -377,7 +377,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     publishAndSerializeAction(&_autoUpdateAction);
     publishAndSerializeAction(&_commandAction, false);
     publishAndSerializeAction(&_pairwiseDiffExpResultsAction, false);
-    serializeAction(&_settingsAction);
+    serializeAction(&_primaryToolbarAction);
     serializeAction(&_copyToClipboardAction);
     _serializedActions.append(&_loadedDatasetsAction);
     
@@ -388,10 +388,10 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
 
 
     //_settingsAction.addAction(_filterOnIdAction,100);
-    _settingsAction.addAction(_loadedDatasetsAction, 1);
+    _primaryToolbarAction.addAction(&_loadedDatasetsAction, 2);
 
     _autoUpdateAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("check"));
-    _settingsAction.addAction(_autoUpdateAction, 5);
+    _primaryToolbarAction.addAction(&_autoUpdateAction, 100);
 
 
     _meanExpressionDatasetGuidAction.reserve(_loadedDatasetsAction.size());
@@ -439,7 +439,7 @@ void ClusterDifferentialExpressionPlugin::init()
       //  QWidget* selectedDatasetsWidget = _selectedDatasetsAction.createWidget(&mainWidget);
       //  selectedDatasetsWidget->setContentsMargins(0, 3, 0, 3);
 
-        QWidget* settingsWidget = _settingsAction.createWidget(&mainWidget);
+        QWidget* settingsWidget = _primaryToolbarAction.createWidget(&mainWidget);
         addConfigurableWidget("LoadedDataSettings", settingsWidget);
 
         QHBoxLayout* toolBarLayout = new QHBoxLayout;
@@ -586,19 +586,7 @@ void ClusterDifferentialExpressionPlugin::init()
 }
 
 
-void ClusterDifferentialExpressionPlugin::onDataEvent(hdps::DataEvent* dataEvent)
-{
-    // Event which gets triggered when a dataset is added to the system.
-    if (dataEvent->getType() == EventType::DataAdded)
-    {
-    //    _differentialExpressionWidget->addDataOption(dataEvent->getDataset()->getGuiName());
-    }
-    // Event which gets triggered when the data contained in a dataset changes.
-    if (dataEvent->getType() == EventType::DataChanged)
-    {
-        //dataEvent->getDataset()
-    }
-}
+
 
 void ClusterDifferentialExpressionPlugin::loadData(const hdps::Datasets& datasets)
 {
@@ -756,7 +744,7 @@ void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(qsizetype 
     QString meanExpressionDatasetGuid = _meanExpressionDatasetGuidAction[dataset_index]->getString();
     Dataset<Points> meanExpressionDataset = _core->requestDataset(meanExpressionDatasetGuid);
     meanExpressionDataset->setData(meanExpressionData, 1);
-    events().notifyDatasetChanged(meanExpressionDataset);
+    events().notifyDatasetDataChanged(meanExpressionDataset);
        
    
 }
@@ -843,7 +831,7 @@ void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qs
 
             auto DE_StatisticsDataset = get_DE_Statistics_Dataset(_loadedDatasetsAction.getDataset(i));
             if (DE_StatisticsDataset.isValid())
-                _DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset.getDatasetGuid());
+                _DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset->getId());
         }
     }
 
@@ -1018,7 +1006,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         {
             if (d->isValid() && ((*d)->getGuiName() == datasetName))
             {
-                _meanExpressionDatasetGuidAction[index]->setString(d->getDatasetGuid());
+                _meanExpressionDatasetGuidAction[index]->setString(d->getDatasetId());
                 Dataset<Points> meanExpressionDataset = *d;
                 meanExpressionDataset->setData(meanExpressionData, 1);
                 found = true;
@@ -1028,7 +1016,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         if (!found)
         {
             Dataset<Points> meanExpressionDataset = _core->addDataset("Points", datasetName);
-            _meanExpressionDatasetGuidAction[index]->setString(meanExpressionDataset.getDatasetGuid());
+            _meanExpressionDatasetGuidAction[index]->setString(meanExpressionDataset.getDatasetId());
             meanExpressionDataset->setData(meanExpressionData, 1);
         }
     }
@@ -1406,7 +1394,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         newDataset->setData(std::move(meanExpressions), numDimensions);
         newDataset->setDimensionNames(points->getDimensionNames());
         
-        events().notifyDatasetChanged(newDataset);
+        events().notifyDatasetDataChanged(newDataset);
        
 
         // now fild the child indices for this dataset
@@ -1566,7 +1554,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
 
             auto DE_StatisticsDataset = get_DE_Statistics_Dataset(_loadedDatasetsAction.getDataset(i));
             if (DE_StatisticsDataset.isValid())
-                _DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset.getDatasetGuid());
+                _DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset.getDatasetId());
         }
     }
     
