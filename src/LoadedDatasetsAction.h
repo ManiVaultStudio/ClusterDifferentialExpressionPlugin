@@ -1,18 +1,14 @@
 #pragma once
 
-#include "PluginAction.h"
-
-#include "actions/DatasetPickerAction.h"
-#include "actions/OptionsAction.h"
-#include "actions/TriggerAction.h"
+#include "actions/Actions.h"
 #include "actions/VariantAction.h"
-
 
 using namespace hdps::gui;
 
 class Clusters;
+class ClusterDifferentialExpressionPlugin;
 
-class LoadedDatasetsAction : public PluginAction
+class LoadedDatasetsAction : public hdps::gui::WidgetAction
 {
     Q_OBJECT
 protected:
@@ -27,7 +23,6 @@ protected:
 
         explicit Data(LoadedDatasetsAction* parent, int index = -1);
 
-        
         virtual QStandardItem* clone() const;
         virtual QVariant data(int role = Qt::UserRole + 1) const override;
         virtual void 	setData(const QVariant& value, int role = Qt::UserRole + 1) override;
@@ -37,6 +32,8 @@ protected:
         hdps::Dataset<Clusters>   currentDataset;
         StringAction              datasetNameStringAction;
         ToggleAction              datasetSelectedAction;
+
+        LoadedDatasetsAction*     parent;
     };
 
     class Widget : public WidgetActionWidget {
@@ -68,22 +65,15 @@ public:
 
     hdps::gui::ToggleAction& getDatasetSelectedAction(const std::size_t index);
     hdps::gui::OptionsAction& getClusterSelectionAction(const std::size_t index);
-
     hdps::Dataset<Clusters>& getDataset(std::size_t index) const;
-
     QStringList getClusterOptions(std::size_t index) const;
-
     QStringList getClusterSelection(std::size_t index) const;
-
     QWidget* getClusterSelectionWidget(std::size_t index, QWidget* parent, const std::int32_t& flags);
-
     QWidget* getDatasetNameWidget(std::size_t index, QWidget* parent, const std::int32_t& flags);
+    ClusterDifferentialExpressionPlugin* getClusterDifferentialExpressionPlugin() const;
 
     qsizetype size() const;
-
     Data* data(qsizetype index) const;
-
-
     QStandardItemModel& model();
 
 public slots:
@@ -91,9 +81,10 @@ public slots:
 signals:
     void datasetAdded(int index);
 
-protected:
-    TriggerAction   _addDatasetTriggerAction;
+private:
+    TriggerAction       _addDatasetTriggerAction;
     QStandardItemModel  _model;
     //std::vector<QSharedPointer<Data>> _data;
-    friend class Widget;
+    ClusterDifferentialExpressionPlugin* _plugin;
+
 };

@@ -1,8 +1,6 @@
 #pragma once
 
-#include "SettingsAction.h"
 #include "ProgressManager.h"
-
 
 // HDPS includes
 #include <ViewPlugin.h>
@@ -11,7 +9,6 @@
 #include "actions/VariantAction.h"
 #include "actions/HorizontalToolbarAction.h"
 #include "LoadedDatasetsAction.h"
-
 
 using hdps::plugin::ViewPluginFactory;
 using hdps::plugin::ViewPlugin;
@@ -24,12 +21,9 @@ class SortFilterProxyModel;
 class Points;
 class Clusters;
 
-
-namespace hdps {
-    namespace gui {
-        class DropWidget;
-    }
-}
+// =============================================================================
+// View
+// =============================================================================
 
 class ClusterDifferentialExpressionPlugin : public ViewPlugin
 {
@@ -45,24 +39,21 @@ public:
 
     void init() override;
 
-   
-
     /**
     * Load one (or more datasets in the view)
     * @param datasets Dataset(s) to load
     */
     void loadData(const hdps::Datasets& datasets) override;
 
-    
     void addConfigurableWidget(const QString& name, QWidget* widget);
     QWidget* getConfigurableWidget(const QString& name);
 
 public: // Serialization
 
-/**
- * Load plugin from variant map
- * @param Variant map representation of the plugin
- */
+    /**
+     * Load plugin from variant map
+     * @param Variant map representation of the plugin
+     */
     void fromVariantMap(const QVariantMap& variantMap) override;
 
     /**
@@ -70,7 +61,6 @@ public: // Serialization
      * @return Variant map representation of the plugin
      */
     QVariantMap toVariantMap() const override;
-
 
 private:
 
@@ -124,24 +114,19 @@ public slots:
    
     void computeDE();
 
-
-
 private:
     const QString                       _originalName;
-    TableView* _tableView;
-    QPointer<ButtonProgressBar>                 _buttonProgressBar;
-    hdps::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
-    ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
+    TableView*                          _tableView;
+    QPointer<ButtonProgressBar>         _buttonProgressBar;
+    hdps::gui::DropWidget*              _dropWidget;            /** Widget allowing users to drop in data */
+    ProgressManager                     _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
 
 
-    hdps::gui::HorizontalToolbarAction                     _primaryToolbarAction;
-   
+    hdps::gui::HorizontalToolbarAction                      _primaryToolbarAction;
+    std::vector<std::pair<QString, QVector<qsizetype>>>     _matchingDimensionNames;
 
-   std::vector<std::pair<QString, QVector<qsizetype>>> _matchingDimensionNames;
-
-    bool                            _identicalDimensions;
-  
-    QSharedPointer<QTableItemModel>   _tableItemModel;
+    bool                                _identicalDimensions;
+    QSharedPointer<QTableItemModel>     _tableItemModel;
     QPointer<SortFilterProxyModel>      _sortFilterProxyModel;
 
     //actions
@@ -150,8 +135,8 @@ private:
     ToggleAction                         _autoUpdateAction;
     StringAction                         _selectedIdAction;
     TriggerAction                        _updateStatisticsAction;
-    QVector<QPointer<StringAction>>       _meanExpressionDatasetGuidAction;
-    QVector<QPointer<StringAction>>       _DE_StatisticsDatasetGuidAction;
+    QVector<QPointer<StringAction>>      _meanExpressionDatasetGuidAction;
+    QVector<QPointer<StringAction>>      _DE_StatisticsDatasetGuidAction;
     TriggerAction                        _copyToClipboardAction;
     TriggerAction                        _saveToCsvAction;
 
@@ -169,13 +154,13 @@ private:
     QByteArray                          _headerState;
     
     VariantAction                       _pairwiseDiffExpResultsAction;
-
-    
-    
 };
     
 
-
+// =============================================================================
+// Factory
+// =============================================================================
+ 
 class ClusterDifferentialExpressionFactory : public ViewPluginFactory
 {
         Q_OBJECT
@@ -193,7 +178,6 @@ public:
     ClusterDifferentialExpressionPlugin* produce() override;
 
     hdps::DataTypes supportedDataTypes() const override;
-
 
 	hdps::gui::PluginTriggerActions getPluginTriggerActions(const hdps::Datasets & datasets) const override;
 };

@@ -1,15 +1,14 @@
 #include "LoadedDatasetsAction.h"
+
 #include "ClusterDifferentialExpressionPlugin.h"
 
-
 #include <ClusterData/ClusterData.h>
+
 #include <cstdint>
 #include <QMenu>
 
-
 using namespace hdps;
 using namespace hdps::gui;
-
 
 namespace localNamespace
 {
@@ -24,14 +23,14 @@ namespace localNamespace
     }
 }
 
-LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
+LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
 	:QStandardItem()
     ,datasetPickerAction(parent, "Dataset")
     ,clusterOptionsAction(parent, "Selected Clusters")
 	,datasetNameStringAction(parent, "Dataset")
 	,datasetSelectedAction(parent, "Active Dataset",true)
+    ,parent(parent)
 {
-    
     
     if(index >=0)
     {
@@ -45,7 +44,7 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
         }
 
         {
-            QString baseName = parent->_plugin->getOriginalName() + "::";
+            QString baseName = parent->getClusterDifferentialExpressionPlugin()->getOriginalName() + "::";
             {
                 QString datasetPickerActionName = QString("Dataset") + QString::number(index + 1);
                 datasetPickerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
@@ -129,8 +128,6 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
 
     connect(&datasetNameStringAction, &StringAction::stringChanged, [this](const QString&)->void {this->emitDataChanged(); });
     connect(&datasetSelectedAction, &ToggleAction::changed, [this]()->void {this->emitDataChanged(); });
-
-    
     
     setFlags(Qt::ItemIsUserCheckable  | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
     if(datasetSelectedAction.isChecked())
@@ -149,7 +146,6 @@ QStandardItem* LoadedDatasetsAction::Data::clone() const
     }
     return nullptr;
 }
-
 
 
 QVariant LoadedDatasetsAction::Data::data(int role) const
@@ -192,7 +188,7 @@ void LoadedDatasetsAction::Data::setData(const QVariant& value, int role)
 
 QVariantMap LoadedDatasetsAction::toVariantMap() const
 {
-    auto variantMap = PluginAction::toVariantMap();
+    QVariantMap variantMap = WidgetAction::toVariantMap();
 
     qsizetype nrOfDatasets = _model.rowCount(); // _data.size();
 
@@ -224,8 +220,6 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
 
 void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
 {
-    PluginAction::fromVariantMap(variantMap);
-
     auto version = variantMap.value("LoadedDatasetsActionVersion", QVariant::fromValue(uint(0))).toUInt();
     if(version > 0)
     {
@@ -258,7 +252,9 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
 }
 
 LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin)
-    : PluginAction(plugin, plugin, "Selected clusters")
+    : WidgetAction(plugin, "Selected clusters"),
+    _plugin(plugin)
+
 //    , _data(2)
     , _addDatasetTriggerAction(nullptr, "addDataset")
 {
@@ -327,7 +323,10 @@ QWidget* LoadedDatasetsAction::getDatasetNameWidget(std::size_t index, QWidget* 
     //return _data.at(index)->datasetNameStringAction.createWidget(parent, flags);
 }
 
-
+ClusterDifferentialExpressionPlugin* LoadedDatasetsAction::getClusterDifferentialExpressionPlugin() const
+{
+    return _plugin;
+}
 
 qsizetype LoadedDatasetsAction::size() const
 {

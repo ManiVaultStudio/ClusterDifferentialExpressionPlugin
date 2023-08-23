@@ -17,15 +17,15 @@ set(INSTALL_DIR $ENV{HDPS_INSTALL_DIR} CACHE PATH "The HDPS Install Directoy")
 file(TO_CMAKE_PATH ${INSTALL_DIR} INSTALL_DIR)
 
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
+find_package(OpenMP)
 
 set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
     src/ClusterDifferentialExpressionPlugin.cpp
-   
 )
 
 set(PLUGIN_MOC_HEADERS
-    src/ScatterplotPlugin.h
+    src/ClusterDifferentialExpressionPlugin.h
 )
 
 set(MODEL
@@ -36,17 +36,11 @@ set(MODEL
 )
 
 set(ACTIONS
-    src/PluginAction.h
-    src/PluginAction.cpp
     src/LoadedDatasetsAction.h
     src/LoadedDatasetsAction.cpp
-    src/SettingsAction.h
-    src/SettingsAction.cpp
-  
 )
 
 set(WIDGETS
-    
     src/WordWrapHeaderView.h
     src/WordWrapHeaderView.cpp
     src/TableView.h
@@ -61,7 +55,6 @@ set(UTIL
 )
 
 set(AUX
-    
     src/ClusterDifferentialExpressionPlugin.json
 )
 
@@ -74,7 +67,7 @@ source_group(Widget FILES ${WIDGETS})
 source_group(Util FILES ${UTIL})
 source_group(Aux FILES ${AUX})
 
-add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
+add_library(${PROJECT} SHARED ${SOURCES} ${AUX})
 
 qt_wrap_cpp(CLUSTERDIFF_MOC ${PLUGIN_MOC_HEADERS} TARGET ${PROJECT})
 target_sources(${PROJECT} PRIVATE ${CLUSTERDIFF_MOC})
@@ -98,6 +91,14 @@ target_link_libraries(${PROJECT} PRIVATE "${HDPS_LINK_LIBRARY}")
 target_link_libraries(${PROJECT} PRIVATE "${POINTDATA_LINK_LIBRARY}")
 target_link_libraries(${PROJECT} PRIVATE "${CLUSTERDATA_LINK_LIBRARY}")
 
+if(OpenMP_FOUND)
+    message(STATUS "OpenMP found")
+    target_link_libraries(${PROJECT} PUBLIC OpenMP::OpenMP_CXX)
+    target_compile_options(${PROJECT} PRIVATE ${OpenMP_CXX_FLAGS})
+else()
+    message(WARNING "OpenMP not found!")
+endif()
+
 install(TARGETS ${PROJECT}
     RUNTIME DESTINATION Plugins COMPONENT PLUGINS # Windows .dll
     LIBRARY DESTINATION Plugins COMPONENT PLUGINS # Linux/Mac .so
@@ -114,31 +115,4 @@ add_custom_command(TARGET ${PROJECT} POST_BUILD
 if(MSVC)
     set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY $<IF:$<CONFIG:DEBUG>,${INSTALL_DIR}/debug,${INSTALL_DIR}/release>)
     set_property(TARGET ${PROJECT} PROPERTY VS_DEBUGGER_COMMAND $<IF:$<CONFIG:DEBUG>,${INSTALL_DIR}/debug/HDPS.exe,${INSTALL_DIR}/release/HDPS.exe>)
-
-    set_target_properties(${PROJECT} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=%PATH%;${Qt6_DIR}/../../../bin;$<$<CONFIG:DEBUG>:${INSTALL_DIR}/debug>; $<$<CONFIG:RELEASE>:${INSTALL_DIR}/release>")
 endif()
-
-if(APPLE)
-    target_link_libraries("${PROJECT}" PUBLIC debug "/usr/local/lib/libomp.dylib")
-    target_link_libraries("${PROJECT}" PUBLIC optimized "/usr/local/lib/libomp.dylib")       
-endif()
-
-find_package(OpenMP REQUIRED)
-if(OpenMP_FOUND)
-    message(STATUS "OpenMP found")
-    target_link_libraries(${PROJECT} PUBLIC OpenMP::OpenMP_CXX)
-    target_compile_options(${PROJECT} PRIVATE ${OpenMP_CXX_FLAGS})
-else()
-    message(WARNING "OpenMP not found!")
-endif()
-
- macro(print_all_variables)
-    message(STATUS "print_all_variables------------------------------------------{")
-    get_cmake_property(_variableNames VARIABLES)
-    foreach (_variableName ${_variableNames})
-        message(STATUS "${_variableName}=${${_variableName}}")
-    endforeach()
-    message(STATUS "print_all_variables------------------------------------------}")
-endmacro()
-
-#print_all_variables()   

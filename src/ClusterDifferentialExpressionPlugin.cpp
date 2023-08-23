@@ -1,8 +1,6 @@
 #include "ClusterDifferentialExpressionPlugin.h"
 
 // CDE includes
-
-#include "SettingsAction.h"
 #include "ProgressManager.h"
 #include "QTableItemModel.h"
 #include "SortFilterProxyModel.h"
@@ -20,43 +18,37 @@
 #include <actions/WidgetAction.h>
 
 // QT includes
-
 #include <QMimeData>
 #include <QFileDialog>
 #include <QSettings>
 #include <QDebug>
+#include <QHeaderView>
 
 #include <iostream>
 #include <cassert>
 #include <set>
 #include <algorithm>
 
-
 #ifdef __cpp_lib_parallel_algorithm
 #include <execution>
 #endif
 
-//#ifdef __APPLE__
-//#include "omp.h"
-////#include </opt/homebrew/opt/libomp/include/omp.h>
-//#else
-//#include <omp.h>
-//#endif
-
-
+#if defined(_OPENMP)
 #include <omp.h>
-#include <QHeaderView>
-
-#include "TableView.h"
+#endif
 
 
 Q_PLUGIN_METADATA(IID "nl.BioVault.ClusterDifferentialExpressionPlugin")
-//Q_DECLARE_METATYPE(QWidget*)
+
 using namespace hdps;
 using namespace hdps::gui;
 using namespace hdps::plugin;
 using namespace hdps::util;
 
+
+// =============================================================================
+// Helper functions
+// =============================================================================
 
 namespace local
 {
@@ -181,11 +173,9 @@ namespace local
            
             points->visitData([&clusters, &meanExpressions, numClusters, numDimensions](auto vec)
                 {
-
-					#pragma omp parallel for schedule(dynamic, 1)
+					//#pragma omp parallel for schedule(dynamic, 1)
                     for (int dimension = 0; dimension < numDimensions; ++dimension)
                     {
-                        //#pragma omp parallel for schedule(dynamic, 1)
                         for (std::ptrdiff_t clusterIdx = 0; clusterIdx < numClusters; ++clusterIdx)
                         {
                             const auto& cluster = clusters[clusterIdx];
@@ -201,12 +191,6 @@ namespace local
                     }
                 });
 
-            
-
-
-
-
-
             auto *core = Application::core();
             hdps::Dataset<Points> newDataset = core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
             events().notifyDatasetAdded(newDataset);
@@ -215,7 +199,7 @@ namespace local
             newDataset->setDimensionNames(points->getDimensionNames());
 
             events().notifyDatasetDataChanged(newDataset);
-
+            events().notifyDatasetDataDimensionsChanged(newDataset);
 
             // now fild the child indices for this dataset
             child_DE_Statistics_DatasetIndex = -1;
@@ -304,6 +288,11 @@ namespace local
     }
 
 }
+
+// =============================================================================
+// View
+// =============================================================================
+
 ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory)
     : ViewPlugin(factory)
     , _originalName(getGuiName())
@@ -354,11 +343,6 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
             this->_tableItemModel->copyToClipboard();
             });
     }
-    
-
-    
-
-
     _sortFilterProxyModel->setSourceModel(_tableItemModel.get());
     _filterOnIdAction.setSearchMode(true);
     _filterOnIdAction.setClearable(true);
@@ -366,7 +350,6 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     
     _updateStatisticsAction.setCheckable(false);
     _updateStatisticsAction.setChecked(false);
-    
     
     publishAndSerializeAction(&_preInfoVariantAction);
     publishAndSerializeAction(&_postInfoVariantAction);
@@ -381,13 +364,9 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     serializeAction(&_copyToClipboardAction);
     _serializedActions.append(&_loadedDatasetsAction);
     
-    
     connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
-
     connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
 
-
-    //_settingsAction.addAction(_filterOnIdAction,100);
     _primaryToolbarAction.addAction(&_loadedDatasetsAction, 2);
 
     _autoUpdateAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("check"));
@@ -398,12 +377,10 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     _DE_StatisticsDatasetGuidAction.reserve(_loadedDatasetsAction.size());
     for (qsizetype i = 0; i < _loadedDatasetsAction.size(); ++i)
     {
-        datasetAdded(i);
+        this->datasetAdded(i);
     }
-
     
     connect(&_commandAction, &VariantAction::variantChanged, this, &ClusterDifferentialExpressionPlugin::newCommandsReceived);
-
     connect(&_loadedDatasetsAction, &LoadedDatasetsAction::datasetAdded, this, &ClusterDifferentialExpressionPlugin::datasetAdded);
 
     //_selectedDatasetsAction.setOptionsModel(&_loadedDatasetsAction.model());
@@ -977,7 +954,6 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
 
 }
 
-
 void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
 {
     connect(&_loadedDatasetsAction.getDataset(index), &Dataset<Clusters>::changed, this, [this, index](const hdps::Dataset<hdps::DatasetImpl>& dataset) {datasetChanged(index, dataset); });
@@ -991,7 +967,6 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
     _meanExpressionDatasetGuidAction.resize(_loadedDatasetsAction.size(), nullptr);
     std::vector<float> meanExpressionData(1, 0);
     const QString baseName = getOriginalName();
-    
    
     {
         QString actionName = "SelectedIDMeanExpressionsDataset " + QString::number(index);
@@ -1057,9 +1032,6 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         _datasetTableViewHeader[index]= clusterHeaderWidget;
     }
 
-    
-   
-    
 }
 
 void ClusterDifferentialExpressionPlugin::tableView_clicked(const QModelIndex& index)
@@ -1309,8 +1281,6 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 }
 
 
-
-
 std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset)
 {
     std::ptrdiff_t child_DE_Statistics_DatasetIndex = -1;
@@ -1557,10 +1527,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
                 _DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset.getDatasetId());
         }
     }
-    
-   
-
- 
+     
     if(!_identicalDimensions)
         if (_matchingDimensionNames.empty())
         {
@@ -1764,10 +1731,13 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             }
         }
     }
-
-  
-
+    
 }
+
+
+// =============================================================================
+// Factory
+// =============================================================================
 
 QIcon ClusterDifferentialExpressionFactory::getIcon(const QColor& color /*= Qt::black*/) const
 {
