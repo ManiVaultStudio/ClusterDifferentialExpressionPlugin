@@ -1,22 +1,20 @@
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.17.0)
 
 set(PROJECT "ClusterDifferentialExpressionPlugin")
 
 PROJECT(${PROJECT})
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG /NODEFAULTLIB:LIBCMT")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 endif(MSVC)
 
-file(TO_CMAKE_PATH $ENV{HDPS_INSTALL_DIR} INSTALL_DIR)
+# Get the env path and allow the user to change it
+set(INSTALL_DIR $ENV{HDPS_INSTALL_DIR} CACHE PATH "The HDPS Install Directoy")
+# Normalize the incoming install path
+file(TO_CMAKE_PATH ${INSTALL_DIR} INSTALL_DIR)
 
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
 
@@ -24,6 +22,10 @@ set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
     src/ClusterDifferentialExpressionPlugin.cpp
    
+)
+
+set(PLUGIN_MOC_HEADERS
+    src/ScatterplotPlugin.h
 )
 
 set(MODEL
@@ -73,6 +75,9 @@ source_group(Util FILES ${UTIL})
 source_group(Aux FILES ${AUX})
 
 add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
+
+qt_wrap_cpp(CLUSTERDIFF_MOC ${PLUGIN_MOC_HEADERS} TARGET ${PROJECT})
+target_sources(${PROJECT} PRIVATE ${CLUSTERDIFF_MOC})
 
 target_include_directories(${PROJECT} PRIVATE "${INSTALL_DIR}/$<CONFIGURATION>/include/")
 
