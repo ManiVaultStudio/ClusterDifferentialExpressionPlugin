@@ -1327,7 +1327,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         points->visitData([this, &clusters, &meanExpressions, numClusters, numDimensions](auto vec)
             {
                 
-                #pragma omp parallel for schedule(dynamic, 1)
+                // #pragma omp parallel for schedule(dynamic, 1) // on MSVC 2022 this causes an internal compiler error
                 for (int dimension = 0; dimension < numDimensions; ++dimension)
                 {
                     //#pragma omp parallel for schedule(dynamic, 1)
