@@ -104,8 +104,6 @@ namespace local
         assert(!std::numeric_limits<T>::is_integer); // this function should not be called on integer types
         return static_cast<float>(floor(n * pow(10., d) + 0.5) / pow(10., d));
     }
-
-
     
     bool clusterDatset_has_computed_DE_Statistics(hdps::Dataset<Clusters> clusterDataset)
     {
@@ -157,10 +155,7 @@ namespace local
         // if they are not available compute them now
         if (child_DE_Statistics_DatasetIndex < 0)
         {
-
-
             //compute the DE statistics for this cluster
-
             const auto numPoints = points->getNumPoints();
 
             std::vector<float> meanExpressions(numClusters * numDimensions, 0);
@@ -168,7 +163,6 @@ namespace local
             int x = omp_get_max_threads();
             int y = omp_get_num_threads();
 
-           
             points->visitData([&clusters, &meanExpressions, numClusters, numDimensions](auto vec)
                 {
 					// #pragma omp parallel for schedule(dynamic, 1) // on MSVC 2022 this causes an internal compiler error
