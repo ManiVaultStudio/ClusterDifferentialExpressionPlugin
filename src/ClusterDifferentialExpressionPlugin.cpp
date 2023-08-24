@@ -37,14 +37,12 @@
 #include <omp.h>
 #endif
 
-
 Q_PLUGIN_METADATA(IID "nl.BioVault.ClusterDifferentialExpressionPlugin")
 
 using namespace hdps;
 using namespace hdps::gui;
 using namespace hdps::plugin;
 using namespace hdps::util;
-
 
 // =============================================================================
 // Helper functions
@@ -173,9 +171,10 @@ namespace local
            
             points->visitData([&clusters, &meanExpressions, numClusters, numDimensions](auto vec)
                 {
-					//#pragma omp parallel for schedule(dynamic, 1)
+					// #pragma omp parallel for schedule(dynamic, 1) // on MSVC 2022 this causes an internal compiler error
                     for (int dimension = 0; dimension < numDimensions; ++dimension)
                     {
+                        //#pragma omp parallel for schedule(dynamic, 1)
                         for (std::ptrdiff_t clusterIdx = 0; clusterIdx < numClusters; ++clusterIdx)
                         {
                             const auto& cluster = clusters[clusterIdx];
@@ -1186,7 +1185,6 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     _matchingDimensionNames.clear();
 
     const qsizetype nrOfDatasets = _loadedDatasetsAction.size();
-
    
     std::vector<std::vector<QString>> dimensionNames(nrOfDatasets);
     std::vector<QVector<QString>> sortedDimensionNames(nrOfDatasets);
@@ -1254,7 +1252,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 
     _matchingDimensionNames.resize(allDimensionNames.size());
     _progressManager.start(allDimensionNames.size(), "Matching Dimensions");
-	#pragma  omp parallel for schedule(dynamic,1)
+	#pragma omp parallel for schedule(dynamic,1)
 	for(qsizetype i=0; i < allDimensionNames.size(); ++i)
 	{
         const QString name = allDimensionNames[i];
@@ -1549,7 +1547,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     
     _tableItemModel->startModelBuilding(totalColumnCount, numDimensions);
     _progressManager.start(numDimensions, "Computing Differential Expresions ");
-	#pragma omp  parallel for schedule(dynamic,1)
+	//#pragma omp parallel for schedule(dynamic,1)
     for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
     {
         std::vector<QVariant> dataVector(totalColumnCount);

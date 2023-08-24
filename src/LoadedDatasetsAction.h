@@ -1,5 +1,7 @@
 #pragma once
 
+#include "PluginAction.h"
+
 #include "actions/Actions.h"
 #include "actions/VariantAction.h"
 
@@ -8,7 +10,7 @@ using namespace hdps::gui;
 class Clusters;
 class ClusterDifferentialExpressionPlugin;
 
-class LoadedDatasetsAction : public hdps::gui::WidgetAction
+class LoadedDatasetsAction : public PluginAction
 {
     Q_OBJECT
 protected:
@@ -16,9 +18,7 @@ protected:
     struct Data : QStandardItem
     {
     public:
-        Data() = delete;
-       // Data(const Data&) = default;
-	        
+        Data() = delete;	        
         ~Data() = default;
 
         explicit Data(LoadedDatasetsAction* parent, int index = -1);
@@ -45,20 +45,6 @@ protected:
         return new Widget(parent, this, widgetFlags);
     };
 
-public: // Serialization
-
-/**
- * Load plugin from variant map
- * @param Variant map representation of the plugin
- */
-    void fromVariantMap(const QVariantMap& variantMap) override;
-
-    /**
-     * Save plugin to variant map
-     * @return Variant map representation of the plugin
-     */
-    QVariantMap toVariantMap() const override;
-
 public:
    
     LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin);
@@ -78,13 +64,27 @@ public:
 
 public slots:
     void addDataset();
+
 signals:
     void datasetAdded(int index);
 
+public: // Serialization
+
+    /**
+     * Load plugin from variant map
+     * @param Variant map representation of the plugin
+     */
+    void fromVariantMap(const QVariantMap& variantMap) override;
+
+    /**
+     * Save plugin to variant map
+     * @return Variant map representation of the plugin
+     */
+    QVariantMap toVariantMap() const override;
+
 private:
-    TriggerAction       _addDatasetTriggerAction;
-    QStandardItemModel  _model;
-    //std::vector<QSharedPointer<Data>> _data;
-    ClusterDifferentialExpressionPlugin* _plugin;
+    TriggerAction                           _addDatasetTriggerAction;
+    QStandardItemModel                      _model;
+    ClusterDifferentialExpressionPlugin*    _plugin;
 
 };

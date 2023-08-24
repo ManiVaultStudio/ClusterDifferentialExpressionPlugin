@@ -23,6 +23,10 @@ namespace localNamespace
     }
 }
 
+// =============================================================================
+// Data
+// =============================================================================
+
 LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
 	:QStandardItem()
     ,datasetPickerAction(parent, "Dataset")
@@ -186,9 +190,36 @@ void LoadedDatasetsAction::Data::setData(const QVariant& value, int role)
 	
 }
 
+// =============================================================================
+// Action
+// =============================================================================
+
+LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin)
+    : PluginAction(plugin, plugin, "Selected clusters"),
+    _plugin(plugin)
+    , _addDatasetTriggerAction(nullptr, "addDataset")
+{
+    setSerializationName("LoadedDatasets");
+    for (auto i = 0; i < 2; ++i)
+        addDataset();
+
+    setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("database"));
+    setToolTip("Manage clusters");
+
+    connect(&_addDatasetTriggerAction, &TriggerAction::triggered, this, &LoadedDatasetsAction::addDataset);
+    _addDatasetTriggerAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("plus"));
+    QString name = _addDatasetTriggerAction.text();
+    assert(!name.isEmpty());
+    QString apiName = localNamespace::toCamelCase(name, ' ');
+    _addDatasetTriggerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+    _addDatasetTriggerAction.publish(plugin->getOriginalName() + "::" + apiName);
+    _addDatasetTriggerAction.setSerializationName(apiName);
+
+}
+
 QVariantMap LoadedDatasetsAction::toVariantMap() const
 {
-    QVariantMap variantMap = WidgetAction::toVariantMap();
+    auto variantMap = PluginAction::toVariantMap();
 
     qsizetype nrOfDatasets = _model.rowCount(); // _data.size();
 
@@ -206,11 +237,7 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
         data->clusterOptionsAction.insertIntoVariantMap(subMap);
         data->datasetNameStringAction.insertIntoVariantMap(subMap);
         data->datasetSelectedAction.insertIntoVariantMap(subMap);
-        /*
-        _data[i]->datasetPickerAction.insertIntoVariantMap(subMap);
-        _data[i]->clusterOptionsAction.insertIntoVariantMap(subMap);
-        _data[i]->datasetNameStringAction.insertIntoVariantMap(subMap);
-        */
+
         QString key = "Data" + QString::number(i);
         variantMap[key] = subMap;
     }
@@ -220,6 +247,8 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
 
 void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
 {
+    PluginAction::fromVariantMap(variantMap);
+
     auto version = variantMap.value("LoadedDatasetsActionVersion", QVariant::fromValue(uint(0))).toUInt();
     if(version > 0)
     {
@@ -241,43 +270,10 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
                 data(i)->datasetPickerAction.fromParentVariantMap(subMap);
                 data(i)->clusterOptionsAction.fromParentVariantMap(subMap);
                 data(i)->datasetNameStringAction.fromParentVariantMap(subMap);
-               // _data[i]->datasetPickerAction.fromParentVariantMap(subMap);
-                //_data[i]->clusterOptionsAction.fromParentVariantMap(subMap);
-                //_data[i]->datasetNameStringAction.fromParentVariantMap(subMap);
             }
         }
     }
 
-    
-}
-
-LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin)
-    : WidgetAction(plugin, "Selected clusters"),
-    _plugin(plugin)
-
-//    , _data(2)
-    , _addDatasetTriggerAction(nullptr, "addDataset")
-{
-    
-    setSerializationName("LoadedDatasets");
-    for (auto i = 0; i < 2; ++i)
-    {
-        addDataset();
-    }
-   // for (auto i = 0; i < _data.size();++i)
-   //     _data[i].reset(new Data(this,i));
-    setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("database"));
-    setToolTip("Manage clusters");
-
-
-    connect(&_addDatasetTriggerAction, &TriggerAction::triggered, this, &LoadedDatasetsAction::addDataset);
-    _addDatasetTriggerAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("plus"));
-    QString name = _addDatasetTriggerAction.text();
-    assert(!name.isEmpty());
-    QString apiName = localNamespace::toCamelCase(name, ' ');
-    _addDatasetTriggerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    _addDatasetTriggerAction.publish(plugin->getOriginalName() + "::" + apiName);
-    _addDatasetTriggerAction.setSerializationName(apiName);
     
 }
 
@@ -289,38 +285,32 @@ hdps::gui::ToggleAction& LoadedDatasetsAction::getDatasetSelectedAction(const st
 hdps::gui::OptionsAction& LoadedDatasetsAction::getClusterSelectionAction(const std::size_t index)
 {
     return data(index)->clusterOptionsAction;
-    //return _data.at(index)->clusterOptionsAction;
 }
 
 
 hdps::Dataset<Clusters>& LoadedDatasetsAction::getDataset(std::size_t index) const
 {
     return data(index)->currentDataset;
-    //return _data.at(index)->currentDataset;
 }
 
  QStringList LoadedDatasetsAction::getClusterOptions(std::size_t index) const
 {
      return data(index)->clusterOptionsAction.getOptions();
-    //return _data.at(index)->clusterOptionsAction.getOptions();
 }
 
 QStringList LoadedDatasetsAction::getClusterSelection(std::size_t index) const
 {
     return data(index)->clusterOptionsAction.getSelectedOptions();
-    //return _data.at(index)->clusterOptionsAction.getSelectedOptions();
 }
 
 QWidget* LoadedDatasetsAction::getClusterSelectionWidget(std::size_t index, QWidget *parent, const std::int32_t &flags)
 {
     return data(index)->clusterOptionsAction.createWidget(parent, flags);
-    //return _data.at(index)->clusterOptionsAction.createWidget(parent, flags);
 }
 
 QWidget* LoadedDatasetsAction::getDatasetNameWidget(std::size_t index, QWidget* parent, const std::int32_t& flags)
 {
     return data(index)->datasetNameStringAction.createWidget(parent, flags);
-    //return _data.at(index)->datasetNameStringAction.createWidget(parent, flags);
 }
 
 ClusterDifferentialExpressionPlugin* LoadedDatasetsAction::getClusterDifferentialExpressionPlugin() const
@@ -348,11 +338,9 @@ void LoadedDatasetsAction::addDataset()
     int currentSize = _model.rowCount();// _data.size();
 
     _model.appendRow(new Data(this, currentSize));
-//    _data.resize(currentSize + 1);
-//    _data[currentSize].reset(new Data(this, currentSize));
+
     emit datasetAdded(currentSize);
 }
-
 
 LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* currentDatasetAction, const std::int32_t& widgetFlags) :
     WidgetActionWidget(parent, currentDatasetAction)
@@ -362,14 +350,10 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
     {
         setFixedWidth(600);
         auto layout = new QGridLayout();
-
-       
-        
         
         QWidget* addButton = currentDatasetAction->_addDatasetTriggerAction.createWidget(this, TriggerAction::Icon);
         addButton->setFixedWidth(addButton->height());
         layout->addWidget(addButton,0,1);
-        
         
         const int offset = 1;
         connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[this,layout,offset,currentDatasetAction]()->void
@@ -384,10 +368,8 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
                 layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
                 layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
                 layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
-
          
         });
-
        
     	for (qsizetype i = 0; i < currentDatasetAction->size(); ++i)
         {
@@ -400,11 +382,8 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
             layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
             layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
         }
-
-
         
         setLayout(layout);
-        //setPopupLayout(layout);
             
     } else {
 

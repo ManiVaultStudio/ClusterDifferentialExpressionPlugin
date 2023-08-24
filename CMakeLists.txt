@@ -4,6 +4,8 @@ set(PROJECT "ClusterDifferentialExpressionPlugin")
 
 PROJECT(${PROJECT})
 
+set(CMAKE_AUTOMOC ON)
+
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG /NODEFAULTLIB:LIBCMT")
@@ -36,6 +38,8 @@ set(MODEL
 )
 
 set(ACTIONS
+    src/PluginAction.h
+    src/PluginAction.cpp
     src/LoadedDatasetsAction.h
     src/LoadedDatasetsAction.cpp
 )
@@ -67,7 +71,7 @@ source_group(Widget FILES ${WIDGETS})
 source_group(Util FILES ${UTIL})
 source_group(Aux FILES ${AUX})
 
-add_library(${PROJECT} SHARED ${SOURCES} ${AUX})
+add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
 
 qt_wrap_cpp(CLUSTERDIFF_MOC ${PLUGIN_MOC_HEADERS} TARGET ${PROJECT})
 target_sources(${PROJECT} PRIVATE ${CLUSTERDIFF_MOC})
