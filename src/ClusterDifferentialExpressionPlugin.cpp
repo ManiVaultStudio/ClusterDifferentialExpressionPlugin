@@ -296,7 +296,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _primaryToolbarAction(this, "Primary Toolbar")
     , _loadedDatasetsAction(this)
     , _filterOnIdAction(this, "Filter on Id")
-    , _autoUpdateAction(this, "auto update", false)
+    , _autoUpdateAction(this, "Auto update", false)
     , _selectedIdAction(this, "Last selected Id")
     , _updateStatisticsAction(this, "Calculate Differential Expression")
     , _sortFilterProxyModel(new SortFilterProxyModel)
@@ -311,7 +311,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
 {
     setSerializationName(getGuiName());
 
-    { // copy to Clipboard
+    { // copy to Clipboard - is added to TitleBarMenu
         getWidget().addAction(&_saveToCsvAction);
         addTitleBarMenuAction(&_saveToCsvAction);
         _saveToCsvAction.setIcon(Application::getIconFont("FontAwesome").getIcon("file-csv"));
@@ -324,7 +324,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
             });
     }
 
-    { // copy to Clipboard
+    { // copy to Clipboard - is added to TitleBarMenu
         getWidget().addAction(&_copyToClipboardAction);
         addTitleBarMenuAction(&_copyToClipboardAction);
         _copyToClipboardAction.setIcon(Application::getIconFont("FontAwesome").getIcon("copy"));
@@ -336,6 +336,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
             this->_tableItemModel->copyToClipboard();
             });
     }
+
     _sortFilterProxyModel->setSourceModel(_tableItemModel.get());
     _filterOnIdAction.setSearchMode(true);
     _filterOnIdAction.setClearable(true);
@@ -343,28 +344,13 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     
     _updateStatisticsAction.setCheckable(false);
     _updateStatisticsAction.setChecked(false);
-    
-    publishAndSerializeAction(&_preInfoVariantAction);
-    publishAndSerializeAction(&_postInfoVariantAction);
-    publishAndSerializeAction(&_filterOnIdAction);
-    publishAndSerializeAction(&_selectedIdAction);
-    publishAndSerializeAction(&_updateStatisticsAction);
-    publishAndSerializeAction(&_infoTextAction);
-    publishAndSerializeAction(&_autoUpdateAction);
-    publishAndSerializeAction(&_commandAction, false);
-    publishAndSerializeAction(&_pairwiseDiffExpResultsAction, false);
-    serializeAction(&_primaryToolbarAction);
-    serializeAction(&_copyToClipboardAction);
-    _serializedActions.append(&_loadedDatasetsAction);
-    
+        
     connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
     connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
 
-    _primaryToolbarAction.addAction(&_loadedDatasetsAction, 2);
-
     _autoUpdateAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("check"));
+    _primaryToolbarAction.addAction(&_loadedDatasetsAction, 2);
     _primaryToolbarAction.addAction(&_autoUpdateAction, 100);
-
 
     _meanExpressionDatasetGuidAction.reserve(_loadedDatasetsAction.size());
     _DE_StatisticsDatasetGuidAction.reserve(_loadedDatasetsAction.size());
@@ -376,7 +362,17 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     connect(&_commandAction, &VariantAction::variantChanged, this, &ClusterDifferentialExpressionPlugin::newCommandsReceived);
     connect(&_loadedDatasetsAction, &LoadedDatasetsAction::datasetAdded, this, &ClusterDifferentialExpressionPlugin::datasetAdded);
 
-    //_selectedDatasetsAction.setOptionsModel(&_loadedDatasetsAction.model());
+    _filterOnIdAction.setSerializationName("FilterOnIdAction");
+    _autoUpdateAction.setSerializationName("AutoUpdateAction");
+    _selectedIdAction.setSerializationName("SelectedIdAction");
+    _updateStatisticsAction.setSerializationName("UpdateStatisticsAction");
+    _copyToClipboardAction.setSerializationName("CopyToClipboardAction");
+    _saveToCsvAction.setSerializationName("SaveToCsvAction");
+    _preInfoVariantAction.setSerializationName("PreInfoVariantAction");
+    _postInfoVariantAction.setSerializationName("PostInfoVariantAction");
+    _infoTextAction.setSerializationName("InfoTextAction");
+    _commandAction.setSerializationName("CommandAction");
+    _pairwiseDiffExpResultsAction.setSerializationName("PairwiseDiffExpResultsAction");
 }
 
 QString ClusterDifferentialExpressionPlugin::getOriginalName() const
@@ -405,16 +401,11 @@ void ClusterDifferentialExpressionPlugin::init()
         filterWidget->setContentsMargins(0, 3, 0, 3);
         addConfigurableWidget("FilterOnId", filterWidget);
 
-
-      //  QWidget* selectedDatasetsWidget = _selectedDatasetsAction.createWidget(&mainWidget);
-      //  selectedDatasetsWidget->setContentsMargins(0, 3, 0, 3);
-
         QWidget* settingsWidget = _primaryToolbarAction.createWidget(&mainWidget);
         addConfigurableWidget("LoadedDataSettings", settingsWidget);
 
         QHBoxLayout* toolBarLayout = new QHBoxLayout;
         toolBarLayout->addWidget(filterWidget);
-     //   toolBarLayout->addWidget(selectedDatasetsWidget);
         toolBarLayout->addWidget(settingsWidget);
         mainLayout->addLayout(toolBarLayout, currentRow, 0);
         mainLayout->setRowStretch(currentRow++, 1);
@@ -587,41 +578,37 @@ void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& vari
 {
     ViewPlugin::fromVariantMap(variantMap);
     auto version = variantMap.value("ClusterDifferentialExpressionPluginVersion", QVariant::fromValue(uint(0))).toUInt();
-    if(version > 0)
-    {
-        for (auto action : _serializedActions)
-        {
-            if(variantMap.contains(action->getSerializationName()))
-				action->fromParentVariantMap(variantMap);
-
-        }
-    }
-
     
+    _filterOnIdAction.fromParentVariantMap(variantMap);
+    _autoUpdateAction.fromParentVariantMap(variantMap);
+    _selectedIdAction.fromParentVariantMap(variantMap);
+    _updateStatisticsAction.fromParentVariantMap(variantMap);
+    _copyToClipboardAction.fromParentVariantMap(variantMap);
+    _saveToCsvAction.fromParentVariantMap(variantMap);
+    _preInfoVariantAction.fromParentVariantMap(variantMap);
+    _postInfoVariantAction.fromParentVariantMap(variantMap);
+    _infoTextAction.fromParentVariantMap(variantMap);
+    _commandAction.fromParentVariantMap(variantMap);
+    _pairwiseDiffExpResultsAction.fromParentVariantMap(variantMap);
+
     if(version > 1)
     {
-
     	QVariantMap propertiesMap = local::get_strict_value<QVariantMap>(variantMap.value("#Properties"));
         if(!propertiesMap.isEmpty())
         {
+            auto found = propertiesMap.constFind("TableViewHeaderState");
+            if (found != propertiesMap.constEnd())
             {
-                auto found = propertiesMap.constFind("TableViewHeaderState");
-                if (found != propertiesMap.constEnd())
-                {
 
-                    QVariant value = found.value();
-                    QString stateAsQString = local::get_strict_value<QString>(value);
-                    // When reading a QByteArray back from jsondocument it's a QString. to Convert it back to a QByteArray we need to use .toUtf8().
-                    QByteArray state = QByteArray::fromBase64(stateAsQString.toUtf8());
-                    assert(local::is_valid_QByteArray(state));
-                	_headerState = state;
-                }
+                QVariant value = found.value();
+                QString stateAsQString = local::get_strict_value<QString>(value);
+                // When reading a QByteArray back from jsondocument it's a QString. to Convert it back to a QByteArray we need to use .toUtf8().
+                QByteArray state = QByteArray::fromBase64(stateAsQString.toUtf8());
+                assert(local::is_valid_QByteArray(state));
+                _headerState = state;
             }
-            
         }
     }
-
-    
     
 }
 
@@ -629,12 +616,19 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
 {
     QVariantMap variantMap = ViewPlugin::toVariantMap();
     variantMap["ClusterDifferentialExpressionPluginVersion"] = 2;
-    for(auto action : _serializedActions)
-    {
-        assert(action->getSerializationName()!="#Properties");
-        action->insertIntoVariantMap(variantMap);
-    }
     
+    _filterOnIdAction.insertIntoVariantMap(variantMap);
+    _autoUpdateAction.insertIntoVariantMap(variantMap);
+    _selectedIdAction.insertIntoVariantMap(variantMap);
+    _updateStatisticsAction.insertIntoVariantMap(variantMap);
+    _copyToClipboardAction.insertIntoVariantMap(variantMap);
+    _saveToCsvAction.insertIntoVariantMap(variantMap);
+    _preInfoVariantAction.insertIntoVariantMap(variantMap);
+    _postInfoVariantAction.insertIntoVariantMap(variantMap);
+    _infoTextAction.insertIntoVariantMap(variantMap);
+    _commandAction.insertIntoVariantMap(variantMap);
+    _pairwiseDiffExpResultsAction.insertIntoVariantMap(variantMap);
+
     // properties map
     QVariantMap propertiesMap;
 
@@ -642,37 +636,10 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
     propertiesMap["TableViewHeaderState"] = QString::fromUtf8(headerState.toBase64()); // encode the state with toBase64() and put it in a Utf8 QString since it will do that anyway. Best to be explicit in case it changes in the future
     variantMap["#Properties"] = propertiesMap;
     
-    
     return variantMap;
     
 }
 
-
-void ClusterDifferentialExpressionPlugin::serializeAction(WidgetAction* w)
-{
-    assert(w != nullptr);
-    if (w == nullptr)
-        return;
-    QString name = w->text();
-    assert(!name.isEmpty());
-    QString apiName = local::toCamelCase(name, ' ');
-    w->setSerializationName(apiName);
-	_serializedActions.append(w);
-}
-void ClusterDifferentialExpressionPlugin::publishAndSerializeAction(WidgetAction* w, bool serialize)
-{
-    assert(w != nullptr);
-    if(w==nullptr)
-        return;
-    QString name = w->text();
-    assert(!name.isEmpty());
-    QString apiName = local::toCamelCase(name,' ');
-    w->setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    w->publish(getOriginalName() + "::" + apiName);
-    w->setSerializationName(apiName);
-    if(serialize)
-		_serializedActions.append(w);
-}
 
 void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(qsizetype dataset_index, qsizetype index)
 {
@@ -831,9 +798,6 @@ void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qs
         }
     }
     
-
-  
-    
     QString json = "{";
     std::size_t counter = 0;
     bool addComma = false;
@@ -910,40 +874,6 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
         createMeanExpressionDataset(i, index);
     }
     
-   /*
-    QVariantList commands;
-    QVariantList command;
-    command << QString("TableView") << QString("setStyleSheet") << QString("QHeaderView::section{ background - color:red }");
-    commands.push_back(command);
-    _commandAction.setVariant(commands);
-    */
-    /*
-    QVariantList commands;
-    {
-        QVariantList command;
-        command << QString("TableView") << QString("SLOT_setColumnWidth") << int(1) << int(20);
-        commands.push_back(command);
-    }
-    {
-        QVariantList command;
-        command << QString("TableView") << QString("hideColumn") << int(2);
-        commands.push_back(command);
-
-    }
-
-
-    {
-        QVariantList command;
-        command << QString("TableViewClusterSelection1") << QString("setDisabled") << bool(true);
-        commands.push_back(command);
-
-    }
-
-    commands.push_back(QString());
-    
-	_commandAction.setVariant(commands);
-	*/
-
 }
 
 void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
@@ -963,7 +893,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
     {
         QString actionName = "SelectedIDMeanExpressionsDataset " + QString::number(index);
         _meanExpressionDatasetGuidAction[index] = new StringAction(this, "SelectedIDMeanExpressionsDataset " + QString::number(index));
-        publishAndSerializeAction(_meanExpressionDatasetGuidAction[index]);
+        //publishAndSerializeAction(_meanExpressionDatasetGuidAction[index]);
 
         QString datasetName = baseName + QString("::") + actionName;
 
@@ -994,7 +924,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         {
             QString actionName = "DE_ExpressionsDataset " + QString::number(index);
             _DE_StatisticsDatasetGuidAction[index] = new StringAction(this, "DE_StatisticsDataset " + QString::number(index));
-            publishAndSerializeAction(_DE_StatisticsDatasetGuidAction[index]);
+            //publishAndSerializeAction(_DE_StatisticsDatasetGuidAction[index]);
         }
     }
     

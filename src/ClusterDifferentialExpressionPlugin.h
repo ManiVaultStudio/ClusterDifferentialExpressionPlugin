@@ -61,8 +61,6 @@ public: // Serialization
 
 private:
 
-    void serializeAction(WidgetAction* w);
-    void publishAndSerializeAction(WidgetAction* w, bool serialize=true);
     void createMeanExpressionDataset(qsizetype dataset_index, qsizetype index);
 
     hdps::Dataset<Clusters> &getDataset(qsizetype index)
@@ -85,7 +83,6 @@ private:
 protected slots:
     void selectedRowChanged(int index);
 
-
     void newCommandsReceived(const QVariant& commands);
 
     void datasetAdded(int index);
@@ -98,6 +95,7 @@ protected slots:
 public slots:
     
     void clusterSelectionChanged(const QStringList&);
+    void computeDE();
 
 private:
     
@@ -105,11 +103,6 @@ private:
     hdps::Dataset<Points> get_DE_Statistics_Dataset(hdps::Dataset<Clusters> clusterDataset);
     std::vector<double> computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters);
     bool matchDimensionNames();
-    //void updateData(int index);
-
-public slots:
-   
-    void computeDE();
 
 private:
     const QString                       _originalName;
@@ -117,7 +110,6 @@ private:
     QPointer<ButtonProgressBar>         _buttonProgressBar;
     hdps::gui::DropWidget*              _dropWidget;            /** Widget allowing users to drop in data */
     ProgressManager                     _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
-
 
     hdps::gui::HorizontalToolbarAction                      _primaryToolbarAction;
     std::vector<std::pair<QString, QVector<qsizetype>>>     _matchingDimensionNames;
@@ -141,8 +133,6 @@ private:
     VariantAction                       _preInfoVariantAction;
     VariantAction                       _postInfoVariantAction;
     StringAction                         _infoTextAction;
-    //OptionsAction                        _selectedDatasetsAction;
-    QVector<WidgetAction*>              _serializedActions;
 
     VariantAction                       _commandAction;
 

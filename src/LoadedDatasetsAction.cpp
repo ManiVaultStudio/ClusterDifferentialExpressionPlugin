@@ -19,7 +19,6 @@ namespace localNamespace
             parts[i].replace(0, 1, parts[i][0].toUpper());
 
         return parts.join("");
-
     }
 }
 
@@ -63,7 +62,6 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
                 datasetNameStringAction.setSerializationName(datasetNameStringActionName);
             }
 
-
             {
                 QString clusterOptionsActionName = QString("SelectClusters") + QString::number(index + 1);
                 clusterOptionsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
@@ -77,7 +75,6 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
                 datasetSelectedAction.publish(baseName + actionName);
                 datasetSelectedAction.setSerializationName(actionName);
             }
-
 
         }
         QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
@@ -99,10 +96,7 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
         currentDataset = pickedDataset;
         });
 
-
-    
     connect(&currentDataset, &Dataset<Clusters>::changed,  [this](Dataset<hdps::DatasetImpl> dataset) -> void {
-
 
         if (datasetPickerAction.getCurrentDataset() != dataset)
             datasetPickerAction.setCurrentDataset(dataset);
@@ -122,11 +116,8 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
             QStringList firstItemSelectedList;
             firstItemSelectedList.append(clusterNames.first());
             clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
-
-        
         }
         });
-
 
 	currentDataset = datasetPickerAction.getCurrentDataset();
 
@@ -221,6 +212,8 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
 {
     auto variantMap = WidgetAction::toVariantMap();
 
+    _addDatasetTriggerAction.insertIntoVariantMap(variantMap);
+
     qsizetype nrOfDatasets = _model.rowCount(); // _data.size();
 
     variantMap["LoadedDatasetsActionVersion"] = 1;
@@ -228,7 +221,6 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
     
     for(qsizetype i =0; i < nrOfDatasets; ++i)
     {
-
         Data* data = dynamic_cast<Data*>(_model.item(i, 0));
         
         QVariantMap subMap;
@@ -242,12 +234,13 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
         variantMap[key] = subMap;
     }
     return variantMap;
-    return variantMap;
 }
 
 void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
 {
     WidgetAction::fromVariantMap(variantMap);
+
+    _addDatasetTriggerAction.fromParentVariantMap(variantMap);
 
     auto version = variantMap.value("LoadedDatasetsActionVersion", QVariant::fromValue(uint(0))).toUInt();
     if(version > 0)
