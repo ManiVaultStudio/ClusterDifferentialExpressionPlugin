@@ -45,6 +45,8 @@ public:
     void addConfigurableWidget(const QString& name, QWidget* widget);
     QWidget* getConfigurableWidget(const QString& name);
 
+    ToggleAction& getAutoClusterAction() { return _autoClusterAction; }
+
 public: // Serialization
 
     /**
@@ -122,6 +124,7 @@ private:
     LoadedDatasetsAction                 _loadedDatasetsAction;
     StringAction                         _filterOnIdAction;
     ToggleAction                         _autoUpdateAction;
+    ToggleAction                         _autoClusterAction;
     StringAction                         _selectedIdAction;
     TriggerAction                        _updateStatisticsAction;
     QVector<QPointer<StringAction>>      _meanExpressionDatasetGuidAction;

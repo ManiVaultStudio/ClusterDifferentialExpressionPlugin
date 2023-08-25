@@ -89,6 +89,14 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
         }
         });
 
+    // Update selected cluster ticks
+    connect(&currentDataset, &Dataset<Clusters>::dataSelectionChanged,  [this, parent]() -> void {
+
+        if (parent->getClusterDifferentialExpressionPlugin()->getAutoClusterAction().isChecked())
+            clusterOptionsAction.setSelectedOptions(currentDataset->getSelectionNames());
+
+        });
+
 	currentDataset = datasetPickerAction.getCurrentDataset();
 
     connect(&datasetNameStringAction, &StringAction::stringChanged, [this](const QString&)->void {this->emitDataChanged(); });

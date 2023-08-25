@@ -250,6 +250,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _loadedDatasetsAction(this)
     , _filterOnIdAction(this, "Filter on Id")
     , _autoUpdateAction(this, "Auto update", false)
+    , _autoClusterAction(this, "Auto select cluster", true)
     , _selectedIdAction(this, "Last selected Id")
     , _updateStatisticsAction(this, "Calculate Differential Expression")
     , _sortFilterProxyModel(new SortFilterProxyModel)
@@ -301,9 +302,9 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
     connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
 
-    _autoUpdateAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("check"));
     _primaryToolbarAction.addAction(&_loadedDatasetsAction, 2);
-    _primaryToolbarAction.addAction(&_autoUpdateAction, 100);
+    _primaryToolbarAction.addAction(&_autoUpdateAction, 3);
+    _primaryToolbarAction.addAction(&_autoClusterAction, 3);
 
     _meanExpressionDatasetGuidAction.reserve(_loadedDatasetsAction.size());
     _DE_StatisticsDatasetGuidAction.reserve(_loadedDatasetsAction.size());
@@ -317,6 +318,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
 
     _filterOnIdAction.setSerializationName("FilterOnIdAction");
     _autoUpdateAction.setSerializationName("AutoUpdateAction");
+    _autoClusterAction.setSerializationName("AutoClusterAction");
     _selectedIdAction.setSerializationName("SelectedIdAction");
     _updateStatisticsAction.setSerializationName("UpdateStatisticsAction");
     _copyToClipboardAction.setSerializationName("CopyToClipboardAction");
@@ -332,7 +334,6 @@ QString ClusterDifferentialExpressionPlugin::getOriginalName() const
 {
     return _originalName;
 }
-
 
 void ClusterDifferentialExpressionPlugin::init()
 {
@@ -365,7 +366,6 @@ void ClusterDifferentialExpressionPlugin::init()
     }
 
     { // table view
-
         _tableView = new TableView(&mainWidget);
         _tableView->setModel(_sortFilterProxyModel);
         _tableView->setSortingEnabled(true);
@@ -408,15 +408,6 @@ void ClusterDifferentialExpressionPlugin::init()
                 infoTextWidget->setVisible(!text.isEmpty());
             });
 
-
-        /*
-        const auto debug = [infoTextWidget](bool b) -> void
-        {
-            bool x = b;
-            infoTextWidget->setVisible(b);
-        };
-        */
-
         mainLayout->addWidget(infoTextWidget, currentRow, 0);
         mainLayout->setRowStretch(currentRow++, 1);
     }
@@ -428,18 +419,14 @@ void ClusterDifferentialExpressionPlugin::init()
         _buttonProgressBar->setProgressBarText("No Data Available");
         _buttonProgressBar->setButtonText("No Data Available", Qt::red);
         
-        
-
         connect(_tableItemModel.get(), &QTableItemModel::statusChanged, _buttonProgressBar, &ButtonProgressBar::showStatus);
 
         mainLayout->addWidget(_buttonProgressBar, currentRow, 0);
         mainLayout->setRowStretch(currentRow++, 1);
-
     }
 
     { // dropwidget
         _dropWidget = new gui::DropWidget(&mainWidget);
-
 
         _dropWidget->setDropIndicatorWidget(new gui::DropWidget::DropIndicatorWidget(&getWidget(), "No data loaded", "Drag an item from the data hierarchy and drop it here to visualize data..."));
         _dropWidget->initialize([this](const QMimeData* mimeData) -> gui::DropWidget::DropRegions {
@@ -485,8 +472,6 @@ void ClusterDifferentialExpressionPlugin::init()
                         //  _dropWidget->setShowDropIndicator(false);
                         getDataset(1) = candidateDataset;
                         });
-
-
                 }
             }
 
@@ -494,12 +479,8 @@ void ClusterDifferentialExpressionPlugin::init()
             });
     }
 
-
     _progressManager.setProgressBar(_buttonProgressBar->getProgressBar());
 }
-
-
-
 
 void ClusterDifferentialExpressionPlugin::loadData(const hdps::Datasets& datasets)
 {
@@ -535,6 +516,7 @@ void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& vari
     _loadedDatasetsAction.fromParentVariantMap(variantMap);
     _filterOnIdAction.fromParentVariantMap(variantMap);
     _autoUpdateAction.fromParentVariantMap(variantMap);
+    _autoClusterAction.fromParentVariantMap(variantMap);
     _selectedIdAction.fromParentVariantMap(variantMap);
     _updateStatisticsAction.fromParentVariantMap(variantMap);
     _copyToClipboardAction.fromParentVariantMap(variantMap);
@@ -574,6 +556,7 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
     _loadedDatasetsAction.insertIntoVariantMap(variantMap);
     _filterOnIdAction.insertIntoVariantMap(variantMap);
     _autoUpdateAction.insertIntoVariantMap(variantMap);
+    _autoClusterAction.insertIntoVariantMap(variantMap);
     _selectedIdAction.insertIntoVariantMap(variantMap);
     _updateStatisticsAction.insertIntoVariantMap(variantMap);
     _copyToClipboardAction.insertIntoVariantMap(variantMap);
