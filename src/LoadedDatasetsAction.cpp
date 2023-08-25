@@ -34,7 +34,6 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
 	,datasetSelectedAction(parent, "Active Dataset",true)
     ,parent(parent)
 {
-   
     if(index >=0)
     {
         QString datasetGuiName = QString("Dataset ") + QString::number(index + 1);
@@ -50,12 +49,12 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
         datasetSelectedAction.setSerializationName(QString("SelectedDataset") + QString::number(index + 1));
 
         QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
-        
     }
+
     datasetPickerAction.setDatasetsFilterFunction([](const hdps::Datasets& datasets) -> Datasets {
         Datasets clusterDatasets;
 
-        for (auto dataset : datasets)
+        for (auto& dataset : datasets)
             if (dataset->getDataType() == ClusterType)
                 clusterDatasets << dataset;
 
@@ -80,8 +79,8 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
                 for (auto& cluster : clusterDataset->getClusters())
                     clusterNames.append(cluster.getName());
             }
-
-            clusterOptionsAction.initialize(clusterNames, { clusterNames.first() });
+            clusterOptionsAction.setOptions(clusterNames, true);
+            clusterOptionsAction.setSelectedOptions({ clusterNames.first() });
         }
         });
 
@@ -115,7 +114,6 @@ QStandardItem* LoadedDatasetsAction::Data::clone() const
     }
     return nullptr;
 }
-
 
 QVariant LoadedDatasetsAction::Data::data(int role) const
 {
@@ -239,7 +237,6 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
         }
     }
 
-    
 }
 
 hdps::gui::ToggleAction& LoadedDatasetsAction::getDatasetSelectedAction(const std::size_t index)
@@ -322,17 +319,16 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
         const int offset = 1;
         connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[this,layout,offset,currentDatasetAction]()->void
         {
-                int i = currentDatasetAction->size()-1;
-                int column = 0;
+            int i = currentDatasetAction->size()-1;
+            int column = 0;
                 
-                QWidget* w = currentDatasetAction->data(i)->datasetSelectedAction.createWidget(this, ToggleAction::CheckBox);
-        		w->setFixedWidth(16);
-                layout->addWidget(w, i + offset, column++);
-                layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), i + offset, column++);
-                layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
-                layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
-                layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
-         
+            QWidget* w = currentDatasetAction->data(i)->datasetSelectedAction.createWidget(this, ToggleAction::CheckBox);
+        	w->setFixedWidth(16);
+            layout->addWidget(w, i + offset, column++);
+            layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), i + offset, column++);
+            layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
+            layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
+            layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
         });
        
     	for (qsizetype i = 0; i < currentDatasetAction->size(); ++i)

@@ -625,7 +625,6 @@ void ClusterDifferentialExpressionPlugin::datasetChanged(qsizetype index, const 
     _identicalDimensions = false;
     _matchingDimensionNames.clear();
 
-    
     createMeanExpressionDataset(index, -1);
 
     if (index == 0 && !(getDataset(1).isValid()))
@@ -647,7 +646,6 @@ void ClusterDifferentialExpressionPlugin::datasetChanged(qsizetype index, const 
 
 void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qsizetype dimension, const QString &nameToCheck)
 {
-
     if (_pairwiseDiffExpResultsAction.getVariant().toString() != "json")
         return;
     const qsizetype NrOfDatasets = _loadedDatasetsAction.size();
@@ -784,9 +782,7 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
         return;
 
     for(qsizetype i=0; i < _loadedDatasetsAction.size(); ++i)
-    {
         createMeanExpressionDataset(i, index);
-    }
     
 }
 
