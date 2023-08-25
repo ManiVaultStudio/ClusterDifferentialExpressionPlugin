@@ -42,9 +42,6 @@ public:
     */
     void loadData(const hdps::Datasets& datasets) override;
 
-    void addConfigurableWidget(const QString& name, QWidget* widget);
-    QWidget* getConfigurableWidget(const QString& name);
-
     ToggleAction& getAutoClusterAction() { return _autoClusterAction; }
 
 public: // Serialization
@@ -84,8 +81,6 @@ private:
 
 protected slots:
     void selectedRowChanged(int index);
-
-    void newCommandsReceived(const QVariant& commands);
 
     void datasetAdded(int index);
 
@@ -133,11 +128,9 @@ private:
     TriggerAction                        _saveToCsvAction;
 
     // Viewer Configuration Options
-    VariantAction                       _preInfoVariantAction;
-    VariantAction                       _postInfoVariantAction;
+    VariantAction                        _preInfoVariantAction;
+    VariantAction                        _postInfoVariantAction;
     StringAction                         _infoTextAction;
-
-    VariantAction                       _commandAction;
 
     QVector<QPointer<QWidget>>          _datasetTableViewHeader;
     QMap<QString, QWidget*>             _configurableWidgets;

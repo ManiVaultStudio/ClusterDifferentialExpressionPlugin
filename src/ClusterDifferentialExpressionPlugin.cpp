@@ -256,7 +256,6 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _sortFilterProxyModel(new SortFilterProxyModel)
     , _tableItemModel(new QTableItemModel(nullptr, false))
     , _infoTextAction(this, "IntoText")
-    , _commandAction(this, "InvokeMethods")
 	, _tableView(nullptr)
 	, _buttonProgressBar(nullptr)
 	, _pairwiseDiffExpResultsAction(this, "PairwiseDifferentialExpressionResults")
@@ -302,9 +301,12 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
     connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
 
+    auto groupAction = new VerticalGroupAction(this, "Auto Updates", true);
+    groupAction->addAction(&_autoUpdateAction);
+    groupAction->addAction(&_autoClusterAction);
+
     _primaryToolbarAction.addAction(&_loadedDatasetsAction, 2);
-    _primaryToolbarAction.addAction(&_autoUpdateAction, 3);
-    _primaryToolbarAction.addAction(&_autoClusterAction, 3);
+    _primaryToolbarAction.addAction(groupAction, 3);
 
     _meanExpressionDatasetGuidAction.reserve(_loadedDatasetsAction.size());
     _DE_StatisticsDatasetGuidAction.reserve(_loadedDatasetsAction.size());
@@ -313,7 +315,6 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
         this->datasetAdded(i);
     }
     
-    connect(&_commandAction, &VariantAction::variantChanged, this, &ClusterDifferentialExpressionPlugin::newCommandsReceived);
     connect(&_loadedDatasetsAction, &LoadedDatasetsAction::datasetAdded, this, &ClusterDifferentialExpressionPlugin::datasetAdded);
 
     _filterOnIdAction.setSerializationName("FilterOnIdAction");
@@ -326,7 +327,6 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     _preInfoVariantAction.setSerializationName("PreInfoVariantAction");
     _postInfoVariantAction.setSerializationName("PostInfoVariantAction");
     _infoTextAction.setSerializationName("InfoTextAction");
-    _commandAction.setSerializationName("CommandAction");
     _pairwiseDiffExpResultsAction.setSerializationName("PairwiseDiffExpResultsAction");
 }
 
@@ -353,10 +353,8 @@ void ClusterDifferentialExpressionPlugin::init()
     { // toolbar
         QWidget* filterWidget = _filterOnIdAction.createWidget(&mainWidget);
         filterWidget->setContentsMargins(0, 3, 0, 3);
-        addConfigurableWidget("FilterOnId", filterWidget);
 
         QWidget* settingsWidget = _primaryToolbarAction.createWidget(&mainWidget);
-        addConfigurableWidget("LoadedDataSettings", settingsWidget);
 
         QHBoxLayout* toolBarLayout = new QHBoxLayout;
         toolBarLayout->addWidget(filterWidget);
@@ -372,13 +370,10 @@ void ClusterDifferentialExpressionPlugin::init()
         _tableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-        //_tableView->setStyleSheet("QTableView::item:selected { background-color: #2c56ba; }");
-        addConfigurableWidget("TableView", _tableView);
         
         connect(_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ClusterDifferentialExpressionPlugin::tableView_selectionChanged);
 
         WordWrapHeaderView* horizontalHeader = new WordWrapHeaderView(Qt::Horizontal, _tableView, true);
-        //horizontalHeader->setStretchLastSection(true);
         horizontalHeader->setFirstSectionMovable(false);
         horizontalHeader->setSectionsMovable(true);
         horizontalHeader->setSectionsClickable(true);
@@ -387,8 +382,9 @@ void ClusterDifferentialExpressionPlugin::init()
         horizontalHeader->setStretchLastSection(true);
         horizontalHeader->setSortIndicator(1, Qt::AscendingOrder);
         horizontalHeader->setDefaultAlignment(Qt::AlignBottom | Qt::AlignLeft | Qt::Alignment(Qt::TextWordWrap));
+
         _tableView->setHorizontalHeader(horizontalHeader);
-        addConfigurableWidget("TableViewHeader", _tableView->horizontalHeader());
+
         mainLayout->addWidget(_tableView, currentRow, 0);
         mainLayout->setRowStretch(currentRow++, 97);
     }
@@ -495,19 +491,6 @@ void ClusterDifferentialExpressionPlugin::loadData(const hdps::Datasets& dataset
         getDataset(1) = datasets[1];
 }
 
-void ClusterDifferentialExpressionPlugin::addConfigurableWidget(const QString& name, QWidget* widget)
-{
-    if (!_configurableWidgets.contains(name))
-        _configurableWidgets[name] = widget;
-}
-
-QWidget* ClusterDifferentialExpressionPlugin::getConfigurableWidget(const QString& name)
-{
-    if (_configurableWidgets.contains(name))
-        return _configurableWidgets[name];
-    return nullptr;
-}
-
 void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& variantMap)
 {
     ViewPlugin::fromVariantMap(variantMap);
@@ -524,7 +507,6 @@ void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& vari
     _preInfoVariantAction.fromParentVariantMap(variantMap);
     _postInfoVariantAction.fromParentVariantMap(variantMap);
     _infoTextAction.fromParentVariantMap(variantMap);
-    _commandAction.fromParentVariantMap(variantMap);
     _pairwiseDiffExpResultsAction.fromParentVariantMap(variantMap);
 
     if(version > 1)
@@ -564,7 +546,6 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
     _preInfoVariantAction.insertIntoVariantMap(variantMap);
     _postInfoVariantAction.insertIntoVariantMap(variantMap);
     _infoTextAction.insertIntoVariantMap(variantMap);
-    _commandAction.insertIntoVariantMap(variantMap);
     _pairwiseDiffExpResultsAction.insertIntoVariantMap(variantMap);
 
     // properties map
@@ -953,88 +934,6 @@ void ClusterDifferentialExpressionPlugin::writeToCSV()
     file.close();
 }
 
-void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& variant)
-{
-    if (!variant.isValid())
-    {
-        _commandAction.setVariant(bool(false)); // return false
-        return;
-    }
-
-    QVariantList commands = local::get_strict_value<QVariantList>(variant);
-    if (commands.isEmpty())
-    {
-        _commandAction.setVariant(bool(false)); // return false
-        return;
-    }
-
-    enum { OBJECT_ID = 0, METHOD_ID = 1, ARGUMENT_OFFSET = 2 };
-    qsizetype successfulCommands = 0;
-    for (auto item : commands)
-    {
-        QVariantList  command = local::get_strict_value<QVariantList>(item);
-
-        if (command.size() >= 2)
-        {
-            QString objectID = local::get_strict_value<QString>(command[OBJECT_ID]);
-            if (!objectID.isEmpty())
-            {
-                QObject* object = this->getConfigurableWidget(objectID);
-                if (object)
-                {
-                    QString method = local::get_strict_value<QString>(command[METHOD_ID]);
-                    if (!method.isEmpty())
-                    {
-                        QString method_signature = method + '(';
-                        for (qsizetype i = ARGUMENT_OFFSET; i < command.size(); ++i)
-                        {
-                            if (i > ARGUMENT_OFFSET)
-                                method_signature += ',';
-                            method_signature += command[i].typeName();
-                        }
-                        method_signature += ')';
-
-                        QString message = QString("calling ") + objectID + "->" + method_signature + " ";
-                        if ((object->metaObject()->indexOfMethod(method_signature.toLocal8Bit().data()) != -1))
-                        {
-                            const qsizetype nrOfArguments = command.size() - ARGUMENT_OFFSET;
-                            bool result = false;
-                            switch (nrOfArguments)
-                            {
-                            case 0:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection); break;
-                            case 1:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()));  break;
-                            case 2:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()), QGenericArgument(command[ARGUMENT_OFFSET + 1].typeName(), command[ARGUMENT_OFFSET + 1].data()));  break;
-                            case 3:  result = QMetaObject::invokeMethod(object, method.toLocal8Bit().data(), Qt::DirectConnection, QGenericArgument(command[ARGUMENT_OFFSET + 0].typeName(), command[ARGUMENT_OFFSET + 0].data()), QGenericArgument(command[ARGUMENT_OFFSET + 1].typeName(), command[ARGUMENT_OFFSET + 1].data()), QGenericArgument(command[ARGUMENT_OFFSET + 2].typeName(), command[ARGUMENT_OFFSET + 2].data()));  break;
-                            default: break;
-                            }
-
-
-                            if (result)
-                            {
-                                message += " --> OK";
-                                successfulCommands++;
-                            }
-                            else
-                            {
-                                message += " --> Failed";
-                            }
-                        }
-                        else
-                        {
-                            message += " --> signal/slot does not exist";
-
-                        }
-                        qDebug() << message;
-                    }
-                }
-            }
-        }
-
-    } //for (auto item : commands)
-    
-    _commandAction.setVariant(bool(successfulCommands == commands.size())); // return value ?
-}
-
 bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 {
     _matchingDimensionNames.clear();
@@ -1418,7 +1317,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
 				mean_DE = mean[0] - mean[1]; // no fabs since we want to preserve the sign
         }
         
-
         dataVector[ID] = dimensionName;
         std::size_t columnNr = 1;
         for (auto info = preInfoMap.cbegin(); info != preInfoMap.cend(); ++info, ++columnNr)
@@ -1453,7 +1351,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
                 }
             }
         }
-		
         
         for (auto info = postInfoMap.cbegin(); info != postInfoMap.cend(); ++info, ++columnNr)
         {
@@ -1469,7 +1366,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         _progressManager.print(dimension);
     }
    
-    
     QString emptyString;
     
     _tableItemModel->setHorizontalHeader(ID, QString("ID"));

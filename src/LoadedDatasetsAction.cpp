@@ -77,15 +77,11 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
             QStringList clusterNames;
             if (clusterDataset.isValid())
             {
-                auto& clusters = clusterDataset->getClusters();
-                for (auto cluster : clusters)
-                {
+                for (auto& cluster : clusterDataset->getClusters())
                     clusterNames.append(cluster.getName());
-                }
             }
-            QStringList firstItemSelectedList;
-            firstItemSelectedList.append(clusterNames.first());
-            clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
+
+            clusterOptionsAction.initialize(clusterNames, { clusterNames.first() });
         }
         });
 
