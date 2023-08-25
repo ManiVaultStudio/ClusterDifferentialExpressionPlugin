@@ -116,21 +116,21 @@ private:
     QPointer<SortFilterProxyModel>      _sortFilterProxyModel;
 
     //actions
-    LoadedDatasetsAction                 _loadedDatasetsAction;
-    StringAction                         _filterOnIdAction;
-    ToggleAction                         _autoUpdateAction;
-    ToggleAction                         _autoClusterAction;
-    StringAction                         _selectedIdAction;
-    TriggerAction                        _updateStatisticsAction;
-    QVector<QPointer<StringAction>>      _meanExpressionDatasetGuidAction;
-    QVector<QPointer<StringAction>>      _DE_StatisticsDatasetGuidAction;
-    TriggerAction                        _copyToClipboardAction;
-    TriggerAction                        _saveToCsvAction;
+    LoadedDatasetsAction                _loadedDatasetsAction;
+    StringAction                        _filterOnIdAction;
+    ToggleAction                        _autoUpdateAction;
+    ToggleAction                        _autoClusterAction;
+    StringAction                        _selectedIdAction;
+    TriggerAction                       _updateStatisticsAction;
+    QVector<QPointer<StringAction>>     _meanExpressionDatasetGuidAction;
+    QVector<QPointer<StringAction>>     _DE_StatisticsDatasetGuidAction;
+    TriggerAction                       _copyToClipboardAction;
+    TriggerAction                       _saveToCsvAction;
 
     // Viewer Configuration Options
-    VariantAction                        _preInfoVariantAction;
-    VariantAction                        _postInfoVariantAction;
-    StringAction                         _infoTextAction;
+    VariantAction                       _preInfoVariantAction;
+    VariantAction                       _postInfoVariantAction;
+    StringAction                        _infoTextAction;
 
     QVector<QPointer<QWidget>>          _datasetTableViewHeader;
     QMap<QString, QWidget*>             _configurableWidgets;

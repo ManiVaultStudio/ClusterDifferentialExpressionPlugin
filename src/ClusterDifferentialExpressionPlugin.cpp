@@ -302,6 +302,8 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
 
     auto groupAction = new VerticalGroupAction(this, "Auto Updates", true);
+
+    groupAction->setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("spinner"));
     groupAction->addAction(&_autoUpdateAction);
     groupAction->addAction(&_autoClusterAction);
 
@@ -880,7 +882,6 @@ void ClusterDifferentialExpressionPlugin::tableView_clicked(const QModelIndex& i
        _selectedIdAction.setString(selectedGeneName);
 
        update_pairwiseDiffExpResultsAction(row, selectedGeneName);
-
 
         emit selectedRowChanged(row);
     }
