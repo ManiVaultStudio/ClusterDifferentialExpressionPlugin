@@ -433,7 +433,6 @@ void ClusterDifferentialExpressionPlugin::init()
         
         connect(_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ClusterDifferentialExpressionPlugin::tableView_selectionChanged);
 
-
         WordWrapHeaderView* horizontalHeader = new WordWrapHeaderView(Qt::Horizontal, _tableView, true);
         //horizontalHeader->setStretchLastSection(true);
         horizontalHeader->setFirstSectionMovable(false);
@@ -1215,8 +1214,6 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     }
     if (identicalOrder)
         return true;
-
-
     
     QVector<QString> allDimensionNames = sortedDimensionNames[0];
     for (qsizetype datasetIndex = 1; datasetIndex < nrOfDatasets; ++datasetIndex)
@@ -1230,11 +1227,8 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
         std::unique(result.begin(), result.end());
 #endif
         allDimensionNames = std::move(result);
-        
-
     }
     
-
     std::vector<std::vector<QString>::const_iterator> begin(nrOfDatasets);
     std::vector<std::vector<QString>::const_iterator> end(nrOfDatasets);
 	#pragma omp parallel for
@@ -1269,16 +1263,13 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 	}
    
     _progressManager.end();
-	
 }
-
 
 std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset)
 {
     std::ptrdiff_t child_DE_Statistics_DatasetIndex = -1;
     
     // check if the basic DE_Statistics for the cluster dataset has already been computed
-   
     const QString child_DE_Statistics_DatasetName = "DE_Statistics";
     {
         const auto& childDatasets = clusterDataset->getChildren({ PointType });
@@ -1346,8 +1337,6 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
                 }
             });
         
-
-        
         hdps::Dataset<Points> newDataset = _core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
 
         events().notifyDatasetAdded(newDataset);
@@ -1358,7 +1347,6 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         
         events().notifyDatasetDataChanged(newDataset);
        
-
         // now fild the child indices for this dataset
         child_DE_Statistics_DatasetIndex = -1;
         {
@@ -1378,7 +1366,6 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
     return child_DE_Statistics_DatasetIndex;
 }
 
-
 Dataset<Points> ClusterDifferentialExpressionPlugin::get_DE_Statistics_Dataset(hdps::Dataset<Clusters> clusterDataset)
 {
     auto clusterDataset_DE_Statitstics_Index = get_DE_Statistics_Index(clusterDataset);
@@ -1390,9 +1377,6 @@ Dataset<Points> ClusterDifferentialExpressionPlugin::get_DE_Statistics_Dataset(h
 
 std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters)
 {
-
-   
-    
     std::vector<double> meanExpressions_cluster1;
     auto clusterDataset_DE_Statitstics_Index = get_DE_Statistics_Index(clusterDataset);
     if (clusterDataset_DE_Statitstics_Index < 0)
@@ -1421,7 +1405,6 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
             {
 
                 meanExpressions_cluster1[dimension] += DE_Statistics->getValueAt(clusterIndexOffset + dimension) * clusterSize;
-   //            _progressManager.print(  (numProcessedClusters * numDimensions) + dimension);
             }
             sumOfClusterSizes += clusterSize;
             ++numProcessedClusters;
@@ -1433,12 +1416,10 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
         for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
         {
             meanExpressions_cluster1[dimension] /= sumOfClusterSizes;
-  //          _progressManager.print(progressOffset + dimension);
         }
         progressOffset += numDimensions;
     }
 
-   // _progressManager.end();
     return meanExpressions_cluster1;
 }
 
@@ -1468,41 +1449,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     std::size_t totalColumnCount = columnOffset + 2 + NrOfSelectedDatasets + postInfoMap.size();
     if (NrOfSelectedDatasets > 2)
         totalColumnCount += 2; // for min and max DE
-
-  
-    /*
-    static bool demo = false;
-    if (demo)
-    {
-        QVariantMap demoMap;
-        QVariantMap demoHARS;
-        QVariantMap demoHCONDELS;
-
-        
-        QVariantMap item1;
-        item1[QString::number(Qt::BackgroundRole)] = QBrush(QColor::fromRgb(128, 128, 128));
-        
-       
-        demoHARS["A1BG"] = item1;
-        demoHCONDELS["A1BG"] = QString("*");
-
-        QVariantMap item2;
-        item1[QString::number(Qt::DecorationRole)] = Application::getIconFont("FontAwesome").getIcon("square", Qt::black);
-        
-
-        demoHARS["PVALB"] = item2;
-    	demoHCONDELS["PVALB"] = QString("*");
-
-        demoMap["HARS"] = demoHARS;
-        demoMap["HCONDELS"] = demoHCONDELS;
-        _preInfoVariantAction.setVariant(demoMap);
-
-        QVariantMap emptColumn;
-        emptColumn[""] = QVariantMap();
-        _postInfoVariantAction.setVariant(emptColumn);
-    }
-    */
-    
 
     std::vector<std::vector<double>> meanExpressionValues(NrOfDatasets);
 	//#pragma omp parallel for schedule(dynamic,1)
@@ -1684,15 +1630,11 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         _tableItemModel->setHorizontalHeader(columnNr++, "Differential Expression");
     }
 
-    
     for (qsizetype datasetIndex = 0; datasetIndex < NrOfDatasets; ++datasetIndex)
     {
 
         if (_loadedDatasetsAction.data(datasetIndex)->datasetSelectedAction.isChecked())
         {
-            //_datasetTableViewHeader[datasetIndex]->setParent(_differentialExpressionWidget->getTableView()->horizontalHeader());
-            //_datasetTableViewHeader[datasetIndex]->raise();
-           // QVariant variant(QMetaType::fromType<QWidget*>(), static_cast<void*>(_datasetTableViewHeader[datasetIndex].get()));
             QWidget* widget = _datasetTableViewHeader[datasetIndex].get();
             widget->setParent(nullptr);
             widget->hide();
@@ -1708,8 +1650,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     }
     _tableItemModel->endModelBuilding();
     _progressManager.end();
-
-
   
     if (_tableView && _tableView->horizontalHeader())
     {

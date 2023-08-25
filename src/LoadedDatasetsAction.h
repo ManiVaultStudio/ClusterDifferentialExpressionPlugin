@@ -1,7 +1,5 @@
 #pragma once
 
-#include "PluginAction.h"
-
 #include "actions/Actions.h"
 #include "actions/VariantAction.h"
 
@@ -10,7 +8,7 @@ using namespace hdps::gui;
 class Clusters;
 class ClusterDifferentialExpressionPlugin;
 
-class LoadedDatasetsAction : public PluginAction
+class LoadedDatasetsAction : public WidgetAction
 {
     Q_OBJECT
 protected:

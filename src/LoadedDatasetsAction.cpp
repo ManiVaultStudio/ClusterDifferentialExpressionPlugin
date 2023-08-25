@@ -195,7 +195,7 @@ void LoadedDatasetsAction::Data::setData(const QVariant& value, int role)
 // =============================================================================
 
 LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin)
-    : PluginAction(plugin, plugin, "Selected clusters"),
+    : WidgetAction(plugin, "Selected clusters"),
     _plugin(plugin)
     , _addDatasetTriggerAction(nullptr, "addDataset")
 {
@@ -219,7 +219,7 @@ LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* 
 
 QVariantMap LoadedDatasetsAction::toVariantMap() const
 {
-    auto variantMap = PluginAction::toVariantMap();
+    auto variantMap = WidgetAction::toVariantMap();
 
     qsizetype nrOfDatasets = _model.rowCount(); // _data.size();
 
@@ -247,7 +247,7 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
 
 void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
 {
-    PluginAction::fromVariantMap(variantMap);
+    WidgetAction::fromVariantMap(variantMap);
 
     auto version = variantMap.value("LoadedDatasetsActionVersion", QVariant::fromValue(uint(0))).toUInt();
     if(version > 0)

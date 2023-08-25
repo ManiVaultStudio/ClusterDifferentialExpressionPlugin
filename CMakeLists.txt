@@ -38,8 +38,6 @@ set(MODEL
 )
 
 set(ACTIONS
-    src/PluginAction.h
-    src/PluginAction.cpp
     src/LoadedDatasetsAction.h
     src/LoadedDatasetsAction.cpp
 )
@@ -71,7 +69,7 @@ source_group(Widget FILES ${WIDGETS})
 source_group(Util FILES ${UTIL})
 source_group(Aux FILES ${AUX})
 
-add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
+add_library(${PROJECT} SHARED ${SOURCES} ${AUX})
 
 qt_wrap_cpp(CLUSTERDIFF_MOC ${PLUGIN_MOC_HEADERS} TARGET ${PROJECT})
 target_sources(${PROJECT} PRIVATE ${CLUSTERDIFF_MOC})

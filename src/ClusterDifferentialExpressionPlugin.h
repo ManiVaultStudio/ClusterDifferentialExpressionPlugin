@@ -28,9 +28,6 @@ class Clusters;
 class ClusterDifferentialExpressionPlugin : public ViewPlugin
 {
     Q_OBJECT
-
-        typedef std::pair<QString, std::vector<ptrdiff_t>> DimensionNameMatch;
-
 		
 public:
     ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory);
