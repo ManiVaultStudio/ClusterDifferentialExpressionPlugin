@@ -37,51 +37,21 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
     
     if(index >=0)
     {
-        {
-            QString datasetGuiName = QString("Dataset ") + QString::number(index + 1);
+        QString datasetGuiName = QString("Dataset ") + QString::number(index + 1);
 
-            datasetPickerAction.setText(datasetGuiName);
-            datasetNameStringAction.setString(datasetGuiName);
-            datasetNameStringAction.setText(datasetGuiName);
-            datasetSelectedAction.setText(" ");
-        }
+        datasetPickerAction.setText(datasetGuiName);
+        datasetNameStringAction.setString(datasetGuiName);
+        datasetNameStringAction.setText(datasetGuiName);
+        datasetSelectedAction.setText(" ");
 
-        {
-            QString baseName = parent->getClusterDifferentialExpressionPlugin()->getOriginalName() + "::";
-            {
-                QString datasetPickerActionName = QString("Dataset") + QString::number(index + 1);
-                datasetPickerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-                datasetPickerAction.publish(baseName + datasetPickerActionName);
-                datasetPickerAction.setSerializationName(datasetPickerActionName);
-            }
+        datasetPickerAction.setSerializationName(QString("Dataset") + QString::number(index + 1));
+        datasetNameStringAction.setSerializationName(QString("DatasetName") + QString::number(index + 1));
+        clusterOptionsAction.setSerializationName(QString("SelectClusters") + QString::number(index + 1));
+        datasetSelectedAction.setSerializationName(QString("SelectedDataset") + QString::number(index + 1));
 
-            {
-                QString datasetNameStringActionName = QString("DatasetName") + QString::number(index + 1);
-                datasetNameStringAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-                datasetNameStringAction.publish(baseName + datasetNameStringActionName);
-                datasetNameStringAction.setSerializationName(datasetNameStringActionName);
-            }
-
-            {
-                QString clusterOptionsActionName = QString("SelectClusters") + QString::number(index + 1);
-                clusterOptionsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-                clusterOptionsAction.publish(baseName + clusterOptionsActionName);
-                clusterOptionsAction.setSerializationName(clusterOptionsActionName);
-            }
-
-            {
-                QString actionName = QString("SelectedDataset") + QString::number(index + 1);
-                datasetSelectedAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-                datasetSelectedAction.publish(baseName + actionName);
-                datasetSelectedAction.setSerializationName(actionName);
-            }
-
-        }
         QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
-        
-        
-       // setCheckable(true);
     }
+
     datasetPickerAction.setDatasetsFilterFunction([](const hdps::Datasets& datasets) -> Datasets {
         Datasets clusterDatasets;
 
@@ -202,10 +172,8 @@ LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* 
     QString name = _addDatasetTriggerAction.text();
     assert(!name.isEmpty());
     QString apiName = localNamespace::toCamelCase(name, ' ');
-    _addDatasetTriggerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-    _addDatasetTriggerAction.publish(plugin->getOriginalName() + "::" + apiName);
-    _addDatasetTriggerAction.setSerializationName(apiName);
 
+    _addDatasetTriggerAction.setSerializationName(apiName);
 }
 
 QVariantMap LoadedDatasetsAction::toVariantMap() const
