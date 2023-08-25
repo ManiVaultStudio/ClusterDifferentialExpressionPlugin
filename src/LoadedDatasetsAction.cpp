@@ -34,7 +34,7 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
 	,datasetSelectedAction(parent, "Active Dataset",true)
     ,parent(parent)
 {
-    
+   
     if(index >=0)
     {
         QString datasetGuiName = QString("Dataset ") + QString::number(index + 1);
@@ -50,8 +50,8 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
         datasetSelectedAction.setSerializationName(QString("SelectedDataset") + QString::number(index + 1));
 
         QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
+        
     }
-
     datasetPickerAction.setDatasetsFilterFunction([](const hdps::Datasets& datasets) -> Datasets {
         Datasets clusterDatasets;
 
@@ -247,7 +247,6 @@ hdps::gui::OptionsAction& LoadedDatasetsAction::getClusterSelectionAction(const 
 {
     return data(index)->clusterOptionsAction;
 }
-
 
 hdps::Dataset<Clusters>& LoadedDatasetsAction::getDataset(std::size_t index) const
 {

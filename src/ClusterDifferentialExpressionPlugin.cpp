@@ -63,6 +63,7 @@ namespace local
 		bool result =  (stream.status() == QDataStream::Ok && (ver == 0));
         return result;
     }
+
     template<typename T> 
     bool is_exact_type(const QVariant& variant)
     {
@@ -70,6 +71,7 @@ namespace local
         auto requestedType = QMetaType::fromType<T>();
         return (variantType == requestedType);
     }
+
     template<typename T>
     T get_strict_value(const QVariant& variant)
     {
@@ -82,20 +84,6 @@ namespace local
 #endif
             return T();
         }
-    }
-
-    template<typename T>
-    QPair<bool,T> findAndGetAs(const QVariantMap &map, const QString & key)
-    {
-        auto found = map.constFind(key);
-        if(found != map.constEnd())
-        {
-	       if(found->canConvert<T>())
-	       {
-               return QPair<bool, T>(true, found->value<T>());
-	       }
-        }
-        return QPair<bool, T>(false, T());
     }
 
     template <typename T>
@@ -122,12 +110,6 @@ namespace local
         }
         return false;
     }
-
-    bool clusterDataset_has_parent_Point_Dataset(hdps::Dataset<Clusters> clusterDataset)
-    {
-        return clusterDataset->getParent<Points>().isValid();
-    }
-
 
     std::ptrdiff_t get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset)
     {
@@ -251,35 +233,6 @@ namespace local
         }
         return text;
 	}
-
-
-    QString fromCamelCase(const QString& s, QChar c='_') {
-
-        static QRegularExpression regExp1{ "(.)([A-Z][a-z]+)" };
-        static QRegularExpression regExp2{ "([a-z0-9])([A-Z])" };
-
-        QString result = s;
-        
-        QString s2("\\1");
-    	s2 += QString(c);
-    	s2+= "\\2";
-        result.replace(regExp1, s2);
-        result.replace(regExp2, s2);
-
-        return result.toLower();
-
-    }
-
-    QString toCamelCase(const QString& s, QChar c='_') {
-
-        QStringList parts = s.split(c, Qt::SkipEmptyParts);
-        for (int i = 1; i < parts.size(); ++i)
-            parts[i].replace(0, 1, parts[i][0].toUpper());
-
-        return parts.join("");
-
-    }
-
 }
 
 // =============================================================================
@@ -771,7 +724,6 @@ void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qs
         }
     }
 
-
     std::vector<double> mean(NrOfDatasets);
     if (_identicalDimensions)
     {
@@ -841,7 +793,6 @@ void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qs
     _pairwiseDiffExpResultsAction.setVariant(json);
 }
 
-
 void ClusterDifferentialExpressionPlugin::clusterSelectionChanged(const QStringList&)
 {
     if(_autoUpdateAction.isChecked())
@@ -860,9 +811,6 @@ void ClusterDifferentialExpressionPlugin::clusterSelectionChanged(const QStringL
 	if (_tableItemModel)
 		_tableItemModel->invalidate();
 }
-
-
-
 
 void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
 {
@@ -1101,7 +1049,6 @@ void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& va
     
     _commandAction.setVariant(bool(successfulCommands == commands.size())); // return value ?
 }
-
 
 bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 {
