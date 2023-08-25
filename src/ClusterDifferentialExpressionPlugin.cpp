@@ -532,6 +532,7 @@ void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& vari
     ViewPlugin::fromVariantMap(variantMap);
     auto version = variantMap.value("ClusterDifferentialExpressionPluginVersion", QVariant::fromValue(uint(0))).toUInt();
     
+    _loadedDatasetsAction.fromParentVariantMap(variantMap);
     _filterOnIdAction.fromParentVariantMap(variantMap);
     _autoUpdateAction.fromParentVariantMap(variantMap);
     _selectedIdAction.fromParentVariantMap(variantMap);
@@ -570,6 +571,7 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
     QVariantMap variantMap = ViewPlugin::toVariantMap();
     variantMap["ClusterDifferentialExpressionPluginVersion"] = 2;
     
+    _loadedDatasetsAction.insertIntoVariantMap(variantMap);
     _filterOnIdAction.insertIntoVariantMap(variantMap);
     _autoUpdateAction.insertIntoVariantMap(variantMap);
     _selectedIdAction.insertIntoVariantMap(variantMap);
