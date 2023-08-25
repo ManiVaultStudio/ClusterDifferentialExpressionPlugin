@@ -13,17 +13,17 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
     """Class to package DifferentialExpressionPlugin using conan
 
     Packages both RELEASE and DEBUG.
-    Uses rules_support (github.com/hdps/rulessupport) to derive
+    Uses rules_support (github.com/hManiVaultStudio/rulessupport) to derive
     versioninfo based on the branch naming convention
-    as described in https://github.com/hdps/core/wiki/Branch-naming-rules
+    as described in https://github.com/ManiVaultStudio/core/wiki/Branch-naming-rules
     """
 
     name = "ClusterDifferentialExpressionPlugin"
     description = (
-        "A plugin for viewing cluster differential expressions in the high-dimensional plugin system (HDPS)."
+        "A plugin for viewing cluster differential expressions in the high-dimensional plugin system (ManiVault)."
     )
-    topics = ("hdps", "plugin", "ClusterDifferentialExpression data", "viewing")
-    url = "https://github.com/hdps/ClusterDifferentialExpressionPlugin"
+    topics = ("ManiVault", "plugin", "ClusterDifferentialExpression data", "viewing")
+    url = "https://github.com/ManiVaultStudio/ClusterDifferentialExpressionPlugin"
     author = "B. van Lew b.van_lew@lumc.nl"  # conan recipe author
     license = "MIT"
 
@@ -37,7 +37,7 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
 
     scm = {
         "type": "git",
-        "subfolder": "hdps/ClusterDifferentialExpressionPlugin",
+        "subfolder": "ManiVaultStudio/ClusterDifferentialExpressionPlugin",
         "url": "auto",
         "revision": "auto",
     }
@@ -106,7 +106,7 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        cmake.configure(build_script_folder="hdps/ClusterDifferentialExpressionPlugin")
+        cmake.configure(build_script_folder="ManiVaultStudio/ClusterDifferentialExpressionPlugin")
         cmake.verbose = True
         return cmake
 
