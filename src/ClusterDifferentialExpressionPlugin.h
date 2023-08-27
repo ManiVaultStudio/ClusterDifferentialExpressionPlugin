@@ -1,6 +1,8 @@
 #pragma once
 
+// Local includes
 #include "ProgressManager.h"
+#include "LoadedDatasetsAction.h"
 
 // HDPS includes
 #include <ViewPlugin.h>
@@ -8,7 +10,7 @@
 #include "widgets/DropWidget.h"
 #include "actions/VariantAction.h"
 #include "actions/HorizontalToolbarAction.h"
-#include "LoadedDatasetsAction.h"
+#include <PointData/DimensionPickerAction.h>
 
 using hdps::plugin::ViewPluginFactory;
 using hdps::plugin::ViewPlugin;
@@ -120,7 +122,7 @@ private:
     StringAction                        _filterOnIdAction;
     ToggleAction                        _autoUpdateAction;
     ToggleAction                        _autoClusterAction;
-    StringAction                        _selectedIdAction;
+    DimensionPickerAction               _selectedGeneNameAction;
     TriggerAction                       _updateStatisticsAction;
     QVector<QPointer<StringAction>>     _meanExpressionDatasetGuidAction;
     QVector<QPointer<StringAction>>     _DE_StatisticsDatasetGuidAction;

@@ -251,7 +251,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     , _filterOnIdAction(this, "Filter on Id")
     , _autoUpdateAction(this, "Auto update", false)
     , _autoClusterAction(this, "Auto select cluster", true)
-    , _selectedIdAction(this, "Last selected Id")
+    , _selectedGeneNameAction(this, "Last selected Gene Name")
     , _updateStatisticsAction(this, "Calculate Differential Expression")
     , _sortFilterProxyModel(new SortFilterProxyModel)
     , _tableItemModel(new QTableItemModel(nullptr, false))
@@ -322,7 +322,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     _filterOnIdAction.setSerializationName("FilterOnIdAction");
     _autoUpdateAction.setSerializationName("AutoUpdateAction");
     _autoClusterAction.setSerializationName("AutoClusterAction");
-    _selectedIdAction.setSerializationName("SelectedIdAction");
+    _selectedGeneNameAction.setSerializationName("SelectedGeneNameAction");
     _updateStatisticsAction.setSerializationName("UpdateStatisticsAction");
     _copyToClipboardAction.setSerializationName("CopyToClipboardAction");
     _saveToCsvAction.setSerializationName("SaveToCsvAction");
@@ -502,7 +502,7 @@ void ClusterDifferentialExpressionPlugin::fromVariantMap(const QVariantMap& vari
     _filterOnIdAction.fromParentVariantMap(variantMap);
     _autoUpdateAction.fromParentVariantMap(variantMap);
     _autoClusterAction.fromParentVariantMap(variantMap);
-    _selectedIdAction.fromParentVariantMap(variantMap);
+    _selectedGeneNameAction.fromParentVariantMap(variantMap);
     _updateStatisticsAction.fromParentVariantMap(variantMap);
     _copyToClipboardAction.fromParentVariantMap(variantMap);
     _saveToCsvAction.fromParentVariantMap(variantMap);
@@ -541,7 +541,7 @@ QVariantMap ClusterDifferentialExpressionPlugin::toVariantMap() const
     _filterOnIdAction.insertIntoVariantMap(variantMap);
     _autoUpdateAction.insertIntoVariantMap(variantMap);
     _autoClusterAction.insertIntoVariantMap(variantMap);
-    _selectedIdAction.insertIntoVariantMap(variantMap);
+    _selectedGeneNameAction.insertIntoVariantMap(variantMap);
     _updateStatisticsAction.insertIntoVariantMap(variantMap);
     _copyToClipboardAction.insertIntoVariantMap(variantMap);
     _saveToCsvAction.insertIntoVariantMap(variantMap);
@@ -805,7 +805,6 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
     {
         QString actionName = "SelectedIDMeanExpressionsDataset " + QString::number(index);
         _meanExpressionDatasetGuidAction[index] = new StringAction(this, "SelectedIDMeanExpressionsDataset " + QString::number(index));
-        //publishAndSerializeAction(_meanExpressionDatasetGuidAction[index]);
 
         QString datasetName = baseName + QString("::") + actionName;
 
@@ -836,7 +835,6 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         {
             QString actionName = "DE_ExpressionsDataset " + QString::number(index);
             _DE_StatisticsDatasetGuidAction[index] = new StringAction(this, "DE_StatisticsDataset " + QString::number(index));
-            //publishAndSerializeAction(_DE_StatisticsDatasetGuidAction[index]);
         }
     }
     
@@ -879,7 +877,7 @@ void ClusterDifferentialExpressionPlugin::tableView_clicked(const QModelIndex& i
         QString selectedGeneName = firstColumn.data().toString();
         QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
         auto row = temp.row();
-       _selectedIdAction.setString(selectedGeneName);
+       _selectedGeneNameAction.setCurrentDimensionName(selectedGeneName);
 
        update_pairwiseDiffExpResultsAction(row, selectedGeneName);
 
