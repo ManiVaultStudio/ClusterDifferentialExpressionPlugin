@@ -208,7 +208,7 @@ namespace local
     QSet<unsigned> getClusterIndices(const QStringList &clusters, const QStringList &selection)
     {
         QSet<unsigned> result;
-	    for(auto s : selection)
+	    for(const auto& s : selection)
 	    {
             qsizetype index = clusters.indexOf(s);
             if (index != -1)
@@ -436,7 +436,7 @@ void ClusterDifferentialExpressionPlugin::init()
             if (tokens.count() == 1)
                 return dropRegions;
 
-            const auto datasetGuid = tokens[1];
+            const auto& datasetGuid = tokens[1];
             const auto dataType = DataType(tokens[2]);
             const auto dataTypes = DataTypes({ ClusterType });
 
@@ -569,7 +569,7 @@ void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(qsizetype 
     const auto& clusters = getDataset(dataset_index)->getClusters();
     std::size_t nrOfClusters = clusters.size();
     std::size_t nrOfPoints = 0;
-    for (auto cluster : clusters)
+    for (const auto& cluster : clusters)
     {
         nrOfPoints += cluster.getNumberOfIndices();
     }
@@ -936,10 +936,9 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     std::vector<std::vector<QString>> dimensionNames(nrOfDatasets);
     std::vector<QVector<QString>> sortedDimensionNames(nrOfDatasets);
     
-	//#pragma omp parallel for schedule(dynamic, 1)
+#pragma omp parallel for schedule(dynamic, 1)
     for(qsizetype datasetIndex=0; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
-        
         if (local::clusterDatset_has_computed_DE_Statistics(getDataset(0)))
         {
             dimensionNames[datasetIndex] = get_DE_Statistics_Dataset(getDataset(datasetIndex))->getDimensionNames();
@@ -985,7 +984,8 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     
     std::vector<std::vector<QString>::const_iterator> begin(nrOfDatasets);
     std::vector<std::vector<QString>::const_iterator> end(nrOfDatasets);
-	#pragma omp parallel for
+
+#pragma omp parallel for
     for(qsizetype datasetIndex=0; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
         begin[datasetIndex] = dimensionNames[datasetIndex].begin();
@@ -994,7 +994,8 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 
     _matchingDimensionNames.resize(allDimensionNames.size());
     _progressManager.start(allDimensionNames.size(), "Matching Dimensions");
-	#pragma omp parallel for schedule(dynamic,1)
+
+#pragma omp parallel for schedule(dynamic,1)
 	for(qsizetype i=0; i < allDimensionNames.size(); ++i)
 	{
         const QString name = allDimensionNames[i];
@@ -1075,7 +1076,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
                 // #pragma omp parallel for schedule(dynamic, 1) // on MSVC 2022 this causes an internal compiler error
                 for (int dimension = 0; dimension < numDimensions; ++dimension)
                 {
-                    //#pragma omp parallel for schedule(dynamic, 1)
+                    // #pragma omp parallel for schedule(dynamic, 1)
                     for (std::ptrdiff_t clusterIdx = 0; clusterIdx < numClusters; ++clusterIdx)
                     {
                         const auto& cluster = clusters[clusterIdx];
@@ -1153,7 +1154,7 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
             auto clusterName = cluster.getName();
             const auto clusterSize = cluster.getIndices().size();
 
-            const std::size_t clusterIndexOffset = clusterIdx * numDimensions;
+            const std::size_t clusterIndexOffset = static_cast<size_t>(clusterIdx) * numDimensions;
 #pragma omp parallel for schedule(dynamic,1)
             for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
             {
@@ -1205,7 +1206,8 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         totalColumnCount += 2; // for min and max DE
 
     std::vector<std::vector<double>> meanExpressionValues(NrOfDatasets);
-	//#pragma omp parallel for schedule(dynamic,1)
+
+#pragma omp parallel for schedule(dynamic,1)
     for (qsizetype i = 0; i < NrOfDatasets; ++i)
     {
         if(_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
