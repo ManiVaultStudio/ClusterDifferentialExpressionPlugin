@@ -10,7 +10,6 @@
 #include "widgets/DropWidget.h"
 #include "actions/VariantAction.h"
 #include "actions/HorizontalToolbarAction.h"
-#include <PointData/DimensionPickerAction.h>
 
 using hdps::plugin::ViewPluginFactory;
 using hdps::plugin::ViewPlugin;
@@ -122,7 +121,7 @@ private:
     StringAction                        _filterOnIdAction;
     ToggleAction                        _autoUpdateAction;
     ToggleAction                        _autoClusterAction;
-    DimensionPickerAction               _selectedGeneNameAction;
+    StringAction                        _selectedGeneNameAction;
     TriggerAction                       _updateStatisticsAction;
     QVector<QPointer<StringAction>>     _meanExpressionDatasetGuidAction;
     QVector<QPointer<StringAction>>     _DE_StatisticsDatasetGuidAction;
@@ -148,10 +147,10 @@ private:
  
 class ClusterDifferentialExpressionFactory : public ViewPluginFactory
 {
-        Q_OBJECT
-        Q_PLUGIN_METADATA(IID   "nl.BioVault.ClusterDifferentialExpressionPlugin"
-            FILE  "ClusterDifferentialExpressionPlugin.json")
-        Q_INTERFACES(hdps::plugin::ViewPluginFactory hdps::plugin::PluginFactory)
+    Q_OBJECT
+    Q_PLUGIN_METADATA(IID   "nl.BioVault.ClusterDifferentialExpressionPlugin"
+        FILE  "ClusterDifferentialExpressionPlugin.json")
+    Q_INTERFACES(hdps::plugin::ViewPluginFactory hdps::plugin::PluginFactory)
 
 public:
     ClusterDifferentialExpressionFactory() {}

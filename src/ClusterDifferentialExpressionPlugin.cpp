@@ -857,7 +857,6 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         clusterHeaderWidgetLayout->addWidget(widget, 1, 0, Qt::AlignTop);
         clusterHeaderWidgetLayout->addWidget(new QLabel("Mean", clusterHeaderWidget), 2, 0, Qt::AlignLeft);
 
-
     	clusterHeaderWidget->setLayout(clusterHeaderWidgetLayout);
         clusterHeaderWidget->setParent(nullptr);
         clusterHeaderWidget->hide();
@@ -875,10 +874,9 @@ void ClusterDifferentialExpressionPlugin::tableView_clicked(const QModelIndex& i
         QModelIndex firstColumn = index.sibling(index.row(), 0);
 
         QString selectedGeneName = firstColumn.data().toString();
-        QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
-        auto row = temp.row();
-       _selectedGeneNameAction.setCurrentDimensionName(selectedGeneName);
+       _selectedGeneNameAction.setString(selectedGeneName);
 
+       auto row = _sortFilterProxyModel->mapToSource(firstColumn).row();
        update_pairwiseDiffExpResultsAction(row, selectedGeneName);
 
         emit selectedRowChanged(row);
