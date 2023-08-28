@@ -936,7 +936,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     std::vector<std::vector<QString>> dimensionNames(nrOfDatasets);
     std::vector<QVector<QString>> sortedDimensionNames(nrOfDatasets);
     
-#pragma omp parallel for schedule(dynamic, 1)
+    //#pragma omp parallel for schedule(dynamic, 1)
     for(qsizetype datasetIndex=0; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
         if (local::clusterDatset_has_computed_DE_Statistics(getDataset(0)))
@@ -1207,7 +1207,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
 
     std::vector<std::vector<double>> meanExpressionValues(NrOfDatasets);
 
-#pragma omp parallel for schedule(dynamic,1)
+    //#pragma omp parallel for schedule(dynamic,1)
     for (qsizetype i = 0; i < NrOfDatasets; ++i)
     {
         if(_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
