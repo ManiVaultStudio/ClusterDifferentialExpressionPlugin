@@ -1,9 +1,11 @@
 #pragma once
 
+/*
 #include "PluginAction.h"
 #include "LoadedDatasetsAction.h"
 
 #include "actions/WidgetActionStateWidget.h"
+
 
 using namespace hdps::gui;
 
@@ -74,3 +76,4 @@ protected:
     QVector<qsizetype> _priorities;
     
 };
+*/

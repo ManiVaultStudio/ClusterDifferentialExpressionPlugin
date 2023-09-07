@@ -1,3 +1,4 @@
+/*
 #include "SettingsAction.h"
 #include "Application.h"
 #include "ClusterDifferentialExpressionPlugin.h"
@@ -24,31 +25,14 @@ SettingsAction::SettingsAction(ClusterDifferentialExpressionPlugin* plugin) :
 
    // _exportAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("camera"));
    // _exportAction.setDefaultWidgetFlags(TriggerAction::Icon);
-/*
-    connect(&_exportAction, &TriggerAction::triggered, this, [this]() {
-        ExportImageDialog exportDialog(nullptr, *_scatterplotPlugin);
 
-        exportDialog.exec();
-    });
-*/
 }
 
 QMenu* SettingsAction::getContextMenu()
 {
     
     auto menu = new QMenu();
-    /*
-    menu->addMenu(_renderModeAction.getContextMenu());
-    menu->addMenu(_plotAction.getContextMenu());
-    menu->addSeparator();
-    menu->addMenu(_positionAction.getContextMenu());
-    menu->addMenu(_coloringAction.getContextMenu());
-    menu->addSeparator();
-    menu->addMenu(_subsetAction.getContextMenu());
-    menu->addMenu(_selectionAction.getContextMenu());
-    menu->addSeparator();
-    menu->addMenu(_miscellaneousAction.getContextMenu());
-    */
+    
     return menu;
 }
 
@@ -109,16 +93,11 @@ bool SettingsAction::Widget::eventFilter(QObject* object, QEvent* event)
     return QObject::eventFilter(object, event);
 }
 
-void SettingsAction::Widget::addStateWidget(WidgetAction* widgetAction, const std::int32_t& priority /*= 0*/)
+void SettingsAction::Widget::addStateWidget(WidgetAction* widgetAction, const std::int32_t& priority )
 {
     _stateWidgets << new WidgetActionStateWidget(this, widgetAction, priority);
 
-    /*
-    if (_stateWidgets.count() >= 2 ) {
-        _spacerWidgets << new SpacerWidget();
-        _toolBarLayout.addWidget(_spacerWidgets.back());
-    }
-    */
+   
     _toolBarLayout.addWidget(_stateWidgets.back());
 }
 
@@ -178,7 +157,7 @@ void SettingsAction::Widget::updateLayout()
     }
 }
 
-SettingsAction::SpacerWidget::SpacerWidget(const Type& type /*= Type::Spacer*/) :
+SettingsAction::SpacerWidget::SpacerWidget(const Type& type ) :
     QWidget(),
     _type(Type::Divider),
     _layout(new QHBoxLayout())
@@ -232,3 +211,4 @@ std::int32_t SettingsAction::SpacerWidget::getWidth(const Type& type)
 
     return 0;
 }
+*/
