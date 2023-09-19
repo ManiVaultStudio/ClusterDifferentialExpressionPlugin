@@ -28,7 +28,7 @@ public:
 
 private:
 	void clear();
-	void resize(std::size_t size);
+	void resize(std::size_t rows, std::size_t columns);
 	
 
 public:
@@ -39,10 +39,6 @@ public:
 	virtual bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::DisplayRole) override;
     virtual Qt::ItemFlags flags(const QModelIndex& index) const override;
 	virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-
-	void update();
-	//virtual QModelIndex	index(int row, int column, const QModelIndex &parent = QModelIndex()) const override;
-	//virtual QModelIndex	parent(const QModelIndex &index) const override;
 
 	void setCheckState(int row, Qt::CheckState state);
 	Qt::CheckState checkState(int row) const;
@@ -56,6 +52,7 @@ public:
 	void startModelBuilding(qsizetype columns, qsizetype rows);
 
 	void endModelBuilding();
+	QVariant getHorizontalHeader(int index) const;
 	void setHorizontalHeader(int index, QVariant &value);
 	void setHorizontalHeader(int index, const QString& value);
 	
@@ -67,6 +64,8 @@ public:
 	void invalidate();
 
 	void setStatus(Status status);
+	void setHeaderStatus(Status status);
+
 public:
 	Status status();
 
@@ -81,6 +80,7 @@ private:
 	bool m_checkable;
 	std::size_t m_columns;
 	Status m_status;
+	Status m_headerStatus;
 };
 
 #endif

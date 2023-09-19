@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <QMetaType>
 #include <QLabel>
-
+#include <QAbstractItemModelTester>
 //#define TESTING
 
 namespace 
@@ -28,6 +28,7 @@ QTableItemModel::QTableItemModel(QObject *parent /*= Q_NULLPTR*/, bool checkable
 	, m_checkable(checkable)
 	, m_columns(0)
 	, m_status(Status::Undefined)
+	, m_headerStatus(Status::Undefined)
 {
 	
 }
@@ -125,23 +126,38 @@ Qt::ItemFlags QTableItemModel::flags(const QModelIndex& index) const
 	return returnFlags;
 }
 
-void QTableItemModel::resize(std::size_t size)
+void QTableItemModel::resize(std::size_t rows, std::size_t columns)
 {
-	if (size != m_data.size())
+	bool layoutToBeChanged = false;
+	if(columns != m_columns)
 	{
-		m_data.resize(size);
+		m_columns = columns;
+		layoutToBeChanged = true;
+	}
+	
+	if (rows != m_data.size())
+	{
+		
+		layoutToBeChanged = true;
 	}
 
-	for (std::size_t i = 0; i < size; ++i)
+	if(layoutToBeChanged)
 	{
+		layoutAboutToBeChanged();
+		m_data.resize(rows);
+		for (std::size_t i = 0; i < rows; ++i)
+		{
 #ifdef TESTING
-		m_data[i].data.resize(m_columns + 1);
-		m_data[i].data[m_columns] = i;
+			m_data[i].data.resize(m_columns + 1);
+			m_data[i].data[m_columns] = i;
 #endif
-		if (m_data[i].data.size() != m_columns)
-			m_data[i].data.resize(m_columns);
+			if (m_data[i].data.size() != m_columns)
+				m_data[i].data.resize(m_columns);
 
+		}
+		emit layoutChanged();
 	}
+	
 }
 
 QVariant& QTableItemModel::at(std::size_t row, std::size_t column)
@@ -220,37 +236,48 @@ void QTableItemModel::clear()
 void QTableItemModel::startModelBuilding(qsizetype columns, qsizetype rows)
 {
 	beginResetModel();
-	m_columns = columns;
-	for(qsizetype i=0; i < m_horizontalHeader.size(); ++i)
+	resize(rows, columns);
+
+	if(m_headerStatus != Status::UpToDate)
 	{
-		QVariant variant = m_horizontalHeader[i];
-		if (variant.metaType().id() == QMetaType::QObjectStar)
+		for (qsizetype i = 0; i < m_horizontalHeader.size(); ++i)
 		{
-			QObject* result = variant.value<QObject*>();
+			QVariant variant = m_horizontalHeader[i];
+			if (variant.metaType().id() == QMetaType::QObjectStar)
+			{
+				QObject* result = variant.value<QObject*>();
 
-			QWidget* widget = qobject_cast<QWidget*>(result);
+				QWidget* widget = qobject_cast<QWidget*>(result);
 
-			widget->lower();
-			widget->hide();
-			widget->setParent(nullptr);
+				widget->lower();
+				widget->hide();
+				widget->setParent(nullptr);
+			}
 		}
+		if (m_horizontalHeader.size() == 0)
+			m_horizontalHeader.assign(m_columns, QVariantMap());
 	}
-	m_horizontalHeader.assign(m_columns, QVariantMap());
-	resize(rows);
 	setStatus(Status::Updating);
 }
 
 void QTableItemModel::endModelBuilding()
 {
 	setStatus(Status::UpToDate);
-	emit headerDataChanged(Qt::Horizontal, 0, m_columns-1 );
+	if(m_headerStatus != Status::UpToDate)
+	{
+		emit headerDataChanged(Qt::Horizontal, 0, m_columns - 1);
+		m_headerStatus = Status::UpToDate;
+	}
 	endResetModel();
+}
+
+QVariant QTableItemModel::getHorizontalHeader(int index) const
+{
+	return headerData(index, Qt::Horizontal, Qt::DisplayRole);
 }
 
 void QTableItemModel::setHorizontalHeader(int index, QVariant &value)
 {
-	if (index >= m_horizontalHeader.size())
-		m_horizontalHeader.resize(index+1);
 	setHeaderData(index, Qt::Horizontal, value, Qt::DisplayRole);
 }
 void QTableItemModel::setHorizontalHeader(int index, const QString& value)
@@ -267,9 +294,17 @@ bool QTableItemModel::setHeaderData(int section, Qt::Orientation orientation, co
 	if(orientation == Qt::Horizontal)
 	{
 		if (section >= m_horizontalHeader.size())
+		{
 			m_horizontalHeader.resize(section + 1);
+			m_headerStatus = Status::OutDated;
+		}
 
-		m_horizontalHeader[section] = value;
+		if(headerData(section, orientation, role) != value)
+		{
+			m_horizontalHeader[section] = value;
+			m_headerStatus = Status::OutDated;
+		}
+		
 		return true;
 	}
 	return false;
@@ -406,13 +441,32 @@ void QTableItemModel::setStatus(QTableItemModel::Status status)
 {
 	if (status != m_status)
 	{
-		layoutAboutToBeChanged();
 		m_status = status;
-		emit layoutChanged();
 		emit statusChanged(status);
 	}
 }
+
+void QTableItemModel::setHeaderStatus(QTableItemModel::Status status)
+{
+	if (status != m_headerStatus)
+	{
+		m_headerStatus = status;
+	}
+}
+
 QTableItemModel::Status QTableItemModel::status()
 {
 	return m_status;
 }
+
+	
+#ifdef TESTING
+bool QTableItemModelTest()
+{
+	 QSharedPointer<QTableItemModel> model(new QTableItemModel(nullptr,true));
+	 QSharedPointer <QAbstractItemModelTester> tester(new QAbstractItemModelTester(model.get(), QAbstractItemModelTester::FailureReportingMode::Warning));
+ 	 return true;
+}
+
+static bool QTableItemModelTestPerformed = QTableItemModelTest();
+#endif

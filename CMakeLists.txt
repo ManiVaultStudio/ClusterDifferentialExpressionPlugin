@@ -18,7 +18,7 @@ endif(MSVC)
 
 file(TO_CMAKE_PATH $ENV{HDPS_INSTALL_DIR} INSTALL_DIR)
 
-find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
+find_package(Qt6 COMPONENTS Widgets WebEngineWidgets Test REQUIRED)
 
 set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
@@ -80,6 +80,7 @@ target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
 target_link_libraries(${PROJECT} PRIVATE Qt6::Widgets)
 target_link_libraries(${PROJECT} PRIVATE Qt6::WebEngineWidgets)
+target_link_libraries(${PROJECT} PRIVATE Qt6::Test)
 
 set(HDPS_LINK_PATH "${INSTALL_DIR}/$<CONFIGURATION>/lib")
 set(PLUGIN_LINK_PATH "${INSTALL_DIR}/$<CONFIGURATION>/$<IF:$<CXX_COMPILER_ID:MSVC>,lib,Plugins>")

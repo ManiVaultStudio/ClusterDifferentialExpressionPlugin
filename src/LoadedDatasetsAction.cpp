@@ -386,6 +386,10 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
                 layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
                 layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
 
+
+                connect(&(currentDatasetAction->data(i)->datasetNameStringAction), &StringAction::stringChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
+                connect(&(currentDatasetAction->data(i)->datasetPickerAction), &DatasetPickerAction::currentTextChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
+                connect(&(currentDatasetAction->data(i)->clusterOptionsAction), &OptionsAction::selectedOptionsChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
          
         });
 
