@@ -33,10 +33,8 @@
 #include <cmath>
 
 
-#ifdef __cpp_lib_parallel_algorithm
+#if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
 #undef emit
-// #include <tbb/tbb.h>
-#include <tbb/task.h>
 #include <execution>
 #define emit
 #endif
@@ -1277,7 +1275,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
         }
         sortedDimensionNames[datasetIndex]= std::move(QVector<QString>(dimensionNames[datasetIndex].cbegin(), dimensionNames[datasetIndex].cend()));
 
-#ifdef __cpp_lib_parallel_algorithm
+#if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
         std::sort(std::execution::par_unseq, sortedDimensionNames[datasetIndex].begin(), sortedDimensionNames[datasetIndex].end());
 #else
         std::sort(sortedDimensionNames[datasetIndex].begin(), sortedDimensionNames[datasetIndex].end());
@@ -1300,7 +1298,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     for (qsizetype datasetIndex = 1; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
         QVector<QString>result;
-#ifdef __cpp_lib_parallel_algorithm
+#if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
         std::merge(std::execution::par_unseq, allDimensionNames.cbegin(), allDimensionNames.cend(), sortedDimensionNames[datasetIndex].cbegin(), sortedDimensionNames[datasetIndex].cend(), result.begin());
         auto dummy = std::unique(std::execution::par_unseq, result.begin(), result.end());
 #else
@@ -1333,7 +1331,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 		value.resize(nrOfDatasets, -1);
         for (qsizetype datasetIndex = 0; datasetIndex < nrOfDatasets; ++datasetIndex)
         {
-#ifdef __cpp_lib_parallel_algorithm
+#if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
             auto found  = std::find(std::execution::par_unseq, begin[datasetIndex], end[datasetIndex],name);
 #else
             auto found = std::find(begin[datasetIndex], end[datasetIndex], name);
