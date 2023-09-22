@@ -33,10 +33,16 @@
 #include <cmath>
 
 
+
 #if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
+# define TBB_SUPPRESS_DEPRECATED_MESSAGES 1
 #undef emit
-#include <execution>
+# include <tbb/tbb.h>
 #define emit
+# endif
+
+#if defined(__cpp_lib_parallel_algorithm)
+#include <execution>
 #endif
 
 #include <omp.h>
@@ -1275,7 +1281,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
         }
         sortedDimensionNames[datasetIndex]= std::move(QVector<QString>(dimensionNames[datasetIndex].cbegin(), dimensionNames[datasetIndex].cend()));
 
-#if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
+#if defined(__cpp_lib_parallel_algorithm)
         std::sort(std::execution::par_unseq, sortedDimensionNames[datasetIndex].begin(), sortedDimensionNames[datasetIndex].end());
 #else
         std::sort(sortedDimensionNames[datasetIndex].begin(), sortedDimensionNames[datasetIndex].end());
@@ -1298,7 +1304,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     for (qsizetype datasetIndex = 1; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
         QVector<QString>result;
-#if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
+#if defined(__cpp_lib_parallel_algorithm)
         std::merge(std::execution::par_unseq, allDimensionNames.cbegin(), allDimensionNames.cend(), sortedDimensionNames[datasetIndex].cbegin(), sortedDimensionNames[datasetIndex].cend(), result.begin());
         auto dummy = std::unique(std::execution::par_unseq, result.begin(), result.end());
 #else
@@ -1331,7 +1337,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 		value.resize(nrOfDatasets, -1);
         for (qsizetype datasetIndex = 0; datasetIndex < nrOfDatasets; ++datasetIndex)
         {
-#if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
+#if defined(__cpp_lib_parallel_algorithm)
             auto found  = std::find(std::execution::par_unseq, begin[datasetIndex], end[datasetIndex],name);
 #else
             auto found = std::find(begin[datasetIndex], end[datasetIndex], name);
