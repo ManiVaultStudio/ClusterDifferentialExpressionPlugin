@@ -72,7 +72,20 @@ source_group(Widget FILES ${WIDGETS})
 source_group(Util FILES ${UTIL})
 source_group(Aux FILES ${AUX})
 
+set(PLUGIN_MOC_HEADERS
+    src/ButtonProgressBar.h
+    src/ClusterDifferentialExpressionPlugin.h
+    src/LoadedDatasetsAction.h
+    src/QTableItemModel.h
+    src/SortFilterProxyModel.h
+    src/TableView.h
+    src/WordWrapHeaderView.h
+)
+
 add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
+
+qt_wrap_cpp(CDEPLUGIN_MOC ${PLUGIN_MOC_HEADERS} TARGET ${PROJECT})
+target_sources(${PROJECT} PRIVATE ${CDEPLUGIN_MOC})
 
 target_include_directories(${PROJECT} PRIVATE "${INSTALL_DIR}/$<CONFIGURATION>/include/")
 
