@@ -30,6 +30,7 @@
 #include <cassert>
 #include <set>
 #include <algorithm>
+#include <cmath>
 
 
 #ifdef __cpp_lib_parallel_algorithm
@@ -904,7 +905,7 @@ void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qs
         if (_loadedDatasetsAction.data(datasetIndex1)->datasetSelectedAction.isChecked())
         {
             double mean1 = mean[datasetIndex1];
-            if (!isnan(mean1))
+            if (!std::isnan(mean1))
             {
                 if (addComma)
                     json += ',';
@@ -918,7 +919,7 @@ void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qs
                     {
                         if (_loadedDatasetsAction.data(datasetIndex2)->datasetSelectedAction.isChecked())
                         {
-                            if (!isnan(mean[datasetIndex2]))
+                            if (!std::isnan(mean[datasetIndex2]))
                             {
 
                                 const double diffExp = (mean1 - mean[datasetIndex2]);
@@ -1674,7 +1675,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
                 if (_loadedDatasetsAction.data(datasetIndex1)->datasetSelectedAction.isChecked())
                 {
                     double mean1 = mean[datasetIndex1];
-                    if (!isnan(mean1))
+                    if (!std::isnan(mean1))
                     {
                         for (qsizetype datasetIndex2 = (datasetIndex1 + 1); datasetIndex2 < NrOfDatasets; ++datasetIndex2)
                         {
@@ -1726,7 +1727,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             if(_loadedDatasetsAction.data(datasetIndex)->datasetSelectedAction.isChecked())
             {
                 double meanValue = mean[datasetIndex];
-                if (isnan(meanValue))
+                if (std::isnan(meanValue))
                 {
                     dataVector[columnNr++] = "N/A";
                 }
