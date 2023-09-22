@@ -34,6 +34,7 @@
 
 
 #ifdef __cpp_lib_parallel_algorithm
+#define QT_NO_KEYWORDS
 #include <execution>
 #endif
 
