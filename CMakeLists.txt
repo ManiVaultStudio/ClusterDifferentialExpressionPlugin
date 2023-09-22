@@ -19,6 +19,7 @@ endif(MSVC)
 file(TO_CMAKE_PATH $ENV{HDPS_INSTALL_DIR} INSTALL_DIR)
 
 find_package(Qt6 COMPONENTS Widgets WebEngineWidgets Test REQUIRED)
+find_package(TBB REQUIRED)
 
 set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
@@ -88,6 +89,7 @@ qt_wrap_cpp(CDEPLUGIN_MOC ${PLUGIN_MOC_HEADERS} TARGET ${PROJECT})
 target_sources(${PROJECT} PRIVATE ${CDEPLUGIN_MOC})
 
 target_include_directories(${PROJECT} PRIVATE "${INSTALL_DIR}/$<CONFIGURATION>/include/")
+target_include_directories(${PROJECT} PRIVATE "${TBB_INCLUDE_DIRS}")
 
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 
