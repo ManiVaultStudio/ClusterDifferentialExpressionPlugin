@@ -95,6 +95,7 @@ set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
 find_package(TBB COMPONENTS tbb)
 if (TBB_FOUND)
     target_link_libraries(${PROJECT} PRIVATE INTERFACE TBB::tbb)
+    message("TBB version ${TBB_VERSION} interface ${TBB_INTERFACE_VERSION}")
 endif()
 
 target_link_libraries(${PROJECT} PRIVATE Qt6::Widgets)
