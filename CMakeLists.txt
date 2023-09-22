@@ -90,6 +90,7 @@ target_sources(${PROJECT} PRIVATE ${CDEPLUGIN_MOC})
 target_include_directories(${PROJECT} PRIVATE "${INSTALL_DIR}/$<CONFIGURATION>/include/")
 
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
+set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(${PROJECT} PRIVATE Qt6::Widgets)
 target_link_libraries(${PROJECT} PRIVATE Qt6::WebEngineWidgets)
