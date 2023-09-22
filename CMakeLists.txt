@@ -92,6 +92,12 @@ target_include_directories(${PROJECT} PRIVATE "${INSTALL_DIR}/$<CONFIGURATION>/i
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
 
+find_package(TBB)
+if (TBB_FOUND)
+    target_include_directories(${PROJECT} PRIVATE ${TBB_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT} PRIVATE ${TBB_LIBRARIES})
+endif()
+
 target_link_libraries(${PROJECT} PRIVATE Qt6::Widgets)
 target_link_libraries(${PROJECT} PRIVATE Qt6::WebEngineWidgets)
 target_link_libraries(${PROJECT} PRIVATE Qt6::Test)
