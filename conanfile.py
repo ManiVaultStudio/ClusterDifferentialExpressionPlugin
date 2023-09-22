@@ -80,9 +80,9 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
                 f"ln {proc.stdout.decode('UTF-8').strip()}/lib/libomp.dylib /usr/local/lib/libomp.dylib",
                 shell=True,
             )
-        if os_info.is_linux:
-            installer = SystemPackageTool()
-            installer.install("libtbb-dev", update=True)  #  update tbb on linux
+        #  if os_info.is_linux:
+        #    installer = SystemPackageTool()
+        #    installer.install("libtbb-dev", update=True)  #  update tbb on linux
 
     def config_options(self):
         if self.settings.os == "Windows":
