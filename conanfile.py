@@ -81,7 +81,7 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
                 shell=True,
             )
         if os_info.is_linux:
-            self.run("sudo apt update && sudo apt install -y libtbb-dev=2020.1-2")
+            self.run("sudo apt update && sudo apt install -y libtbb2-dev")
 
     def config_options(self):
         if self.settings.os == "Windows":

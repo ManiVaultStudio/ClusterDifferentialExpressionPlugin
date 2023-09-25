@@ -35,7 +35,7 @@ jobs:
             build-config: Release
 
           - name: Linux_gcc10
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             build-cc: gcc
             build-cxx: g++
             build-compiler: gcc
