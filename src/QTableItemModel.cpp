@@ -98,16 +98,14 @@ bool QTableItemModel::setData(const QModelIndex & index, const QVariant & value,
 		if (m_data[index.row()].checkState() != state)
 		{
 			m_data[index.row()].setCheckState(state);
-			emit(dataChanged(index, index));
+			emit dataChanged(index, index, {Qt::CheckStateRole});
 			return true;
 		}
-		
-		
 	}
 	else if (role == Qt::EditRole)
 	{
 		m_data[index.row()].data[index.column()] = value;
-		emit(dataChanged(index, index));
+		emit dataChanged(index, index, {Qt::EditRole});
 		return true;
 	}
 	return false;
@@ -269,6 +267,7 @@ void QTableItemModel::endModelBuilding()
 		m_headerStatus = Status::UpToDate;
 	}
 	endResetModel();
+	emit dataChanged(index(0, 0), index(m_data.size(), m_columns));
 }
 
 QVariant QTableItemModel::getHorizontalHeader(int index) const

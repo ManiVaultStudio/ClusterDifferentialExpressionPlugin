@@ -374,7 +374,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
     publishAndSerializeAction(&_updateStatisticsAction);
     publishAndSerializeAction(&_infoTextAction);
     publishAndSerializeAction(&_autoUpdateAction);
-    publishAndSerializeAction(&_commandAction, false);
+    publishAndSerializeAction(&_commandAction);
     publishAndSerializeAction(&_pairwiseDiffExpResultsAction, false);
     serializeAction(&_primaryToolbarAction);
     serializeAction(&_copyToClipboardAction);
@@ -408,11 +408,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
         });
 
 
-    connect(&_commandAction, &VariantAction::variantChanged, [this](const QVariant& var)
-        {
-          //  qDebug() << "_commandAction changed";
-            _tableItemModel->invalidate();
-        });
+   
 
     connect(&_updateStatisticsAction, &TriggerAction::triggered, [this](const bool& var)
         {
@@ -1174,16 +1170,16 @@ void ClusterDifferentialExpressionPlugin::writeToCSV()
 
 void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& variant)
 {
+//    qDebug() << "ClusterDifferentialExpressionPlugin::newCommandsReceived";
+
     if (!variant.isValid())
     {
-        _commandAction.setVariant(bool(false)); // return false
         return;
     }
 
     QVariantList commands = local::get_strict_value<QVariantList>(variant);
     if (commands.isEmpty())
     {
-        _commandAction.setVariant(bool(false)); // return false
         return;
     }
 
@@ -1213,7 +1209,9 @@ void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& va
                         }
                         method_signature += ')';
 
+#ifdef _DEBUG
                         QString message = QString("calling ") + objectID + "->" + method_signature + " ";
+#endif
                         if ((object->metaObject()->indexOfMethod(method_signature.toLocal8Bit().data()) != -1))
                         {
                             const qsizetype nrOfArguments = command.size() - ARGUMENT_OFFSET;
@@ -1230,28 +1228,36 @@ void ClusterDifferentialExpressionPlugin::newCommandsReceived(const QVariant& va
 
                             if (result)
                             {
+#ifdef _DEBUG
                                 message += " --> OK";
+#endif
                                 successfulCommands++;
                             }
                             else
                             {
+#ifdef _DEBUG
                                 message += " --> Failed";
+#endif
                             }
                         }
                         else
                         {
+#ifdef _DEBUG
                             message += " --> signal/slot does not exist";
-
+#endif
                         }
+#ifdef _DEBUG
                         qDebug() << message;
+#endif
                     }
                 }
             }
         }
 
     } //for (auto item : commands)
+
     
-    _commandAction.setVariant(bool(successfulCommands == commands.size())); // return value ?
+    _commandAction.setVariant(QVariant());
 }
 
 
@@ -1801,8 +1807,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
            // widget->hide();
             QVariant variant = QVariant::fromValue((QObject*)widget);
             //   qDebug() << columnOffset + MEANS_OFFSET + datasetIndex << " _datasetTableViewHeader[" << datasetIndex << "]." << _datasetTableViewHeader[datasetIndex].get();
-            if(variant != _tableItemModel->getHorizontalHeader(columnNr))
-				_tableItemModel->setHorizontalHeader(columnNr++, variant);
+           _tableItemModel->setHorizontalHeader(columnNr++, variant);
         }
     }
     
@@ -1829,7 +1834,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
 
     _tableItemModel->endModelBuilding();
     _progressManager.end();
-    
 }
 
 QIcon ClusterDifferentialExpressionFactory::getIcon(const QColor& color /*= Qt::black*/) const
