@@ -18,7 +18,7 @@ endif(MSVC)
 
 file(TO_CMAKE_PATH $ENV{HDPS_INSTALL_DIR} INSTALL_DIR)
 
-find_package(Qt6 COMPONENTS Widgets WebEngineWidgets REQUIRED)
+find_package(Qt6 COMPONENTS Widgets WebEngineWidgets Test REQUIRED)
 
 set(PLUGIN
     src/ClusterDifferentialExpressionPlugin.h
@@ -72,14 +72,37 @@ source_group(Widget FILES ${WIDGETS})
 source_group(Util FILES ${UTIL})
 source_group(Aux FILES ${AUX})
 
+set(PLUGIN_MOC_HEADERS
+    src/ButtonProgressBar.h
+    src/ClusterDifferentialExpressionPlugin.h
+    src/LoadedDatasetsAction.h
+    src/QTableItemModel.h
+    src/SortFilterProxyModel.h
+    src/TableView.h
+    src/WordWrapHeaderView.h
+)
+
 add_library(${PROJECT} SHARED ${SOURCES} ${UTIL} ${AUX} ${WIDGETS})
+
+qt_wrap_cpp(CDEPLUGIN_MOC ${PLUGIN_MOC_HEADERS} TARGET ${PROJECT})
+target_sources(${PROJECT} PRIVATE ${CDEPLUGIN_MOC})
 
 target_include_directories(${PROJECT} PRIVATE "${INSTALL_DIR}/$<CONFIGURATION>/include/")
 
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
+set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
+
+if (NOT MSVC OR MSVC_VERSION LESS 1920)
+    find_package(TBB COMPONENTS tbb)
+endif()
+if (TBB_FOUND)
+    target_link_libraries(${PROJECT} PRIVATE INTERFACE TBB::tbb)
+    message("TBB version ${TBB_VERSION} interface ${TBB_INTERFACE_VERSION}")
+endif()
 
 target_link_libraries(${PROJECT} PRIVATE Qt6::Widgets)
 target_link_libraries(${PROJECT} PRIVATE Qt6::WebEngineWidgets)
+target_link_libraries(${PROJECT} PRIVATE Qt6::Test)
 
 set(HDPS_LINK_PATH "${INSTALL_DIR}/$<CONFIGURATION>/lib")
 set(PLUGIN_LINK_PATH "${INSTALL_DIR}/$<CONFIGURATION>/$<IF:$<CXX_COMPILER_ID:MSVC>,lib,Plugins>")

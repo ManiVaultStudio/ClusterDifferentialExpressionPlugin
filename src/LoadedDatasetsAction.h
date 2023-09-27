@@ -90,6 +90,7 @@ public slots:
     void addDataset();
 signals:
     void datasetAdded(int index);
+    void datasetOrClusterSelectionChanged();
 
 protected:
     TriggerAction   _addDatasetTriggerAction;
