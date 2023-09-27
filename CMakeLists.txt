@@ -92,7 +92,9 @@ target_include_directories(${PROJECT} PRIVATE "${INSTALL_DIR}/$<CONFIGURATION>/i
 target_compile_features(${PROJECT} PRIVATE cxx_std_17)
 set_property(TARGET ${PROJECT} PROPERTY CXX_STANDARD 17)
 
-find_package(TBB COMPONENTS tbb)
+if (NOT MSVC OR MSVC_VERSION LESS 1920)
+    find_package(TBB COMPONENTS tbb)
+endif()
 if (TBB_FOUND)
     target_link_libraries(${PROJECT} PRIVATE INTERFACE TBB::tbb)
     message("TBB version ${TBB_VERSION} interface ${TBB_INTERFACE_VERSION}")
