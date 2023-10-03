@@ -1,3 +1,1 @@
-# ClusterDifferentialExpressionPlugin
-
-!! Under Development !!
+#Differential Expression Plugin
