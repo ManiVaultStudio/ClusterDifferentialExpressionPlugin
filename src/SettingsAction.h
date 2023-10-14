@@ -7,7 +7,7 @@
 #include "actions/WidgetActionStateWidget.h"
 
 
-using namespace hdps::gui;
+using namespace mv::gui;
 
 class ScatterplotPlugin;
 
@@ -25,7 +25,7 @@ public:
         SpacerWidget(const Type& type = Type::Spacer);
 
         static Type getType(const WidgetActionWidget::State& widgetTypeLeft, const WidgetActionWidget::State& widgetTypeRight);
-        static Type getType(const hdps::gui::WidgetActionStateWidget* stateWidgetLeft, const hdps::gui::WidgetActionStateWidget* stateWidgetRight);
+        static Type getType(const mv::gui::WidgetActionStateWidget* stateWidgetLeft, const mv::gui::WidgetActionStateWidget* stateWidgetRight);
 
         void setType(const Type& type);
         static std::int32_t getWidth(const Type& type);

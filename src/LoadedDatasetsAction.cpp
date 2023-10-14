@@ -7,8 +7,8 @@
 #include <QMenu>
 
 
-using namespace hdps;
-using namespace hdps::gui;
+using namespace mv;
+using namespace mv::gui;
 
 
 namespace localNamespace
@@ -77,12 +77,12 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
 
 
         }
-        QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const hdps::Dataset<hdps::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
+        QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const mv::Dataset<mv::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
         
         
        // setCheckable(true);
     }
-    datasetPickerAction.setDatasetsFilterFunction([](const hdps::Datasets& datasets) -> Datasets {
+    datasetPickerAction.setDatasetsFilterFunction([](const mv::Datasets& datasets) -> Datasets {
         Datasets clusterDatasets;
 
         for (auto dataset : datasets)
@@ -92,13 +92,13 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
         return clusterDatasets;
         });
 
-    connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<hdps::DatasetImpl> pickedDataset) -> void {
+    connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<mv::DatasetImpl> pickedDataset) -> void {
         currentDataset = pickedDataset;
         });
 
 
     
-    connect(&currentDataset, &Dataset<Clusters>::changed,  [this](Dataset<hdps::DatasetImpl> dataset) -> void {
+    connect(&currentDataset, &Dataset<Clusters>::changed,  [this](Dataset<mv::DatasetImpl> dataset) -> void {
 
 
         if (datasetPickerAction.getCurrentDataset() != dataset)
@@ -270,12 +270,12 @@ LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* 
     }
    // for (auto i = 0; i < _data.size();++i)
    //     _data[i].reset(new Data(this,i));
-    setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("database"));
+    setIcon(mv::Application::getIconFont("FontAwesome").getIcon("database"));
     setToolTip("Manage clusters");
 
 
     connect(&_addDatasetTriggerAction, &TriggerAction::triggered, this, &LoadedDatasetsAction::addDataset);
-    _addDatasetTriggerAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("plus"));
+    _addDatasetTriggerAction.setIcon(mv::Application::getIconFont("FontAwesome").getIcon("plus"));
     QString name = _addDatasetTriggerAction.text();
     assert(!name.isEmpty());
     QString apiName = localNamespace::toCamelCase(name, ' ');
@@ -285,19 +285,19 @@ LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* 
     
 }
 
-hdps::gui::ToggleAction& LoadedDatasetsAction::getDatasetSelectedAction(const std::size_t index)
+mv::gui::ToggleAction& LoadedDatasetsAction::getDatasetSelectedAction(const std::size_t index)
 {
     return data(index)->datasetSelectedAction;
 }
 
-hdps::gui::OptionsAction& LoadedDatasetsAction::getClusterSelectionAction(const std::size_t index)
+mv::gui::OptionsAction& LoadedDatasetsAction::getClusterSelectionAction(const std::size_t index)
 {
     return data(index)->clusterOptionsAction;
     //return _data.at(index)->clusterOptionsAction;
 }
 
 
-hdps::Dataset<Clusters>& LoadedDatasetsAction::getDataset(std::size_t index) const
+mv::Dataset<Clusters>& LoadedDatasetsAction::getDataset(std::size_t index) const
 {
     return data(index)->currentDataset;
     //return _data.at(index)->currentDataset;

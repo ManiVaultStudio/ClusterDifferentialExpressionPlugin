@@ -5,7 +5,7 @@
 class ClusterDifferentialExpressionPlugin;
 class ClusterDifferentialExpressionWidget;
 
-class PluginAction : public hdps::gui::WidgetAction
+class PluginAction : public mv::gui::WidgetAction
 {
 public:
     PluginAction(QObject* parent, ClusterDifferentialExpressionPlugin* plugin, const QString& title);

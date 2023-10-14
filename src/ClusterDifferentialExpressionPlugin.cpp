@@ -53,10 +53,10 @@
 
 Q_PLUGIN_METADATA(IID "nl.BioVault.ClusterDifferentialExpressionPlugin")
 
-using namespace hdps;
-using namespace hdps::gui;
-using namespace hdps::plugin;
-using namespace hdps::util;
+using namespace mv;
+using namespace mv::gui;
+using namespace mv::plugin;
+using namespace mv::util;
 
 
 namespace local
@@ -118,7 +118,7 @@ namespace local
 
 
     
-    bool clusterDatset_has_computed_DE_Statistics(hdps::Dataset<Clusters> clusterDataset)
+    bool clusterDatset_has_computed_DE_Statistics(mv::Dataset<Clusters> clusterDataset)
     {
         if(clusterDataset.isValid())
         {
@@ -136,18 +136,18 @@ namespace local
         return false;
     }
 
-    bool clusterDataset_has_parent_Point_Dataset(hdps::Dataset<Clusters> clusterDataset)
+    bool clusterDataset_has_parent_Point_Dataset(mv::Dataset<Clusters> clusterDataset)
     {
         return clusterDataset->getParent<Points>().isValid();
     }
 
 
-    std::ptrdiff_t get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset)
+    std::ptrdiff_t get_DE_Statistics_Index(mv::Dataset<Clusters> clusterDataset)
     {
         const auto& clusters = clusterDataset->getClusters();
         const auto numClusters = clusters.size();
 
-        hdps::Dataset<Points> points = clusterDataset->getParent<Points>();
+        mv::Dataset<Points> points = clusterDataset->getParent<Points>();
         const std::ptrdiff_t numDimensions = points->getNumDimensions();
 
         // check if the basic DE_Statistics for the cluster dataset has already been computed
@@ -209,7 +209,7 @@ namespace local
 
 
             auto *core = Application::core();
-            hdps::Dataset<Points> newDataset = core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
+            mv::Dataset<Points> newDataset = core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
             events().notifyDatasetAdded(newDataset);
             newDataset->setDataElementType<float>();
             newDataset->setData(std::move(meanExpressions), numDimensions);
@@ -237,7 +237,7 @@ namespace local
         return child_DE_Statistics_DatasetIndex;
     }
 
-    Dataset<Points> get_DE_Statistics_Dataset(hdps::Dataset<Clusters> clusterDataset)
+    Dataset<Points> get_DE_Statistics_Dataset(mv::Dataset<Clusters> clusterDataset)
     {
         auto clusterDataset_DE_Statitstics_Index = get_DE_Statistics_Index(clusterDataset);
         assert(clusterDataset_DE_Statitstics_Index >= 0);
@@ -305,7 +305,7 @@ namespace local
     }
 
 }
-ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory)
+ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const mv::plugin::PluginFactory* factory)
     : ViewPlugin(factory)
     , _originalName(getGuiName())
     , _dropWidget(nullptr)
@@ -418,14 +418,14 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const h
         });
 	
 
-    connect(&_filterOnIdAction, &hdps::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
+    connect(&_filterOnIdAction, &mv::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
 
-    connect(&_updateStatisticsAction, &hdps::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
+    connect(&_updateStatisticsAction, &mv::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
 
     
     _primaryToolbarAction.addAction(&_loadedDatasetsAction, 2);
 
-    _autoUpdateAction.setIcon(hdps::Application::getIconFont("FontAwesome").getIcon("check"));
+    _autoUpdateAction.setIcon(mv::Application::getIconFont("FontAwesome").getIcon("check"));
     _primaryToolbarAction.addAction(&_autoUpdateAction, 100);
 
 
@@ -623,7 +623,7 @@ void ClusterDifferentialExpressionPlugin::init()
 
 
 
-void ClusterDifferentialExpressionPlugin::loadData(const hdps::Datasets& datasets)
+void ClusterDifferentialExpressionPlugin::loadData(const mv::Datasets& datasets)
 {
     // Exit if there is nothing to load
     if (datasets.isEmpty())
@@ -796,7 +796,7 @@ void ClusterDifferentialExpressionPlugin::updateWindowTitle()
     getWidget().setWindowTitle(windowTitle);
 }
 
-void ClusterDifferentialExpressionPlugin::datasetChanged(qsizetype index, const hdps::Dataset<hdps::DatasetImpl>& dataset)
+void ClusterDifferentialExpressionPlugin::datasetChanged(qsizetype index, const mv::Dataset<mv::DatasetImpl>& dataset)
 {
     _tableItemModel->invalidate();
     
@@ -1018,11 +1018,11 @@ void ClusterDifferentialExpressionPlugin::selectedRowChanged(int index)
 
 void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
 {
-    connect(&_loadedDatasetsAction.getDataset(index), &Dataset<Clusters>::changed, this, [this, index](const hdps::Dataset<hdps::DatasetImpl>& dataset) {datasetChanged(index, dataset); });
+    connect(&_loadedDatasetsAction.getDataset(index), &Dataset<Clusters>::changed, this, [this, index](const mv::Dataset<mv::DatasetImpl>& dataset) {datasetChanged(index, dataset); });
     connect(&_loadedDatasetsAction.getClusterSelectionAction(index), &OptionsAction::selectedOptionsChanged, this, &ClusterDifferentialExpressionPlugin::clusterSelectionChanged);
     connect(&_loadedDatasetsAction.getDatasetSelectedAction(index), &ToggleAction::toggled, this, [this, index](bool)
         {
-            const hdps::Dataset<hdps::DatasetImpl>& dataset = this->_loadedDatasetsAction.getDataset(index);
+            const mv::Dataset<mv::DatasetImpl>& dataset = this->_loadedDatasetsAction.getDataset(index);
             datasetChanged(index, dataset);
         });
 
@@ -1363,7 +1363,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 
 
 
-std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset)
+std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(mv::Dataset<Clusters> clusterDataset)
 {
     std::ptrdiff_t child_DE_Statistics_DatasetIndex = -1;
     
@@ -1388,7 +1388,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         const auto& clusters = clusterDataset->getClusters();
         const auto numClusters = clusters.size();
 
-        hdps::Dataset<Points> points;
+        mv::Dataset<Points> points;
         DataHierarchyItems parents;
         DataHierarchyItem::getParents(clusterDataset->getDataHierarchyItem(), parents);
         for(auto parent : parents )
@@ -1400,7 +1400,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         if (!points.isValid())
             return child_DE_Statistics_DatasetIndex; // return -1
 
-        //hdps::Dataset<Points> points = clusterDataset->getParent<Points>();
+        //mv::Dataset<Points> points = clusterDataset->getParent<Points>();
         const std::ptrdiff_t numDimensions = points->getNumDimensions();
 
         //compute the DE statistics for this cluster
@@ -1438,7 +1438,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
         
 
         
-        hdps::Dataset<Points> newDataset = _core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
+        mv::Dataset<Points> newDataset = _core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
 
         events().notifyDatasetAdded(newDataset);
         
@@ -1469,7 +1469,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(hdps
 }
 
 
-Dataset<Points> ClusterDifferentialExpressionPlugin::get_DE_Statistics_Dataset(hdps::Dataset<Clusters> clusterDataset)
+Dataset<Points> ClusterDifferentialExpressionPlugin::get_DE_Statistics_Dataset(mv::Dataset<Clusters> clusterDataset)
 {
     auto clusterDataset_DE_Statitstics_Index = get_DE_Statistics_Index(clusterDataset);
     assert(clusterDataset_DE_Statitstics_Index >= 0);
@@ -1478,7 +1478,7 @@ Dataset<Points> ClusterDifferentialExpressionPlugin::get_DE_Statistics_Dataset(h
     return DE_Statistics;
 }
 
-std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters)
+std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsForSelectedClusters(mv::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters)
 {
 
    
@@ -1846,14 +1846,14 @@ ClusterDifferentialExpressionPlugin* ClusterDifferentialExpressionFactory::produ
     return new ClusterDifferentialExpressionPlugin(this);
 }
 
-hdps::DataTypes ClusterDifferentialExpressionFactory::supportedDataTypes() const
+mv::DataTypes ClusterDifferentialExpressionFactory::supportedDataTypes() const
 {
     DataTypes supportedTypes;
     supportedTypes.append(ClusterType);
     return supportedTypes;
 }
 
-hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginTriggerActions(const hdps::Datasets& datasets) const
+mv::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginTriggerActions(const mv::Datasets& datasets) const
 {
 
     PluginTriggerActions pluginTriggerActions;
@@ -1871,7 +1871,7 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
     Datasets clusterDatasets;
     for (const auto& dataset : datasets)
     {
-        if (dataset->getDataType() == hdps::DataType(QString("Clusters")))
+        if (dataset->getDataType() == mv::DataType(QString("Clusters")))
         {
             clusterDatasets << dataset;
         }
@@ -1893,7 +1893,7 @@ hdps::gui::PluginTriggerActions ClusterDifferentialExpressionFactory::getPluginT
     Datasets  pointDatasets;
     for (const auto& dataset : datasets)
     {
-        if (dataset->getDataType() == hdps::DataType(QString("Points")))
+        if (dataset->getDataType() == mv::DataType(QString("Points")))
         {
             pointDatasets << dataset;
         }

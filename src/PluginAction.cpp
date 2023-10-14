@@ -3,7 +3,7 @@
 #include "ClusterDifferentialExpressionPlugin.h"
 #include "actions/WidgetAction.h"
 
-using namespace hdps::gui;
+using namespace mv::gui;
 
 PluginAction::PluginAction(QObject* parent, ClusterDifferentialExpressionPlugin* plugin, const QString& title) :
     WidgetAction(parent, title),

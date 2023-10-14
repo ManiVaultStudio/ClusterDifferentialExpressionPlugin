@@ -8,7 +8,7 @@
 #include "actions/VariantAction.h"
 
 
-using namespace hdps::gui;
+using namespace mv::gui;
 
 class Clusters;
 
@@ -34,7 +34,7 @@ protected:
 
         DatasetPickerAction	      datasetPickerAction;
         OptionsAction             clusterOptionsAction;
-        hdps::Dataset<Clusters>   currentDataset;
+        mv::Dataset<Clusters>   currentDataset;
         StringAction              datasetNameStringAction;
         ToggleAction              datasetSelectedAction;
     };
@@ -66,10 +66,10 @@ public:
    
     LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin);
 
-    hdps::gui::ToggleAction& getDatasetSelectedAction(const std::size_t index);
-    hdps::gui::OptionsAction& getClusterSelectionAction(const std::size_t index);
+    mv::gui::ToggleAction& getDatasetSelectedAction(const std::size_t index);
+    mv::gui::OptionsAction& getClusterSelectionAction(const std::size_t index);
 
-    hdps::Dataset<Clusters>& getDataset(std::size_t index) const;
+    mv::Dataset<Clusters>& getDataset(std::size_t index) const;
 
     QStringList getClusterOptions(std::size_t index) const;
 

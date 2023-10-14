@@ -13,8 +13,8 @@
 #include "LoadedDatasetsAction.h"
 
 
-using hdps::plugin::ViewPluginFactory;
-using hdps::plugin::ViewPlugin;
+using mv::plugin::ViewPluginFactory;
+using mv::plugin::ViewPlugin;
 
 class TableView;
 class ButtonProgressBar;
@@ -25,7 +25,7 @@ class Points;
 class Clusters;
 
 
-namespace hdps {
+namespace mv {
     namespace gui {
         class DropWidget;
     }
@@ -39,7 +39,7 @@ class ClusterDifferentialExpressionPlugin : public ViewPlugin
 
 		
 public:
-    ClusterDifferentialExpressionPlugin(const hdps::plugin::PluginFactory* factory);
+    ClusterDifferentialExpressionPlugin(const mv::plugin::PluginFactory* factory);
 
     QString getOriginalName() const;
 
@@ -51,7 +51,7 @@ public:
     * Load one (or more datasets in the view)
     * @param datasets Dataset(s) to load
     */
-    void loadData(const hdps::Datasets& datasets) override;
+    void loadData(const mv::Datasets& datasets) override;
 
     
     void addConfigurableWidget(const QString& name, QWidget* widget);
@@ -78,7 +78,7 @@ private:
     void publishAndSerializeAction(WidgetAction* w, bool serialize=true);
     void createMeanExpressionDataset(qsizetype dataset_index, qsizetype index);
 
-    hdps::Dataset<Clusters> &getDataset(qsizetype index)
+    mv::Dataset<Clusters> &getDataset(qsizetype index)
     {
         if(_dropWidget)
 			_dropWidget->setShowDropIndicator(false);
@@ -91,7 +91,7 @@ private:
     }
 
     void updateWindowTitle();
-    void datasetChanged(qsizetype index, const hdps::Dataset<hdps::DatasetImpl>& dataset);
+    void datasetChanged(qsizetype index, const mv::Dataset<mv::DatasetImpl>& dataset);
    
     void update_pairwiseDiffExpResultsAction(qsizetype dimension, const QString& nameToCheck);
 
@@ -114,9 +114,9 @@ public slots:
 
 private:
     
-    std::ptrdiff_t get_DE_Statistics_Index(hdps::Dataset<Clusters> clusterDataset);
-    hdps::Dataset<Points> get_DE_Statistics_Dataset(hdps::Dataset<Clusters> clusterDataset);
-    std::vector<double> computeMeanExpressionsForSelectedClusters(hdps::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters);
+    std::ptrdiff_t get_DE_Statistics_Index(mv::Dataset<Clusters> clusterDataset);
+    mv::Dataset<Points> get_DE_Statistics_Dataset(mv::Dataset<Clusters> clusterDataset);
+    std::vector<double> computeMeanExpressionsForSelectedClusters(mv::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters);
     bool matchDimensionNames();
     //void updateData(int index);
 
@@ -130,11 +130,11 @@ private:
     const QString                       _originalName;
     TableView* _tableView;
     QPointer<ButtonProgressBar>                 _buttonProgressBar;
-    hdps::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
+    mv::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
     ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
 
 
-    hdps::gui::HorizontalToolbarAction                     _primaryToolbarAction;
+    mv::gui::HorizontalToolbarAction                     _primaryToolbarAction;
    
 
    std::vector<std::pair<QString, QVector<qsizetype>>> _matchingDimensionNames;
@@ -181,7 +181,7 @@ class ClusterDifferentialExpressionFactory : public ViewPluginFactory
         Q_OBJECT
         Q_PLUGIN_METADATA(IID   "nl.BioVault.ClusterDifferentialExpressionPlugin"
             FILE  "ClusterDifferentialExpressionPlugin.json")
-        Q_INTERFACES(hdps::plugin::ViewPluginFactory hdps::plugin::PluginFactory)
+        Q_INTERFACES(mv::plugin::ViewPluginFactory mv::plugin::PluginFactory)
 
 public:
     ClusterDifferentialExpressionFactory() {}
@@ -192,8 +192,8 @@ public:
 
     ClusterDifferentialExpressionPlugin* produce() override;
 
-    hdps::DataTypes supportedDataTypes() const override;
+    mv::DataTypes supportedDataTypes() const override;
 
 
-	hdps::gui::PluginTriggerActions getPluginTriggerActions(const hdps::Datasets & datasets) const override;
+	mv::gui::PluginTriggerActions getPluginTriggerActions(const mv::Datasets & datasets) const override;
 };
