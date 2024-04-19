@@ -114,9 +114,11 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
             }
             if (!clusterNames.isEmpty())
             {
-                QStringList firstItemSelectedList;
-                firstItemSelectedList.append(clusterNames.first());
-                clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
+                //QStringList firstItemSelectedList;
+                //firstItemSelectedList.append(clusterNames.first());
+                //clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
+                clusterOptionsAction.setOptions(clusterNames);
+                clusterOptionsAction.setSelectedOptions(clusterNames);
             }
 
 
@@ -388,7 +390,7 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
 
                 connect(&(currentDatasetAction->data(i)->datasetNameStringAction), &StringAction::stringChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
-                connect(&(currentDatasetAction->data(i)->datasetPickerAction), &DatasetPickerAction::currentTextChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
+                connect(&(currentDatasetAction->data(i)->datasetPickerAction), &DatasetPickerAction::currentIndexChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
                 connect(&(currentDatasetAction->data(i)->clusterOptionsAction), &OptionsAction::selectedOptionsChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
          
         });
