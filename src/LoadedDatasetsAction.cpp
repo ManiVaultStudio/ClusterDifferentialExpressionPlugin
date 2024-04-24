@@ -89,10 +89,20 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
 
 
     connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<mv::DatasetImpl> pickedDataset) -> void {
+        this->clusterOptionsAction.setSelectedOptions(QStringList());
+    	this->clusterOptionsAction.setOptions(QStringList(), true);
         currentDataset = pickedDataset;
         });
 
 
+    connect(&currentDataset, &Dataset<Clusters>::dataChanged, [this]()-> void
+        {
+           // qDebug() << currentDataset->getGuiName() << " data changed";
+            this->clusterOptionsAction.setSelectedOptions(QStringList());
+            this->clusterOptionsAction.setOptions(QStringList(), true);
+        });
+
+  
     
     connect(&currentDataset, &Dataset<Clusters>::changed,  [this](Dataset<mv::DatasetImpl> dataset) -> void {
 
