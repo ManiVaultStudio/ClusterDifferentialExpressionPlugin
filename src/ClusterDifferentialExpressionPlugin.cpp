@@ -1036,7 +1036,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
 
         QString datasetName = baseName + QString("::") + actionName;
 
-        auto& allDatasets = mv::data().getAllDatasets();
+        auto allDatasets = mv::data().getAllDatasets();
         bool found = false;
         for (auto d = allDatasets.cbegin(); d != allDatasets.cend(); ++d)
         {
@@ -1387,7 +1387,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(mv::
         const auto numClusters = clusters.size();
 
         mv::Dataset<Points> points;
-        DataHierarchyItems parents = clusterDataset->getAncestors<DataHierarchyItem>();
+        DataHierarchyItems parents = clusterDataset->getAncestors();
         for(auto parent : parents )
         {
             points = parent->getDataset<Points>();
