@@ -209,7 +209,7 @@ namespace local
 
 
             auto *core = Application::core();
-            mv::Dataset<Points> newDataset = core->createDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
+            mv::Dataset<Points> newDataset = mv::data()->createDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
             events().notifyDatasetAdded(newDataset);
             newDataset->setDataElementType<float>();
             newDataset->setData(std::move(meanExpressions), numDimensions);
@@ -416,7 +416,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
         });
 	
 
-    connect(&_filterOnIdAction, &mv::gui::StringAction::stringChanged, _sortFilterProxyModel, &SortFilterProxyModel::nameFilterChanged);
+    connect(&_filterOnIdAction, &mv::gui::StringAction::stringChanged, _sortFilterProxyModel, &cde::SortFilterProxyModel::nameFilterChanged);
 
     connect(&_updateStatisticsAction, &mv::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
 
@@ -579,7 +579,7 @@ void ClusterDifferentialExpressionPlugin::init()
                 dropRegions << new gui::DropWidget::DropRegion(this, "Incompatible data", "This type of data is not supported", "exclamation-circle", false);
 
             if (dataType == ClusterType) {
-                const auto candidateDataset = _core->getDataset<Clusters>(datasetGuid);
+                const auto candidateDataset = mv::data().getDataset<Clusters>(datasetGuid);
                 const auto description = QString("Select Clusters %1").arg(candidateDataset->getGuiName());
 
                 if (!getDataset(0).isValid())
@@ -775,7 +775,7 @@ void ClusterDifferentialExpressionPlugin::createMeanExpressionDataset(qsizetype 
     }
     
     QString meanExpressionDatasetGuid = _meanExpressionDatasetGuidAction[dataset_index]->getString();
-    Dataset<Points> meanExpressionDataset = _core->getDataset(meanExpressionDatasetGuid);
+    Dataset<Points> meanExpressionDataset = mv::data().getDataset(meanExpressionDatasetGuid);
     meanExpressionDataset->setData(meanExpressionData, 1);
     events().notifyDatasetDataChanged(meanExpressionDataset);
        
@@ -1051,7 +1051,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         }
         if (!found)
         {
-            Dataset<Points> meanExpressionDataset = _core->createDataset("Points", datasetName);
+            Dataset<Points> meanExpressionDataset = mv::data()->createDataset("Points", datasetName);
             _meanExpressionDatasetGuidAction[index]->setString(meanExpressionDataset.getDatasetId());
             meanExpressionDataset->setData(meanExpressionData, 1);
         }
@@ -1435,7 +1435,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(mv::
         
 
         
-        mv::Dataset<Points> newDataset = _core->createDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
+        mv::Dataset<Points> newDataset = mv::data()->createDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
 
         events().notifyDatasetAdded(newDataset);
         
