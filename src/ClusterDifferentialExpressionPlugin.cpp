@@ -318,7 +318,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     , _autoUpdateAction(this, "auto update", false)
     , _selectedIdAction(this, "Last selected Id")
     , _updateStatisticsAction(this, "Calculate Differential Expression")
-    , _sortFilterProxyModel(new SortFilterProxyModel)
+    , _sortFilterProxyModel(new cde::SortFilterProxyModel)
     , _tableItemModel(new QTableItemModel(nullptr, false))
     , _infoTextAction(this, "IntoText")
     , _commandAction(this, "InvokeMethods")
