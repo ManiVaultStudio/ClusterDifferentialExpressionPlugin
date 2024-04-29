@@ -209,7 +209,7 @@ namespace local
 
 
             auto *core = Application::core();
-            mv::Dataset<Points> newDataset = core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
+            mv::Dataset<Points> newDataset = core->createDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
             events().notifyDatasetAdded(newDataset);
             newDataset->setDataElementType<float>();
             newDataset->setData(std::move(meanExpressions), numDimensions);
@@ -1053,7 +1053,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         }
         if (!found)
         {
-            Dataset<Points> meanExpressionDataset = _core->addDataset("Points", datasetName);
+            Dataset<Points> meanExpressionDataset = _core->createDataset("Points", datasetName);
             _meanExpressionDatasetGuidAction[index]->setString(meanExpressionDataset.getDatasetId());
             meanExpressionDataset->setData(meanExpressionData, 1);
         }
@@ -1438,7 +1438,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(mv::
         
 
         
-        mv::Dataset<Points> newDataset = _core->addDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
+        mv::Dataset<Points> newDataset = _core->createDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
 
         events().notifyDatasetAdded(newDataset);
         
