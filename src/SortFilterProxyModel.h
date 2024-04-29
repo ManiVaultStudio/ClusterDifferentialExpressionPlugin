@@ -2,6 +2,8 @@
 #include <QSortFilterProxyModel>
 #include <QRegularExpression>
 
+namespace cde {
+
 class SortFilterProxyModel : public QSortFilterProxyModel
 {
     Q_OBJECT
@@ -20,3 +22,5 @@ public slots:
 private:
     QRegularExpression	m_nameRegExpFilter;
 };
+
+}

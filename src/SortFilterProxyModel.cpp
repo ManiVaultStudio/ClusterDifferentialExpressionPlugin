@@ -1,5 +1,7 @@
 #include "SortFilterProxyModel.h"
 
+namespace cde {
+
 SortFilterProxyModel::SortFilterProxyModel(QObject* parent)
     :QSortFilterProxyModel(parent)
 {
@@ -43,4 +45,6 @@ void SortFilterProxyModel::nameFilterChanged(const QString& text)
 {
     m_nameRegExpFilter.setPattern(text);
     invalidate();
+}
+
 }

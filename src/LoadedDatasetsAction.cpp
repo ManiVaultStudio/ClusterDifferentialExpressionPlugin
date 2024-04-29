@@ -82,15 +82,9 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
         
        // setCheckable(true);
     }
-    datasetPickerAction.setDatasetsFilterFunction([](const mv::Datasets& datasets) -> Datasets {
-        Datasets clusterDatasets;
-
-        for (auto dataset : datasets)
-            if (dataset->getDataType() == ClusterType)
-                clusterDatasets << dataset;
-
-        return clusterDatasets;
-        });
+    datasetPickerAction.setFilterFunction([](const Dataset<DatasetImpl>& dataset) -> bool {
+        return dataset->getDataType() == ClusterType;
+	});
 
     connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<mv::DatasetImpl> pickedDataset) -> void {
         currentDataset = pickedDataset;

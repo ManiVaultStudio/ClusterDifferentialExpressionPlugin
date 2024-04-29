@@ -19,11 +19,14 @@ using mv::plugin::ViewPlugin;
 class TableView;
 class ButtonProgressBar;
 class QTableItemModel;
-class SortFilterProxyModel;
+
 
 class Points;
 class Clusters;
 
+namespace cde {
+	class SortFilterProxyModel;
+}
 
 namespace mv {
     namespace gui {
@@ -142,7 +145,7 @@ private:
     bool                            _identicalDimensions;
   
     QSharedPointer<QTableItemModel>   _tableItemModel;
-    QPointer<SortFilterProxyModel>      _sortFilterProxyModel;
+    QPointer<cde::SortFilterProxyModel>      _sortFilterProxyModel;
 
     //actions
     LoadedDatasetsAction                 _loadedDatasetsAction;
