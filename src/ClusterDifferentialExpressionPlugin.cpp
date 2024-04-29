@@ -1387,7 +1387,7 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(mv::
         const auto numClusters = clusters.size();
 
         mv::Dataset<Points> points;
-        DataHierarchyItems parents = clusterDataset->getAncestors();
+        DataHierarchyItems parents = clusterDataset->getDataHierarchyItem().getAncestors();
         for(auto parent : parents )
         {
             points = parent->getDataset<Points>();
