@@ -53,6 +53,15 @@ jobs:
             build-xcode-version: 13.4
             build-libcxx: libc++
 
+          - name: Macos_xcode14.3
+            os: macos-13
+            build-compiler: apple-clang
+            build-cversion: 14
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 14.3
+            build-libcxx: libc++
+            
     steps:
       - name: Checkout the source
         if: github.event_name != 'pull_request'
@@ -77,7 +86,7 @@ jobs:
       - name: Setup python version
         uses: actions/setup-python@v1
         with:
-          python-version: "3.7"
+          python-version: "3.11"
 
       - name: Start ssh key agent
         uses: webfactory/ssh-agent@v0.5.0
