@@ -87,8 +87,6 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
                 f"ln {proc.stdout.decode('UTF-8').strip()}/lib/libomp.dylib /usr/local/lib/libomp.dylib",
                 shell=True,
             )
-        if os_info.is_linux:
-            self.run("sudo apt update && sudo apt install -y libtbb2-dev")
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -126,6 +124,10 @@ class ClusterDifferentialExpressionPluginConan(ConanFile):
         # Give the installation directory to CMake
         tc.variables["MV_INSTALL_DIR"] = self.install_dir
         
+        # Find ManiVault with find_package
+        self.manivault_dir = self.install_dir + '/cmake/mv/'
+        tc.variables["ManiVault_DIR"] = self.manivault_dir
+
         tc.generate()
 
     def _configure_cmake(self):
