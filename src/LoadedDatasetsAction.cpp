@@ -110,10 +110,13 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
                     clusterNames.append(cluster.getName());
                 }
             }
-            QStringList firstItemSelectedList;
-            firstItemSelectedList.append(clusterNames.first());
-            clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
-
+            
+            if (!clusterNames.isEmpty())
+            {
+                QStringList firstItemSelectedList;
+                firstItemSelectedList.append(clusterNames.first());
+                clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
+            }
         
         }
         });
