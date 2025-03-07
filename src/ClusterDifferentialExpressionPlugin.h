@@ -187,11 +187,8 @@ class ClusterDifferentialExpressionFactory : public ViewPluginFactory
         Q_INTERFACES(mv::plugin::ViewPluginFactory mv::plugin::PluginFactory)
 
 public:
-    ClusterDifferentialExpressionFactory() {}
+    ClusterDifferentialExpressionFactory();
     ~ClusterDifferentialExpressionFactory() override {}
-
-    /** Returns the plugin icon */
-    QIcon getIcon(const QColor& color = Qt::black) const override;
 
     ClusterDifferentialExpressionPlugin* produce() override;
 

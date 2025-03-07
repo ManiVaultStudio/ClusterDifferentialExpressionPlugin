@@ -333,7 +333,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     { // copy to Clipboard
         getWidget().addAction(&_saveToCsvAction);
         addTitleBarMenuAction(&_saveToCsvAction);
-        _saveToCsvAction.setIcon(Application::getIconFont("FontAwesome").getIcon("file-csv"));
+        _saveToCsvAction.setIcon(mv::util::StyledIcon("file-csv"));
         _saveToCsvAction.setShortcut(tr("Ctrl+S"));
         _saveToCsvAction.setShortcutContext(Qt::WidgetWithChildrenShortcut);
 
@@ -345,7 +345,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     { // copy to Clipboard
         getWidget().addAction(&_copyToClipboardAction);
         addTitleBarMenuAction(&_copyToClipboardAction);
-        _copyToClipboardAction.setIcon(Application::getIconFont("FontAwesome").getIcon("copy"));
+        _copyToClipboardAction.setIcon(mv::util::StyledIcon("copy"));
         _copyToClipboardAction.setShortcut(tr("Ctrl+C"));
         _copyToClipboardAction.setShortcutContext(Qt::WidgetWithChildrenShortcut);
 
@@ -415,17 +415,13 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
             
         });
 	
-
     connect(&_filterOnIdAction, &mv::gui::StringAction::stringChanged, _sortFilterProxyModel, &cde::SortFilterProxyModel::nameFilterChanged);
-
     connect(&_updateStatisticsAction, &mv::gui::TriggerAction::triggered, this, &ClusterDifferentialExpressionPlugin::computeDE);
-
     
     _primaryToolbarAction.addAction(&_loadedDatasetsAction, 2);
 
-    _autoUpdateAction.setIcon(mv::Application::getIconFont("FontAwesome").getIcon("check"));
+    _autoUpdateAction.setIcon(mv::util::StyledIcon("check"));
     _primaryToolbarAction.addAction(&_autoUpdateAction, 100);
-
 
     _meanExpressionDatasetGuidAction.reserve(_loadedDatasetsAction.size());
     _DE_StatisticsDatasetGuidAction.reserve(_loadedDatasetsAction.size());
@@ -434,9 +430,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
         datasetAdded(i);
     }
 
-    
     connect(&_commandAction, &VariantAction::variantChanged, this, &ClusterDifferentialExpressionPlugin::newCommandsReceived);
-
     connect(&_loadedDatasetsAction, &LoadedDatasetsAction::datasetAdded, this, &ClusterDifferentialExpressionPlugin::datasetAdded);
 
     //_selectedDatasetsAction.setOptionsModel(&_loadedDatasetsAction.model());
@@ -1833,9 +1827,9 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     _progressManager.end();
 }
 
-QIcon ClusterDifferentialExpressionFactory::getIcon(const QColor& color /*= Qt::black*/) const
+ClusterDifferentialExpressionFactory::ClusterDifferentialExpressionFactory()
 {
-    return Application::getIconFont("FontAwesome").getIcon("table", color);
+    setIconByName("table");
 }
 
 ClusterDifferentialExpressionPlugin* ClusterDifferentialExpressionFactory::produce()

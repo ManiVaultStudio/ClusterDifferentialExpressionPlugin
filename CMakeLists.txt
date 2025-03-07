@@ -99,6 +99,11 @@ target_include_directories(${PROJECT} PRIVATE "${ManiVault_INCLUDE_DIR}")
 # -----------------------------------------------------------------------------
 target_compile_features(${PROJECT} PRIVATE cxx_std_20)
 
+set_target_properties(${PROJECT}
+    PROPERTIES
+    FOLDER ViewPlugins
+)
+
 # -----------------------------------------------------------------------------
 # Target library linking
 # -----------------------------------------------------------------------------
