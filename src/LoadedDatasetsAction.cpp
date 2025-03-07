@@ -1,11 +1,12 @@
 #include "LoadedDatasetsAction.h"
+
 #include "ClusterDifferentialExpressionPlugin.h"
 
-
 #include <ClusterData/ClusterData.h>
+#include <util/StyledIcon.h>
+
 #include <cstdint>
 #include <QMenu>
-
 
 using namespace mv;
 using namespace mv::gui;
@@ -264,12 +265,11 @@ LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* 
     }
    // for (auto i = 0; i < _data.size();++i)
    //     _data[i].reset(new Data(this,i));
-    setIcon(mv::Application::getIconFont("FontAwesome").getIcon("database"));
+    setIcon(mv::util::StyledIcon("database"));
     setToolTip("Manage clusters");
 
-
     connect(&_addDatasetTriggerAction, &TriggerAction::triggered, this, &LoadedDatasetsAction::addDataset);
-    _addDatasetTriggerAction.setIcon(mv::Application::getIconFont("FontAwesome").getIcon("plus"));
+    _addDatasetTriggerAction.setIcon(mv::util::StyledIcon("plus"));
     QString name = _addDatasetTriggerAction.text();
     assert(!name.isEmpty());
     QString apiName = localNamespace::toCamelCase(name, ' ');
