@@ -317,6 +317,8 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     , _filterOnIdAction(this, "Filter on Id")
     , _autoUpdateAction(this, "auto update", false)
     , _selectedIdAction(this, "Last selected Id")
+    , _selectedDimensionAction(this, "Selected Dimension")
+	, _selectedDimensionDatasetAction(this, "Selected Dimension Dataset")
     , _updateStatisticsAction(this, "Calculate Differential Expression")
     , _sortFilterProxyModel(new cde::SortFilterProxyModel)
     , _tableItemModel(new QTableItemModel(nullptr, false))
@@ -369,6 +371,8 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     publishAndSerializeAction(&_postInfoVariantAction);
     publishAndSerializeAction(&_filterOnIdAction);
     publishAndSerializeAction(&_selectedIdAction);
+    publishAndSerializeAction(&_selectedDimensionAction);
+	publishAndSerializeAction(&_selectedDimensionDatasetAction);
     publishAndSerializeAction(&_updateStatisticsAction);
     publishAndSerializeAction(&_infoTextAction);
     publishAndSerializeAction(&_autoUpdateAction);
@@ -377,7 +381,12 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     serializeAction(&_primaryToolbarAction);
     serializeAction(&_copyToClipboardAction);
     _serializedActions.append(&_loadedDatasetsAction);
-    
+	_selectedDimensionDatasetAction.setFilterFunction([](const Dataset<DatasetImpl>& dataset) -> bool {
+		return dataset->getDataType() == PointType;
+		});
+	connect(&_selectedDimensionDatasetAction, &DatasetPickerAction::datasetPicked, this, [this](Dataset<DatasetImpl> pickedDataset) -> void {
+        _selectedDimensionAction.setPointsDataset(_selectedDimensionDatasetAction.getCurrentDataset());
+		});
 
     connect(&_preInfoVariantAction, &VariantAction::variantChanged, [this](const QVariant &var)
     {
@@ -1107,7 +1116,12 @@ void ClusterDifferentialExpressionPlugin::tableView_clicked(const QModelIndex& i
         QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
         auto row = temp.row();
        _selectedIdAction.setString(selectedGeneName);
-
+	   auto dimensions = _selectedDimensionAction.getDimensionNames();
+       if (dimensions.contains(selectedGeneName))
+       {
+           _selectedDimensionAction.setCurrentDimensionName(selectedGeneName);
+       }
+      
        update_pairwiseDiffExpResultsAction(row, selectedGeneName);
 
 
