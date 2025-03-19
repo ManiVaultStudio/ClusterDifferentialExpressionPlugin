@@ -12,7 +12,6 @@
 #include "actions/HorizontalToolbarAction.h"
 #include "LoadedDatasetsAction.h"
 
-
 using mv::plugin::ViewPluginFactory;
 using mv::plugin::ViewPlugin;
 
@@ -152,9 +151,10 @@ private:
     StringAction                         _filterOnIdAction;
     ToggleAction                         _autoUpdateAction;
     StringAction                         _selectedIdAction;
+    OptionAction                         _selectedDimensionAction;
     TriggerAction                        _updateStatisticsAction;
-    QVector<QPointer<StringAction>>       _meanExpressionDatasetGuidAction;
-    QVector<QPointer<StringAction>>       _DE_StatisticsDatasetGuidAction;
+    QVector<QPointer<StringAction>>      _meanExpressionDatasetGuidAction;
+    QVector<QPointer<StringAction>>      _DE_StatisticsDatasetGuidAction;
     TriggerAction                        _copyToClipboardAction;
     TriggerAction                        _saveToCsvAction;
 

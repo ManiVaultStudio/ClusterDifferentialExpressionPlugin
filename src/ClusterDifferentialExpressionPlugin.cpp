@@ -317,6 +317,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     , _filterOnIdAction(this, "Filter on Id")
     , _autoUpdateAction(this, "auto update", false)
     , _selectedIdAction(this, "Last selected Id")
+    , _selectedDimensionAction(this, "Selected Dimension")
     , _updateStatisticsAction(this, "Calculate Differential Expression")
     , _sortFilterProxyModel(new cde::SortFilterProxyModel)
     , _tableItemModel(new QTableItemModel(nullptr, false))
@@ -369,6 +370,7 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     publishAndSerializeAction(&_postInfoVariantAction);
     publishAndSerializeAction(&_filterOnIdAction);
     publishAndSerializeAction(&_selectedIdAction);
+    publishAndSerializeAction(&_selectedDimensionAction);
     publishAndSerializeAction(&_updateStatisticsAction);
     publishAndSerializeAction(&_infoTextAction);
     publishAndSerializeAction(&_autoUpdateAction);
@@ -377,7 +379,6 @@ ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const m
     serializeAction(&_primaryToolbarAction);
     serializeAction(&_copyToClipboardAction);
     _serializedActions.append(&_loadedDatasetsAction);
-    
 
     connect(&_preInfoVariantAction, &VariantAction::variantChanged, [this](const QVariant &var)
     {
@@ -1107,7 +1108,12 @@ void ClusterDifferentialExpressionPlugin::tableView_clicked(const QModelIndex& i
         QModelIndex temp = _sortFilterProxyModel->mapToSource(firstColumn);
         auto row = temp.row();
        _selectedIdAction.setString(selectedGeneName);
-
+	   auto dimensions = _selectedDimensionAction.getOptions();
+       if (dimensions.contains(selectedGeneName))
+       {
+           _selectedDimensionAction.setCurrentText(selectedGeneName);
+       }
+      
        update_pairwiseDiffExpResultsAction(row, selectedGeneName);
 
 
@@ -1259,14 +1265,12 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 
     const qsizetype nrOfDatasets = _loadedDatasetsAction.size();
 
-   
     std::vector<std::vector<QString>> dimensionNames(nrOfDatasets);
     std::vector<QVector<QString>> sortedDimensionNames(nrOfDatasets);
-    
-	//#pragma omp parallel for schedule(dynamic, 1)
+
+    //#pragma omp parallel for schedule(dynamic, 1)
     for(qsizetype datasetIndex=0; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
-        
         if (local::clusterDatset_has_computed_DE_Statistics(getDataset(0)))
         {
             dimensionNames[datasetIndex] = get_DE_Statistics_Dataset(getDataset(datasetIndex))->getDimensionNames();
@@ -1275,7 +1279,7 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
         {
             auto parentDataset = getDataset(datasetIndex)->getParent<Points>();
             if (parentDataset.isValid())
-	            dimensionNames[datasetIndex] = parentDataset->getDimensionNames();
+                dimensionNames[datasetIndex] = parentDataset->getDimensionNames();
         }
         sortedDimensionNames[datasetIndex]= std::move(QVector<QString>(dimensionNames[datasetIndex].cbegin(), dimensionNames[datasetIndex].cend()));
 
@@ -1296,8 +1300,6 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
     if (identicalOrder)
         return true;
 
-
-    
     QVector<QString> allDimensionNames = sortedDimensionNames[0];
     for (qsizetype datasetIndex = 1; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
@@ -1310,14 +1312,11 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
         std::unique(result.begin(), result.end());
 #endif
         allDimensionNames = std::move(result);
-        
-
     }
-    
 
     std::vector<std::vector<QString>::const_iterator> begin(nrOfDatasets);
     std::vector<std::vector<QString>::const_iterator> end(nrOfDatasets);
-	#pragma omp parallel for
+    #pragma omp parallel for
     for(qsizetype datasetIndex=0; datasetIndex < nrOfDatasets; ++datasetIndex)
     {
         begin[datasetIndex] = dimensionNames[datasetIndex].begin();
@@ -1326,13 +1325,13 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
 
     _matchingDimensionNames.resize(allDimensionNames.size());
     _progressManager.start(allDimensionNames.size(), "Matching Dimensions");
-	#pragma  omp parallel for schedule(dynamic,1)
-	for(qsizetype i=0; i < allDimensionNames.size(); ++i)
-	{
+    #pragma  omp parallel for schedule(dynamic,1)
+    for(qsizetype i=0; i < allDimensionNames.size(); ++i)
+    {
         const QString name = allDimensionNames[i];
         _matchingDimensionNames[i].first = name;
         QVector<qsizetype>& value = _matchingDimensionNames[i].second;
-		value.resize(nrOfDatasets, -1);
+        value.resize(nrOfDatasets, -1);
         for (qsizetype datasetIndex = 0; datasetIndex < nrOfDatasets; ++datasetIndex)
         {
 #if defined(__cpp_lib_parallel_algorithm)
@@ -1346,10 +1345,11 @@ bool ClusterDifferentialExpressionPlugin::matchDimensionNames()
             }
         }
         _progressManager.print(i);
-	}
-   
+    }
+    
     _progressManager.end();
-	
+
+    return false;
 }
 
 
@@ -1631,8 +1631,13 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         }
     }
     std::ptrdiff_t numDimensions =(std::ptrdiff_t) (_identicalDimensions ? unifiedDimensionNames.size() : _matchingDimensionNames.size());
-   
-    
+	QStringList dimensionNames; 
+    for (auto dimension : unifiedDimensionNames)
+    {
+        dimensionNames << dimension;
+    }
+	_selectedDimensionAction.setOptions(dimensionNames);
+
     _tableItemModel->startModelBuilding(totalColumnCount, numDimensions);
     _progressManager.start(numDimensions, "Computing Differential Expresions ");
 
