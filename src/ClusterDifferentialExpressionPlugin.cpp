@@ -1631,7 +1631,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         }
     }
     std::ptrdiff_t numDimensions =(std::ptrdiff_t) (_identicalDimensions ? unifiedDimensionNames.size() : _matchingDimensionNames.size());
-	qDebug() << "unifiedDimensionNames" << unifiedDimensionNames.size();
 	QStringList dimensionNames; 
     for (auto dimension : unifiedDimensionNames)
     {
