@@ -482,6 +482,13 @@ void ClusterDifferentialExpressionPlugin::init()
 
         _tableView = new TableView(&mainWidget);
         _tableView->setModel(_sortFilterProxyModel);
+
+
+        QPalette palette = _tableView->palette();
+        palette.setColor(QPalette::Base, Qt::white); // Background color
+        palette.setColor(QPalette::Text, Qt::black); // Text color
+        _tableView->setPalette(palette);
+
         _tableView->setSortingEnabled(true);
         _tableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
