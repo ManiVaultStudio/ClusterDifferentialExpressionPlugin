@@ -81,6 +81,11 @@ jobs:
           conan-password: ${{secrets.LKEB_UPLOAD_USER_PASSWORD}}
           conan-pem: ${{secrets.LKEB_UPLOAD_CERT_CHAIN}}
           rs_ssh_key: ${{ secrets.RULESSUPPORT_DEPLOY_KEY }}
+          sentry-upload: startsWith(github.ref, 'refs/heads/release/')
+          sentry-url: ${{secrets.LKEB_SENTRY_URL }}
+          sentry-org: ${{secrets.LKEB_SENTRY_ORG }}
+          sentry-project: ${{secrets.LKEB_SENTRY_PROJECT }}
+          sentry-auth-token: ${{secrets.LKEB_SENTRY_AUTH_TOKEN }}
       
       - name: Linux build
         if: startsWith(matrix.os, 'ubuntu')
