@@ -23,14 +23,42 @@ namespace localNamespace
         return parts.join("");
 
     }
+
+    void initializeClusterOptions( const mv::Dataset<mv::DatasetImpl>& dataset, mv::gui::OptionsAction& optionsAction)
+    {
+        QStringList clusterNames;
+
+        mv::Dataset<Clusters> clusterDataset = dataset;
+        if (clusterDataset.isValid())
+        {
+            const auto& clusters = clusterDataset->getClusters();
+            for (const auto& cluster : clusters)
+                clusterNames.append(cluster.getName());
+        }
+
+        QStringList initialSelection;
+        if (!clusterNames.isEmpty())
+            initialSelection.append(clusterNames.first());
+
+        optionsAction.initialize(clusterNames, initialSelection);
+    }
 }
 
-LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
-	:QStandardItem()
-    ,datasetPickerAction(parent, "Dataset")
-    ,clusterOptionsAction(parent, "Selected Clusters")
-	,datasetNameStringAction(parent, "Dataset")
-	,datasetSelectedAction(parent, "Active Dataset",true)
+//LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
+//	:QStandardItem()
+//    ,datasetPickerAction(parent, "Dataset")
+//    ,clusterOptionsAction(parent, "Selected Clusters")
+//	,datasetNameStringAction(parent, "Dataset")
+//	,datasetSelectedAction(parent, "Active Dataset",true)
+//{
+LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
+    : QStandardItem()
+    , datasetPickerAction(parent, "Cluster Dataset 1")
+    , clusterOptionsAction(parent, "Cluster 1")
+    , overlapDatasetPickerAction(parent, "Cluster Dataset 2")
+    , overlapClusterOptionsAction(parent, "Cluster 2")
+    , datasetNameStringAction(parent, "Dataset")
+    , datasetSelectedAction(parent, "Active Dataset", true)
 {
     
     
@@ -69,6 +97,8 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
                 clusterOptionsAction.setSerializationName(clusterOptionsActionName);
             }
 
+
+
             {
                 QString actionName = QString("SelectedDataset") + QString::number(index + 1);
                 datasetSelectedAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
@@ -76,51 +106,107 @@ LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
                 datasetSelectedAction.setSerializationName(actionName);
             }
 
+            {
+                const QString actionName = QString("OverlapDataset") + QString::number(index + 1);
+                overlapDatasetPickerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+                overlapDatasetPickerAction.publish(baseName + actionName);
+                overlapDatasetPickerAction.setSerializationName(actionName);
+            }
+
+            {
+                const QString actionName = QString("SelectOverlapClusters") + QString::number(index + 1);
+                overlapClusterOptionsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+                overlapClusterOptionsAction.publish(baseName + actionName);
+                overlapClusterOptionsAction.setSerializationName(actionName);
+            }
+
 
         }
         QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const mv::Dataset<mv::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
+        QObject::connect(&overlapDataset, &Dataset<Clusters>::changed, [this](const mv::Dataset<mv::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
         
         
        // setCheckable(true);
     }
-    datasetPickerAction.setFilterFunction([](const Dataset<DatasetImpl>& dataset) -> bool {
-        return dataset->getDataType() == ClusterType;
-	});
+ //   datasetPickerAction.setFilterFunction([](const Dataset<DatasetImpl>& dataset) -> bool {
+ //       return dataset->getDataType() == ClusterType;
+	//});
 
-    connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<mv::DatasetImpl> pickedDataset) -> void {
-        currentDataset = pickedDataset;
-        });
-
-
-    
-    connect(&currentDataset, &Dataset<Clusters>::changed,  [this](Dataset<mv::DatasetImpl> dataset) -> void {
+ //   connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<mv::DatasetImpl> pickedDataset) -> void {
+ //       currentDataset = pickedDataset;
+ //       });
 
 
-        if (datasetPickerAction.getCurrentDataset() != dataset)
-            datasetPickerAction.setCurrentDataset(dataset);
-        //else
+ //   
+ //   connect(&currentDataset, &Dataset<Clusters>::changed,  [this](Dataset<mv::DatasetImpl> dataset) -> void {
+
+
+ //       if (datasetPickerAction.getCurrentDataset() != dataset)
+ //           datasetPickerAction.setCurrentDataset(dataset);
+ //       //else
+ //       {
+ //           Dataset<Clusters> clusterDataset = dataset;
+
+ //           QStringList clusterNames;
+ //           if (clusterDataset.isValid())
+ //           {
+ //               auto& clusters = clusterDataset->getClusters();
+ //               for (auto cluster : clusters)
+ //               {
+ //                   clusterNames.append(cluster.getName());
+ //               }
+ //           }
+ //           QStringList firstItemSelectedList;
+ //           firstItemSelectedList.append(clusterNames.first());
+ //           clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
+
+ //       
+ //       }
+ //       });
+
+
+	//currentDataset = datasetPickerAction.getCurrentDataset();
+
+    const auto clusterDatasetFilter =
+        [](const Dataset<DatasetImpl>& dataset) -> bool
         {
-            Dataset<Clusters> clusterDataset = dataset;
+            return dataset->getDataType() == ClusterType;
+        };
 
-            QStringList clusterNames;
-            if (clusterDataset.isValid())
-            {
-                auto& clusters = clusterDataset->getClusters();
-                for (auto cluster : clusters)
-                {
-                    clusterNames.append(cluster.getName());
-                }
-            }
-            QStringList firstItemSelectedList;
-            firstItemSelectedList.append(clusterNames.first());
-            clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
+    datasetPickerAction.setFilterFunction(clusterDatasetFilter);
+    overlapDatasetPickerAction.setFilterFunction(clusterDatasetFilter);
 
-        
-        }
+    connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<DatasetImpl> pickedDataset) { currentDataset = pickedDataset;});
+
+    connect(&overlapDatasetPickerAction, &DatasetPickerAction::datasetPicked,[this](Dataset<DatasetImpl> pickedDataset) { overlapDataset = pickedDataset; });
+
+    connect(&currentDataset, &Dataset<Clusters>::changed, [this](Dataset<DatasetImpl> dataset)
+        {
+            if (datasetPickerAction.getCurrentDataset() != dataset)
+                datasetPickerAction.setCurrentDataset(dataset);
+
+            localNamespace::initializeClusterOptions(
+                dataset,
+                clusterOptionsAction);
+
+            // Preserve old behaviour by using the first dataset as the
+            // overlap dataset until another one is explicitly selected.
+            if (!overlapDataset.isValid() && dataset.isValid())
+                overlapDataset = dataset;
         });
 
+    connect(&overlapDataset, &Dataset<Clusters>::changed, [this](Dataset<DatasetImpl> dataset)
+        {
+            if (overlapDatasetPickerAction.getCurrentDataset() != dataset)
+                overlapDatasetPickerAction.setCurrentDataset(dataset);
 
-	currentDataset = datasetPickerAction.getCurrentDataset();
+            localNamespace::initializeClusterOptions(
+                dataset,
+                overlapClusterOptionsAction);
+        });
+
+    overlapDataset = overlapDatasetPickerAction.getCurrentDataset();
+    currentDataset = datasetPickerAction.getCurrentDataset();
 
     connect(&datasetNameStringAction, &StringAction::stringChanged, [this](const QString&)->void {this->emitDataChanged(); });
     connect(&datasetSelectedAction, &ToggleAction::changed, [this]()->void {this->emitDataChanged(); });
@@ -191,7 +277,8 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
 
     qsizetype nrOfDatasets = _model.rowCount(); // _data.size();
 
-    variantMap["LoadedDatasetsActionVersion"] = 1;
+    //variantMap["LoadedDatasetsActionVersion"] = 1;
+    variantMap["LoadedDatasetsActionVersion"] = 2;
     variantMap["NrOfDatasets"] = nrOfDatasets;
     
     for(qsizetype i =0; i < nrOfDatasets; ++i)
@@ -205,6 +292,9 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
         data->clusterOptionsAction.insertIntoVariantMap(subMap);
         data->datasetNameStringAction.insertIntoVariantMap(subMap);
         data->datasetSelectedAction.insertIntoVariantMap(subMap);
+
+        data->overlapDatasetPickerAction.insertIntoVariantMap(subMap);
+        data->overlapClusterOptionsAction.insertIntoVariantMap(subMap);
         /*
         _data[i]->datasetPickerAction.insertIntoVariantMap(subMap);
         _data[i]->clusterOptionsAction.insertIntoVariantMap(subMap);
@@ -245,6 +335,14 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
                // _data[i]->datasetPickerAction.fromParentVariantMap(subMap);
                 //_data[i]->clusterOptionsAction.fromParentVariantMap(subMap);
                 //_data[i]->datasetNameStringAction.fromParentVariantMap(subMap);
+
+                data(i)->datasetSelectedAction.fromParentVariantMap(subMap);
+
+                if (version >= 2)
+                {
+                    data(i)->overlapDatasetPickerAction.fromParentVariantMap(subMap);
+                    data(i)->overlapClusterOptionsAction.fromParentVariantMap(subMap);
+                }
             }
         }
     }
@@ -321,6 +419,34 @@ QWidget* LoadedDatasetsAction::getDatasetNameWidget(std::size_t index, QWidget* 
     //return _data.at(index)->datasetNameStringAction.createWidget(parent, flags);
 }
 
+mv::gui::OptionsAction& LoadedDatasetsAction::getOverlapClusterSelectionAction( const std::size_t index)
+{
+    return data(index)->overlapClusterOptionsAction;
+}
+
+mv::Dataset<Clusters>& LoadedDatasetsAction::getOverlapDataset(std::size_t index) const
+{
+    return data(index)->overlapDataset;
+}
+
+QStringList LoadedDatasetsAction::getOverlapClusterOptions(
+    std::size_t index) const
+{
+    return data(index)->overlapClusterOptionsAction.getOptions();
+}
+
+QStringList LoadedDatasetsAction::getOverlapClusterSelection( std::size_t index) const
+{
+    return data(index)->overlapClusterOptionsAction.getSelectedOptions();
+}
+
+QWidget* LoadedDatasetsAction::getOverlapClusterSelectionWidget(std::size_t index, QWidget* parent, const std::int32_t& flags)
+{
+    return data(index)->overlapClusterOptionsAction.createWidget(
+        parent,
+        flags);
+}
+
 
 
 qsizetype LoadedDatasetsAction::size() const
@@ -355,55 +481,134 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
     
     if (true/*widgetFlags & PopupLayout*/)
     {
-        setFixedWidth(600);
+     //   setFixedWidth(600);
+     //   auto layout = new QGridLayout();
+
+     //  
+     //   
+     //   
+     //   QWidget* addButton = currentDatasetAction->_addDatasetTriggerAction.createWidget(this, TriggerAction::Icon);
+     //   addButton->setFixedWidth(addButton->height());
+     //   layout->addWidget(addButton,0,1);
+     //   
+     //   
+     //   const int offset = 1;
+     //   connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[this,layout,offset,currentDatasetAction]()->void
+     //   {
+     //           int i = currentDatasetAction->size()-1;
+     //           int column = 0;
+     //           
+     //           QWidget* w = currentDatasetAction->data(i)->datasetSelectedAction.createWidget(this, ToggleAction::CheckBox);
+     //   		w->setFixedWidth(16);
+     //           layout->addWidget(w, i + offset, column++);
+     //           layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), i + offset, column++);
+     //           layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
+     //           layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
+     //           layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
+
+
+     //           connect(&(currentDatasetAction->data(i)->datasetNameStringAction), &StringAction::stringChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
+     //           connect(&(currentDatasetAction->data(i)->datasetPickerAction), &DatasetPickerAction::currentTextChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
+     //           connect(&(currentDatasetAction->data(i)->clusterOptionsAction), &OptionsAction::selectedOptionsChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
+     //    
+     //   });
+
+     //  
+    	//for (qsizetype i = 0; i < currentDatasetAction->size(); ++i)
+     //   {
+     //       int column = 0;
+     //       QWidget* w = currentDatasetAction->data(i)->datasetSelectedAction.createWidget(this, ToggleAction::CheckBox);
+     //       w->setFixedWidth(16);
+     //       layout->addWidget(w, i + offset, column++);
+     //       layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), i + offset, column++);
+     //       layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
+     //       layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
+     //       layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
+     //   }
+
+
+     //   
+     //   setLayout(layout);
+     //   //setPopupLayout(layout);
+
+
+        // Replace the contents of the first branch in
+// LoadedDatasetsAction::Widget::Widget()
+        setFixedWidth(1100);
+
         auto layout = new QGridLayout();
 
-       
-        
-        
-        QWidget* addButton = currentDatasetAction->_addDatasetTriggerAction.createWidget(this, TriggerAction::Icon);
+        QWidget* addButton =
+            currentDatasetAction->_addDatasetTriggerAction.createWidget(
+                this,
+                TriggerAction::Icon);
+
         addButton->setFixedWidth(addButton->height());
-        layout->addWidget(addButton,0,1);
-        
-        
+        layout->addWidget(addButton, 0, 1);
+
         const int offset = 1;
-        connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[this,layout,offset,currentDatasetAction]()->void
-        {
-                int i = currentDatasetAction->size()-1;
+
+        const auto addDatasetRow =
+            [this, layout, offset](
+                LoadedDatasetsAction* action,
+                qsizetype index)
+            {
                 int column = 0;
-                
-                QWidget* w = currentDatasetAction->data(i)->datasetSelectedAction.createWidget(this, ToggleAction::CheckBox);
-        		w->setFixedWidth(16);
-                layout->addWidget(w, i + offset, column++);
-                layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), i + offset, column++);
-                layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
-                layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
-                layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
 
+                QWidget* selectedWidget = action->data(index)->datasetSelectedAction.createWidget( this, ToggleAction::CheckBox);
 
-                connect(&(currentDatasetAction->data(i)->datasetNameStringAction), &StringAction::stringChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
-                connect(&(currentDatasetAction->data(i)->datasetPickerAction), &DatasetPickerAction::currentTextChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
-                connect(&(currentDatasetAction->data(i)->clusterOptionsAction), &OptionsAction::selectedOptionsChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
-         
-        });
+                selectedWidget->setFixedWidth(16);
 
-       
-    	for (qsizetype i = 0; i < currentDatasetAction->size(); ++i)
-        {
-            int column = 0;
-            QWidget* w = currentDatasetAction->data(i)->datasetSelectedAction.createWidget(this, ToggleAction::CheckBox);
-            w->setFixedWidth(16);
-            layout->addWidget(w, i + offset, column++);
-            layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), i + offset, column++);
-            layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
-            layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
-            layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
-        }
+                layout->addWidget(selectedWidget, index + offset, column++);
 
+                layout->addWidget(action->data(index)->datasetNameStringAction.createWidget(this), index + offset, column++);
 
-        
+                layout->addWidget(action->data(index)->datasetPickerAction.createWidget(this), index + offset, column++);
+
+                layout->addWidget(action->data(index)->clusterOptionsAction.createLabelWidget(this), index + offset, column++);
+
+                layout->addWidget(action->data(index)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), index + offset, column++);
+
+                layout->addWidget(new QLabel(QStringLiteral("∩"), this), index + offset, column++);
+
+                layout->addWidget(action->data(index)->overlapDatasetPickerAction.createWidget(this), index + offset, column++);
+
+                layout->addWidget(action->data(index)->overlapClusterOptionsAction.createLabelWidget(this), index + offset, column++);
+
+                layout->addWidget(action->data(index)->overlapClusterOptionsAction.createWidget(this, OptionsAction::ComboBox), index + offset, column++);
+
+                connect(&action->data(index)->datasetNameStringAction, &StringAction::stringChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged(); });
+
+                connect(&action->data(index)->datasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]()
+                    {
+                        emit action->datasetOrClusterSelectionChanged();
+                    });
+
+                connect(&action->data(index)->clusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]()
+                    {
+                        emit action->datasetOrClusterSelectionChanged();
+                    });
+
+                connect(&action->data(index)->overlapDatasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]()
+                    {
+                        emit action->datasetOrClusterSelectionChanged();
+                    });
+
+                connect(&action->data(index)->overlapClusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]()
+                    {
+                        emit action->datasetOrClusterSelectionChanged();
+                    });
+            };
+
+        connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[currentDatasetAction, addDatasetRow](int index)
+            {
+                addDatasetRow(currentDatasetAction, index);
+            });
+
+        for (qsizetype i = 0; i < currentDatasetAction->size(); ++i)
+            addDatasetRow(currentDatasetAction, i);
+
         setLayout(layout);
-        //setPopupLayout(layout);
             
     } else {
 

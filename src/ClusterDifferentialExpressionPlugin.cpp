@@ -304,6 +304,29 @@ namespace local
 
     }
 
+    mv::Dataset<Points> getParentPointDataset(mv::Dataset<Clusters> clusterDataset)
+    {
+        if (!clusterDataset.isValid())
+            return {};
+
+        mv::Dataset<Points> points = clusterDataset->getParent<Points>();
+
+        if (points.isValid())
+            return points;
+
+        const DataHierarchyItems ancestors = clusterDataset->getDataHierarchyItem().getAncestors();
+
+        for (const auto& ancestor : ancestors)
+        {
+            points = ancestor->getDataset<Points>();
+
+            if (points.isValid())
+                return points;
+        }
+
+        return {};
+    }
+
 }
 ClusterDifferentialExpressionPlugin::ClusterDifferentialExpressionPlugin(const mv::plugin::PluginFactory* factory)
     : ViewPlugin(factory)
@@ -626,7 +649,11 @@ void ClusterDifferentialExpressionPlugin::loadData(const mv::Datasets& datasets)
     getDataset(0) = datasets.first();
 
     if (datasets.size() > 1)
+    {
         getDataset(1) = datasets[1];
+        _loadedDatasetsAction.getOverlapDataset(1) = datasets[1];
+
+    }
 }
 
 void ClusterDifferentialExpressionPlugin::addConfigurableWidget(const QString& name, QWidget* widget)
@@ -854,9 +881,20 @@ void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qs
     {
         if (_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
         {
-            QStringList clusterStrings = _loadedDatasetsAction.getClusterOptions(i);
+           /* QStringList clusterStrings = _loadedDatasetsAction.getClusterOptions(i);
             QStringList clusterSelectionStrings = _loadedDatasetsAction.getClusterSelection(i);
-            meanExpressionValues[i] = computeMeanExpressionsForSelectedClusters(getDataset(i), local::getClusterIndices(clusterStrings, clusterSelectionStrings));
+            meanExpressionValues[i] = computeMeanExpressionsForSelectedClusters(getDataset(i), local::getClusterIndices(clusterStrings, clusterSelectionStrings));*/
+
+            const QStringList clusterOptions1 = _loadedDatasetsAction.getClusterOptions(i);
+
+            const QStringList clusterSelection1 = _loadedDatasetsAction.getClusterSelection(i);
+
+            const QStringList clusterOptions2 = _loadedDatasetsAction.getOverlapClusterOptions(i);
+
+            const QStringList clusterSelection2 = _loadedDatasetsAction.getOverlapClusterSelection(i);
+
+            meanExpressionValues[i] = computeMeanExpressionsForOverlappingClusters(getDataset(i), local::getClusterIndices(clusterOptions1,clusterSelection1),
+                    _loadedDatasetsAction.getOverlapDataset(i), local::getClusterIndices(clusterOptions2, clusterSelection2));
 
             auto DE_StatisticsDataset = get_DE_Statistics_Dataset(_loadedDatasetsAction.getDataset(i));
             if (DE_StatisticsDataset.isValid())
@@ -1019,6 +1057,11 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
             datasetChanged(index, dataset);
         });
 
+
+    connect(&_loadedDatasetsAction.getOverlapDataset(index), &Dataset<Clusters>::changed, this, [this](const Dataset<DatasetImpl>&) {clusterSelectionChanged(QStringList());});
+
+    connect(&_loadedDatasetsAction.getOverlapClusterSelectionAction(index), &OptionsAction::selectedOptionsChanged, this, &ClusterDifferentialExpressionPlugin::clusterSelectionChanged);
+
     _meanExpressionDatasetGuidAction.resize(_loadedDatasetsAction.size(), nullptr);
     std::vector<float> meanExpressionData(1, 0);
     const QString baseName = getOriginalName();
@@ -1077,10 +1120,26 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         clusterHeaderWidgetLayout->addWidget(datasetNameWidget, 0, 0, Qt::AlignTop);
         _configurableWidgets[QString("TableViewDatasetName") + QString::number(index + 1)] = datasetNameWidget;
 
-        QWidget* widget = _loadedDatasetsAction.getClusterSelectionWidget(index, clusterHeaderWidget, 1);
+        /*QWidget* widget = _loadedDatasetsAction.getClusterSelectionWidget(index, clusterHeaderWidget, 1);
         _configurableWidgets[QString("TableViewClusterSelection") + QString::number(index + 1)] = widget;
         clusterHeaderWidgetLayout->addWidget(widget, 1, 0, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(new QLabel("Mean", clusterHeaderWidget), 2, 0, Qt::AlignLeft);
+        clusterHeaderWidgetLayout->addWidget(new QLabel("Mean", clusterHeaderWidget), 2, 0, Qt::AlignLeft);*/
+
+        QWidget* cluster1Widget = _loadedDatasetsAction.getClusterSelectionWidget(index, clusterHeaderWidget, 1);
+
+        _configurableWidgets[QString("TableViewClusterSelection") + QString::number(index + 1)] = cluster1Widget;
+
+        clusterHeaderWidgetLayout->addWidget(cluster1Widget, 1, 0, Qt::AlignTop);
+
+        clusterHeaderWidgetLayout->addWidget(new QLabel(QStringLiteral("∩"), clusterHeaderWidget), 2, 0, Qt::AlignCenter);
+
+        QWidget* cluster2Widget = _loadedDatasetsAction.getOverlapClusterSelectionWidget(index, clusterHeaderWidget, 1);
+
+        _configurableWidgets[QString("TableViewOverlapClusterSelection") + QString::number(index + 1)] = cluster2Widget;
+
+        clusterHeaderWidgetLayout->addWidget(cluster2Widget, 3, 0, Qt::AlignTop);
+
+        clusterHeaderWidgetLayout->addWidget(new QLabel("Mean", clusterHeaderWidget), 4, 0, Qt::AlignLeft);
 
         connect(&_loadedDatasetsAction, &LoadedDatasetsAction::datasetOrClusterSelectionChanged, [this]() {_tableItemModel->setHeaderStatus(QTableItemModel::Status::OutDated); });
 
@@ -1523,6 +1582,120 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
     return meanExpressions_cluster1;
 }
 
+std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsForOverlappingClusters(mv::Dataset<Clusters> clusterDataset1,
+    const QSet<unsigned>& selectedClusters1, mv::Dataset<Clusters> clusterDataset2, const QSet<unsigned>& selectedClusters2)
+{
+    std::vector<double> meanExpressions;
+
+    if (!clusterDataset1.isValid() || !clusterDataset2.isValid())
+        return meanExpressions;
+
+    mv::Dataset<Points> points1;
+    DataHierarchyItems parents1 = clusterDataset1->getDataHierarchyItem().getAncestors();
+
+    for (auto parent : parents1)
+    {
+        points1 = parent->getDataset<Points>();
+        if (points1.isValid())
+            break;
+    }
+
+    mv::Dataset<Points> points2;
+    DataHierarchyItems parents2 = clusterDataset2->getDataHierarchyItem().getAncestors();
+
+    for (auto parent : parents2)
+    {
+        points2 = parent->getDataset<Points>();
+        if (points2.isValid())
+            break;
+    }
+
+    if (!points1.isValid() || !points2.isValid())
+        return meanExpressions;
+
+    // Point indices are comparable only when both cluster datasets
+    // belong to the same underlying point dataset.
+    if (points1.getDatasetId() != points2.getDatasetId())
+        return meanExpressions;
+
+    const auto& clusters1 = clusterDataset1->getClusters();
+    const auto& clusters2 = clusterDataset2->getClusters();
+
+    QSet<unsigned> selectedPointIndices1;
+    QSet<unsigned> selectedPointIndices2;
+
+    // Union of the selected clusters in the first cluster dataset.
+    for (const auto clusterIndex : selectedClusters1)
+    {
+        if (clusterIndex >= static_cast<unsigned>(clusters1.size()))
+            continue;
+
+        const auto& clusterIndices = clusters1[clusterIndex].getIndices();
+
+        for (const auto pointIndex : clusterIndices)
+        {
+            selectedPointIndices1.insert(static_cast<unsigned>(pointIndex));
+        }
+    }
+
+    // Union of the selected clusters in the second cluster dataset.
+    for (const auto clusterIndex : selectedClusters2)
+    {
+        if (clusterIndex >= static_cast<unsigned>(clusters2.size()))
+            continue;
+
+        const auto& clusterIndices = clusters2[clusterIndex].getIndices();
+
+        for (const auto pointIndex : clusterIndices)
+        {
+            selectedPointIndices2.insert( static_cast<unsigned>(pointIndex));
+        }
+    }
+
+    // Keep only points contained in both selections.
+    selectedPointIndices1.intersect(selectedPointIndices2);
+
+    const std::ptrdiff_t numDimensions = points1->getNumDimensions();
+
+    meanExpressions.assign(numDimensions, std::numeric_limits<double>::quiet_NaN());
+
+    if (selectedPointIndices1.isEmpty())
+        return meanExpressions;
+
+    const std::size_t numPoints = static_cast<std::size_t>(points1->getNumPoints());
+
+    std::vector<unsigned> overlappingPointIndices;
+    overlappingPointIndices.reserve(static_cast<std::size_t>(selectedPointIndices1.size()));
+
+    for (const auto pointIndex : selectedPointIndices1)
+    {
+        if (static_cast<std::size_t>(pointIndex) < numPoints)
+            overlappingPointIndices.push_back(pointIndex);
+    }
+
+    if (overlappingPointIndices.empty())
+        return meanExpressions;
+
+    const Points* pointData = points1.get();
+
+#pragma omp parallel for schedule(dynamic, 1)
+    for (std::ptrdiff_t dimension = 0; dimension < numDimensions; ++dimension)
+    {
+        double sum = 0.0;
+
+        for (const auto pointIndex : overlappingPointIndices)
+        {
+            const std::size_t flattenedIndex = static_cast<std::size_t>(pointIndex) * static_cast<std::size_t>(numDimensions) + static_cast<std::size_t>(dimension);
+
+            sum += static_cast<double>( pointData->getValueAt(flattenedIndex));
+        }
+
+        meanExpressions[dimension] = sum / static_cast<double>(overlappingPointIndices.size());
+    }
+
+    return meanExpressions;
+}
+
 void ClusterDifferentialExpressionPlugin::computeDE()
 {
     if (_tableItemModel->status() == QTableItemModel::Status::UpToDate)
@@ -1530,7 +1703,8 @@ void ClusterDifferentialExpressionPlugin::computeDE()
       //  qDebug() << "ClusterDifferentialExpressionPlugin::computeDE model up-to-date";
         return;
     }
-    _tableItemModel->setStatus(QTableItemModel::Status::Updating);
+   /* _tableItemModel->setStatus(QTableItemModel::Status::Updating);
+
     const qsizetype NrOfDatasets = _loadedDatasetsAction.size();
     assert(NrOfDatasets >= 2);
 
@@ -1543,7 +1717,33 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             if (_loadedDatasetsAction.getClusterSelection(i).size() == 0)
                 return;
         }
+    }*/
+
+    const qsizetype NrOfDatasets = _loadedDatasetsAction.size();
+    assert(NrOfDatasets >= 2);
+
+    qsizetype NrOfSelectedDatasets = 0;
+
+    for (qsizetype i = 0; i < NrOfDatasets; ++i)
+    {
+        if (!_loadedDatasetsAction.data(i)
+            ->datasetSelectedAction.isChecked())
+        {
+            continue;
+        }
+
+        ++NrOfSelectedDatasets;
+
+        if (!getDataset(i).isValid() ||
+            !_loadedDatasetsAction.getOverlapDataset(i).isValid() ||
+            _loadedDatasetsAction.getClusterSelection(i).isEmpty() ||
+            _loadedDatasetsAction.getOverlapClusterSelection(i).isEmpty())
+        {
+            return;
+        }
     }
+
+    _tableItemModel->setStatus(QTableItemModel::Status::Updating);
 
     enum { ID, MEAN_DE };
     auto preInfoMap = _preInfoVariantAction.getVariant().toMap();
@@ -1601,9 +1801,20 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     {
         if(_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
         {
-            QStringList clusterStrings = _loadedDatasetsAction.getClusterOptions(i);
+            /*QStringList clusterStrings = _loadedDatasetsAction.getClusterOptions(i);
             QStringList clusterSelectionStrings = _loadedDatasetsAction.getClusterSelection(i);
-            meanExpressionValues[i] = computeMeanExpressionsForSelectedClusters(getDataset(i), local::getClusterIndices(clusterStrings, clusterSelectionStrings));
+            meanExpressionValues[i] = computeMeanExpressionsForSelectedClusters(getDataset(i), local::getClusterIndices(clusterStrings, clusterSelectionStrings));*/
+
+            const QStringList clusterOptions1 = _loadedDatasetsAction.getClusterOptions(i);
+
+            const QStringList clusterSelection1 = _loadedDatasetsAction.getClusterSelection(i);
+
+            const QStringList clusterOptions2 = _loadedDatasetsAction.getOverlapClusterOptions(i);
+
+            const QStringList clusterSelection2 = _loadedDatasetsAction.getOverlapClusterSelection(i);
+
+            meanExpressionValues[i] = computeMeanExpressionsForOverlappingClusters( getDataset(i), local::getClusterIndices( clusterOptions1, clusterSelection1),
+                _loadedDatasetsAction.getOverlapDataset(i), local::getClusterIndices( clusterOptions2, clusterSelection2));
 
             auto DE_StatisticsDataset = get_DE_Statistics_Dataset(_loadedDatasetsAction.getDataset(i));
             if (DE_StatisticsDataset.isValid())
@@ -1611,7 +1822,7 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         }
     }
     
-   
+    
 
  
     if(!_identicalDimensions)

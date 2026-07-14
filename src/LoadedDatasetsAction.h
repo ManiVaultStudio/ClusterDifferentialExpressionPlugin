@@ -37,6 +37,11 @@ protected:
         mv::Dataset<Clusters>   currentDataset;
         StringAction              datasetNameStringAction;
         ToggleAction              datasetSelectedAction;
+
+        // extra cluster overlap dataset and options
+        DatasetPickerAction        overlapDatasetPickerAction;
+        OptionsAction              overlapClusterOptionsAction;
+        mv::Dataset<Clusters>      overlapDataset;
     };
 
     class Widget : public WidgetActionWidget {
@@ -85,6 +90,19 @@ public:
 
 
     QStandardItemModel& model();
+
+    // extra cluster overlap dataset and options
+    mv::gui::OptionsAction& getOverlapClusterSelectionAction(const std::size_t index);
+
+    mv::Dataset<Clusters>& getOverlapDataset(std::size_t index) const;
+
+    QStringList getOverlapClusterOptions(std::size_t index) const;
+    QStringList getOverlapClusterSelection(std::size_t index) const;
+
+    QWidget* getOverlapClusterSelectionWidget(
+        std::size_t index,
+        QWidget* parent,
+        const std::int32_t& flags);
 
 public slots:
     void addDataset();

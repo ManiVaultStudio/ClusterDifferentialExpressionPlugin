@@ -118,7 +118,9 @@ private:
     
     std::ptrdiff_t get_DE_Statistics_Index(mv::Dataset<Clusters> clusterDataset);
     mv::Dataset<Points> get_DE_Statistics_Dataset(mv::Dataset<Clusters> clusterDataset);
-    std::vector<double> computeMeanExpressionsForSelectedClusters(mv::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters);
+    std::vector<double> computeMeanExpressionsForSelectedClusters(mv::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters);// TOREMOVE
+    std::vector<double> computeMeanExpressionsForOverlappingClusters(mv::Dataset<Clusters> clusterDataset1, const QSet<unsigned>& selectedClusters1,
+        mv::Dataset<Clusters> clusterDataset2, const QSet<unsigned>& selectedClusters2);
     bool matchDimensionNames();
     //void updateData(int index);
 
