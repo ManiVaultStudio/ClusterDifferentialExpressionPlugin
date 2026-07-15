@@ -55,9 +55,9 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
     : QStandardItem()
     , datasetPickerAction(parent, "Cluster Dataset 1")
     , clusterOptionsAction(parent, "Cluster 1")
-    , overlapDatasetPickerAction(parent, "Cluster Dataset 2")
-    , overlapClusterOptionsAction(parent, "Cluster 2")
-    , useOverlapSelectionAction(parent, "Use overlapping cells", false)
+    , intersectionDatasetPickerAction(parent, "Cluster Dataset 2")
+    , intersectionClusterOptionsAction(parent, "Cluster 2")
+    , useIntersectionSelectionAction(parent, "Intersect", false)
     , datasetNameStringAction(parent, "Dataset")
     , datasetSelectedAction(parent, "Active Dataset", true)
 {
@@ -108,32 +108,32 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
             }
 
             {
-                const QString actionName = QString("OverlapDataset") + QString::number(index + 1);
-                overlapDatasetPickerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-                overlapDatasetPickerAction.publish(baseName + actionName);
-                overlapDatasetPickerAction.setSerializationName(actionName);
+                const QString actionName = QString("IntersectionDataset") + QString::number(index + 1);
+                intersectionDatasetPickerAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+                intersectionDatasetPickerAction.publish(baseName + actionName);
+                intersectionDatasetPickerAction.setSerializationName(actionName);
             }
 
             {
-                const QString actionName = QString("SelectOverlapClusters") + QString::number(index + 1);
-                overlapClusterOptionsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
-                overlapClusterOptionsAction.publish(baseName + actionName);
-                overlapClusterOptionsAction.setSerializationName(actionName);
+                const QString actionName = QString("SelectIntersectionClusters") + QString::number(index + 1);
+                intersectionClusterOptionsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
+                intersectionClusterOptionsAction.publish(baseName + actionName);
+                intersectionClusterOptionsAction.setSerializationName(actionName);
             }
 
             {
-                const QString actionName = QString("UseOverlapSelection") + QString::number(index + 1);
+                const QString actionName = QString("UseIntersectionSelection") + QString::number(index + 1);
 
-                useOverlapSelectionAction.setConnectionPermissionsFlag( ConnectionPermissionFlag::All);
+                useIntersectionSelectionAction.setConnectionPermissionsFlag( ConnectionPermissionFlag::All);
 
-                useOverlapSelectionAction.publish(baseName + actionName);
-                useOverlapSelectionAction.setSerializationName(actionName);
+                useIntersectionSelectionAction.publish(baseName + actionName);
+                useIntersectionSelectionAction.setSerializationName(actionName);
             }
 
 
         }
         QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const mv::Dataset<mv::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
-        QObject::connect(&overlapDataset, &Dataset<Clusters>::changed, [this](const mv::Dataset<mv::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
+        QObject::connect(&intersectionDataset, &Dataset<Clusters>::changed, [this](const mv::Dataset<mv::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
         
         
        // setCheckable(true);
@@ -184,38 +184,34 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
         };
 
     datasetPickerAction.setFilterFunction(clusterDatasetFilter);
-    overlapDatasetPickerAction.setFilterFunction(clusterDatasetFilter);
+    intersectionDatasetPickerAction.setFilterFunction(clusterDatasetFilter);
 
     connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<DatasetImpl> pickedDataset) { currentDataset = pickedDataset;});
 
-    connect(&overlapDatasetPickerAction, &DatasetPickerAction::datasetPicked,[this](Dataset<DatasetImpl> pickedDataset) { overlapDataset = pickedDataset; });
+    connect(&intersectionDatasetPickerAction, &DatasetPickerAction::datasetPicked,[this](Dataset<DatasetImpl> pickedDataset) { intersectionDataset = pickedDataset; });
 
     connect(&currentDataset, &Dataset<Clusters>::changed, [this](Dataset<DatasetImpl> dataset)
         {
             if (datasetPickerAction.getCurrentDataset() != dataset)
                 datasetPickerAction.setCurrentDataset(dataset);
 
-            localNamespace::initializeClusterOptions(
-                dataset,
-                clusterOptionsAction);
+            localNamespace::initializeClusterOptions(dataset, clusterOptionsAction);
 
             // Preserve old behaviour by using the first dataset as the
-            // overlap dataset until another one is explicitly selected.
-            if (!overlapDataset.isValid() && dataset.isValid())
-                overlapDataset = dataset;
+            // intersection dataset until another one is explicitly selected.
+            if (!intersectionDataset.isValid() && dataset.isValid())
+                intersectionDataset = dataset;
         });
 
-    connect(&overlapDataset, &Dataset<Clusters>::changed, [this](Dataset<DatasetImpl> dataset)
+    connect(&intersectionDataset, &Dataset<Clusters>::changed, [this](Dataset<DatasetImpl> dataset)
         {
-            if (overlapDatasetPickerAction.getCurrentDataset() != dataset)
-                overlapDatasetPickerAction.setCurrentDataset(dataset);
+            if (intersectionDatasetPickerAction.getCurrentDataset() != dataset)
+                intersectionDatasetPickerAction.setCurrentDataset(dataset);
 
-            localNamespace::initializeClusterOptions(
-                dataset,
-                overlapClusterOptionsAction);
+            localNamespace::initializeClusterOptions(dataset, intersectionClusterOptionsAction);
         });
 
-    overlapDataset = overlapDatasetPickerAction.getCurrentDataset();
+    intersectionDataset = intersectionDatasetPickerAction.getCurrentDataset();
     currentDataset = datasetPickerAction.getCurrentDataset();
 
     connect(&datasetNameStringAction, &StringAction::stringChanged, [this](const QString&)->void {this->emitDataChanged(); });
@@ -303,9 +299,9 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
         data->datasetNameStringAction.insertIntoVariantMap(subMap);
         data->datasetSelectedAction.insertIntoVariantMap(subMap);
 
-        data->overlapDatasetPickerAction.insertIntoVariantMap(subMap);
-        data->overlapClusterOptionsAction.insertIntoVariantMap(subMap);
-        data->useOverlapSelectionAction.insertIntoVariantMap(subMap);
+        data->intersectionDatasetPickerAction.insertIntoVariantMap(subMap);
+        data->intersectionClusterOptionsAction.insertIntoVariantMap(subMap);
+        data->useIntersectionSelectionAction.insertIntoVariantMap(subMap);
         /*
         _data[i]->datasetPickerAction.insertIntoVariantMap(subMap);
         _data[i]->clusterOptionsAction.insertIntoVariantMap(subMap);
@@ -351,13 +347,13 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
 
                 if (version >= 2)
                 {
-                    data(i)->overlapDatasetPickerAction.fromParentVariantMap(subMap);
-                    data(i)->overlapClusterOptionsAction.fromParentVariantMap(subMap);
-                    data(i)->useOverlapSelectionAction.fromParentVariantMap(subMap);
+                    data(i)->intersectionDatasetPickerAction.fromParentVariantMap(subMap);
+                    data(i)->intersectionClusterOptionsAction.fromParentVariantMap(subMap);
+                    data(i)->useIntersectionSelectionAction.fromParentVariantMap(subMap);
                 }
                 else
                     {
-                    data(i)->useOverlapSelectionAction.setChecked(false);
+                    data(i)->useIntersectionSelectionAction.setChecked(false);
                 }
             }
         }
@@ -435,39 +431,39 @@ QWidget* LoadedDatasetsAction::getDatasetNameWidget(std::size_t index, QWidget* 
     //return _data.at(index)->datasetNameStringAction.createWidget(parent, flags);
 }
 
-mv::gui::OptionsAction& LoadedDatasetsAction::getOverlapClusterSelectionAction( const std::size_t index)
+mv::gui::OptionsAction& LoadedDatasetsAction::getIntersectionClusterSelectionAction( const std::size_t index)
 {
-    return data(index)->overlapClusterOptionsAction;
+    return data(index)->intersectionClusterOptionsAction;
 }
 
-mv::Dataset<Clusters>& LoadedDatasetsAction::getOverlapDataset(std::size_t index) const
+mv::Dataset<Clusters>& LoadedDatasetsAction::getIntersectionDataset(std::size_t index) const
 {
-    return data(index)->overlapDataset;
+    return data(index)->intersectionDataset;
 }
 
-QStringList LoadedDatasetsAction::getOverlapClusterOptions(std::size_t index) const
+QStringList LoadedDatasetsAction::getIntersectionClusterOptions(std::size_t index) const
 {
-    return data(index)->overlapClusterOptionsAction.getOptions();
+    return data(index)->intersectionClusterOptionsAction.getOptions();
 }
 
-QStringList LoadedDatasetsAction::getOverlapClusterSelection( std::size_t index) const
+QStringList LoadedDatasetsAction::getIntersectionClusterSelection( std::size_t index) const
 {
-    return data(index)->overlapClusterOptionsAction.getSelectedOptions();
+    return data(index)->intersectionClusterOptionsAction.getSelectedOptions();
 }
 
-QWidget* LoadedDatasetsAction::getOverlapClusterSelectionWidget(std::size_t index, QWidget* parent, const std::int32_t& flags)
+QWidget* LoadedDatasetsAction::getIntersectionClusterSelectionWidget(std::size_t index, QWidget* parent, const std::int32_t& flags)
 {
-    return data(index)->overlapClusterOptionsAction.createWidget(parent, flags);
+    return data(index)->intersectionClusterOptionsAction.createWidget(parent, flags);
 }
 
-mv::gui::ToggleAction& LoadedDatasetsAction::getUseOverlapSelectionAction(const std::size_t index)
+mv::gui::ToggleAction& LoadedDatasetsAction::getUseIntersectionSelectionAction(const std::size_t index)
 {
-    return data(index)->useOverlapSelectionAction;
+    return data(index)->useIntersectionSelectionAction;
 }
 
-bool LoadedDatasetsAction::isOverlapSelectionEnabled(std::size_t index) const
+bool LoadedDatasetsAction::isIntersectionSelectionEnabled(std::size_t index) const
 {
-    return data(index)->useOverlapSelectionAction.isChecked();
+    return data(index)->useIntersectionSelectionAction.isChecked();
 }
 
 
@@ -599,42 +595,41 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 layout->addWidget(action->data(index)->overlapClusterOptionsAction.createWidget(this, OptionsAction::ComboBox), index + offset, column++);*/
 
-                QWidget* overlapToggleWidget = action->data(index)->useOverlapSelectionAction.createWidget(this, ToggleAction::CheckBox);
+                QWidget* intersectionToggleWidget = action->data(index)->useIntersectionSelectionAction.createWidget(this, ToggleAction::CheckBox);
 
-                layout->addWidget(overlapToggleWidget, index + offset, column++);
+                layout->addWidget(intersectionToggleWidget, index + offset, column++);
 
-                QWidget* overlapSeparator = new QLabel(QStringLiteral("∩"), this);
+                QWidget* intersectionSeparator = new QLabel(QStringLiteral("∩"), this);
 
-                layout->addWidget(overlapSeparator, index + offset, column++);
+                layout->addWidget(intersectionSeparator, index + offset, column++);
 
-                QWidget* overlapDatasetWidget = action->data(index)->overlapDatasetPickerAction.createWidget(this);
+                QWidget* intersectionDatasetWidget = action->data(index)->intersectionDatasetPickerAction.createWidget(this);
 
-                layout->addWidget(overlapDatasetWidget, index + offset, column++);
+                layout->addWidget(intersectionDatasetWidget, index + offset, column++);
 
-                QWidget* overlapClusterLabelWidget = action->data(index)->overlapClusterOptionsAction.createLabelWidget(this);
+                QWidget* intersectionClusterLabelWidget = action->data(index)->intersectionClusterOptionsAction.createLabelWidget(this);
 
-                layout->addWidget(overlapClusterLabelWidget, index + offset, column++);
+                layout->addWidget(intersectionClusterLabelWidget, index + offset, column++);
 
-                QWidget* overlapClusterWidget = action->data(index)->overlapClusterOptionsAction.createWidget(this, OptionsAction::ComboBox);
+                QWidget* intersectionClusterWidget = action->data(index)->intersectionClusterOptionsAction.createWidget(this, OptionsAction::ComboBox);
 
-                layout->addWidget(overlapClusterWidget, index + offset, column++);
+                layout->addWidget(intersectionClusterWidget, index + offset, column++);
 
-                const QList<QWidget*> overlapWidgets = { overlapSeparator,   overlapDatasetWidget,  overlapClusterLabelWidget,overlapClusterWidget
-                };
+                const QList<QWidget*> intersectionWidgets = { intersectionSeparator, intersectionDatasetWidget, intersectionClusterLabelWidget, intersectionClusterWidget};
 
-                const auto updateOverlapVisibility = [overlapWidgets](bool enabled)
+                const auto updateIntersectionVisibility = [intersectionWidgets](bool enabled)
                     {
-                        for (QWidget* widget : overlapWidgets)
+                        for (QWidget* widget : intersectionWidgets)
                         {
                             if (widget != nullptr)
                                 widget->setVisible(enabled);
                         }
                     };
 
-                updateOverlapVisibility(action->data(index)->useOverlapSelectionAction.isChecked());
+                updateIntersectionVisibility(action->data(index)->useIntersectionSelectionAction.isChecked());
 
-                connect(&action->data(index)->useOverlapSelectionAction, &ToggleAction::toggled, this, [action, updateOverlapVisibility](bool enabled)
-                {updateOverlapVisibility(enabled);
+                connect(&action->data(index)->useIntersectionSelectionAction, &ToggleAction::toggled, this, [action, updateIntersectionVisibility](bool enabled)
+                {updateIntersectionVisibility(enabled);
                 emit action->datasetOrClusterSelectionChanged();
                  });
 
@@ -644,9 +639,9 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 connect(&action->data(index)->clusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();    });
 
-                connect(&action->data(index)->overlapDatasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();    });
+                connect(&action->data(index)->intersectionDatasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();    });
 
-                connect(&action->data(index)->overlapClusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();  });
+                connect(&action->data(index)->intersectionClusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();  });
             };
 
         connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[currentDatasetAction, addDatasetRow](int index)

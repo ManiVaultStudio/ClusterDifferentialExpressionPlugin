@@ -38,12 +38,12 @@ protected:
         StringAction              datasetNameStringAction;
         ToggleAction              datasetSelectedAction;
 
-        // extra cluster overlap dataset and options
-        DatasetPickerAction        overlapDatasetPickerAction;
-        OptionsAction              overlapClusterOptionsAction;
-        mv::Dataset<Clusters>      overlapDataset;
+        // extra cluster intersection dataset and options
+        DatasetPickerAction        intersectionDatasetPickerAction;
+        OptionsAction              intersectionClusterOptionsAction;
+        mv::Dataset<Clusters>      intersectionDataset;
 
-        ToggleAction useOverlapSelectionAction;// to enable/disable the overlap dataset
+        ToggleAction useIntersectionSelectionAction;// to enable/disable the intersection dataset
     };
 
     class Widget : public WidgetActionWidget {
@@ -93,19 +93,19 @@ public:
 
     QStandardItemModel& model();
 
-    // extra cluster overlap dataset and options
-    mv::gui::OptionsAction& getOverlapClusterSelectionAction(const std::size_t index);
+    // extra cluster dataset and options
+    mv::gui::OptionsAction& getIntersectionClusterSelectionAction(const std::size_t index);
 
-    mv::Dataset<Clusters>& getOverlapDataset(std::size_t index) const;
+    mv::Dataset<Clusters>& getIntersectionDataset(std::size_t index) const;
 
-    QStringList getOverlapClusterOptions(std::size_t index) const;
-    QStringList getOverlapClusterSelection(std::size_t index) const;
+    QStringList getIntersectionClusterOptions(std::size_t index) const;
+    QStringList getIntersectionClusterSelection(std::size_t index) const;
 
-    QWidget* getOverlapClusterSelectionWidget(std::size_t index, QWidget* parent, const std::int32_t& flags);
+    QWidget* getIntersectionClusterSelectionWidget(std::size_t index, QWidget* parent,const std::int32_t& flags);
 
-    mv::gui::ToggleAction& getUseOverlapSelectionAction(const std::size_t index);
+    mv::gui::ToggleAction& getUseIntersectionSelectionAction(const std::size_t index);
 
-    bool isOverlapSelectionEnabled(std::size_t index) const;
+    bool isIntersectionSelectionEnabled(std::size_t index) const;
 
 public slots:
     void addDataset();
