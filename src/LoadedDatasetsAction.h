@@ -42,6 +42,8 @@ protected:
         DatasetPickerAction        overlapDatasetPickerAction;
         OptionsAction              overlapClusterOptionsAction;
         mv::Dataset<Clusters>      overlapDataset;
+
+        ToggleAction useOverlapSelectionAction;// to enable/disable the overlap dataset
     };
 
     class Widget : public WidgetActionWidget {
@@ -99,10 +101,11 @@ public:
     QStringList getOverlapClusterOptions(std::size_t index) const;
     QStringList getOverlapClusterSelection(std::size_t index) const;
 
-    QWidget* getOverlapClusterSelectionWidget(
-        std::size_t index,
-        QWidget* parent,
-        const std::int32_t& flags);
+    QWidget* getOverlapClusterSelectionWidget(std::size_t index, QWidget* parent, const std::int32_t& flags);
+
+    mv::gui::ToggleAction& getUseOverlapSelectionAction(const std::size_t index);
+
+    bool isOverlapSelectionEnabled(std::size_t index) const;
 
 public slots:
     void addDataset();
