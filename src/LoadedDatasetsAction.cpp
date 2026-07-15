@@ -599,59 +599,30 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 layout->addWidget(action->data(index)->overlapClusterOptionsAction.createWidget(this, OptionsAction::ComboBox), index + offset, column++);*/
 
-                QWidget* overlapToggleWidget = action->data(index)->useOverlapSelectionAction.createWidget(
-                        this,
-                        ToggleAction::CheckBox);
+                QWidget* overlapToggleWidget = action->data(index)->useOverlapSelectionAction.createWidget(this, ToggleAction::CheckBox);
 
-                layout->addWidget(
-                    overlapToggleWidget,
-                    index + offset,
-                    column++);
+                layout->addWidget(overlapToggleWidget, index + offset, column++);
 
-                QWidget* overlapSeparator =
-                    new QLabel(QStringLiteral("∩"), this);
+                QWidget* overlapSeparator = new QLabel(QStringLiteral("∩"), this);
 
-                layout->addWidget(
-                    overlapSeparator,
-                    index + offset,
-                    column++);
+                layout->addWidget(overlapSeparator, index + offset, column++);
 
-                QWidget* overlapDatasetWidget =
-                    action->data(index)->overlapDatasetPickerAction.createWidget(this);
+                QWidget* overlapDatasetWidget = action->data(index)->overlapDatasetPickerAction.createWidget(this);
 
-                layout->addWidget(
-                    overlapDatasetWidget,
-                    index + offset,
-                    column++);
+                layout->addWidget(overlapDatasetWidget, index + offset, column++);
 
-                QWidget* overlapClusterLabelWidget =
-                    action->data(index)
-                    ->overlapClusterOptionsAction.createLabelWidget(this);
+                QWidget* overlapClusterLabelWidget = action->data(index)->overlapClusterOptionsAction.createLabelWidget(this);
 
-                layout->addWidget(
-                    overlapClusterLabelWidget,
-                    index + offset,
-                    column++);
+                layout->addWidget(overlapClusterLabelWidget, index + offset, column++);
 
-                QWidget* overlapClusterWidget =
-                    action->data(index)->overlapClusterOptionsAction.createWidget(
-                        this,
-                        OptionsAction::ComboBox);
+                QWidget* overlapClusterWidget = action->data(index)->overlapClusterOptionsAction.createWidget(this, OptionsAction::ComboBox);
 
-                layout->addWidget(
-                    overlapClusterWidget,
-                    index + offset,
-                    column++);
+                layout->addWidget(overlapClusterWidget, index + offset, column++);
 
-                const QList<QWidget*> overlapWidgets = {
-                    overlapSeparator,
-                    overlapDatasetWidget,
-                    overlapClusterLabelWidget,
-                    overlapClusterWidget
+                const QList<QWidget*> overlapWidgets = { overlapSeparator,   overlapDatasetWidget,  overlapClusterLabelWidget,overlapClusterWidget
                 };
 
-                const auto updateOverlapVisibility =
-                    [overlapWidgets](bool enabled)
+                const auto updateOverlapVisibility = [overlapWidgets](bool enabled)
                     {
                         for (QWidget* widget : overlapWidgets)
                         {
@@ -660,40 +631,22 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
                         }
                     };
 
-                updateOverlapVisibility(
-                    action->data(index)->useOverlapSelectionAction.isChecked());
+                updateOverlapVisibility(action->data(index)->useOverlapSelectionAction.isChecked());
 
-                connect(
-                    &action->data(index)->useOverlapSelectionAction,
-                    &ToggleAction::toggled,
-                    this,
-                    [action, updateOverlapVisibility](bool enabled)
-                    {
-                        updateOverlapVisibility(enabled);
-                        emit action->datasetOrClusterSelectionChanged();
-                    });
+                connect(&action->data(index)->useOverlapSelectionAction, &ToggleAction::toggled, this, [action, updateOverlapVisibility](bool enabled)
+                {updateOverlapVisibility(enabled);
+                emit action->datasetOrClusterSelectionChanged();
+                 });
 
                 connect(&action->data(index)->datasetNameStringAction, &StringAction::stringChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged(); });
 
-                connect(&action->data(index)->datasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]()
-                    {
-                        emit action->datasetOrClusterSelectionChanged();
-                    });
+                connect(&action->data(index)->datasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();   });
 
-                connect(&action->data(index)->clusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]()
-                    {
-                        emit action->datasetOrClusterSelectionChanged();
-                    });
+                connect(&action->data(index)->clusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();    });
 
-                connect(&action->data(index)->overlapDatasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]()
-                    {
-                        emit action->datasetOrClusterSelectionChanged();
-                    });
+                connect(&action->data(index)->overlapDatasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();    });
 
-                connect(&action->data(index)->overlapClusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]()
-                    {
-                        emit action->datasetOrClusterSelectionChanged();
-                    });
+                connect(&action->data(index)->overlapClusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();  });
             };
 
         connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[currentDatasetAction, addDatasetRow](int index)
