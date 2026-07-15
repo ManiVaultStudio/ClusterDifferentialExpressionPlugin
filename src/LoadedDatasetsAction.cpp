@@ -556,9 +556,15 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
 
 
-        setFixedWidth(800);
+        //setFixedWidth(800);
+        setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
         auto layout = new QGridLayout();
+
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setHorizontalSpacing(4);
+        layout->setVerticalSpacing(2);
+        layout->setColumnStretch(0, 0);
 
         QWidget* addButton = currentDatasetAction->_addDatasetTriggerAction.createWidget( this, TriggerAction::Icon);
 
