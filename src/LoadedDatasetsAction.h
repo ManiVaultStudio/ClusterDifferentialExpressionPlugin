@@ -27,7 +27,6 @@ protected:
 
         explicit Data(LoadedDatasetsAction* parent, int index = -1);
 
-        
         virtual QStandardItem* clone() const;
         virtual QVariant data(int role = Qt::UserRole + 1) const override;
         virtual void 	setData(const QVariant& value, int role = Qt::UserRole + 1) override;
@@ -43,7 +42,7 @@ protected:
         OptionsAction              intersectionClusterOptionsAction;
         mv::Dataset<Clusters>      intersectionDataset;
 
-        ToggleAction useIntersectionSelectionAction;// to enable/disable the intersection dataset
+        ToggleAction useIntersectionSelectionAction;// to enable or disable the intersection dataset
     };
 
     class Widget : public WidgetActionWidget {
@@ -89,7 +88,6 @@ public:
     qsizetype size() const;
 
     Data* data(qsizetype index) const;
-
 
     QStandardItemModel& model();
 

@@ -46,6 +46,7 @@ namespace localNamespace
     }
 }
 
+// TODO: clean up
 //LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
 //	:QStandardItem()
 //    ,datasetPickerAction(parent, "Dataset")
@@ -63,7 +64,6 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
     , datasetNameStringAction(parent, "Dataset")
     , datasetSelectedAction(parent, "Active Dataset", true)
 {
-    
     
     if(index >=0)
     {
@@ -92,15 +92,12 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
                 datasetNameStringAction.setSerializationName(datasetNameStringActionName);
             }
 
-
             {
                 QString clusterOptionsActionName = QString("SelectClusters") + QString::number(index + 1);
                 clusterOptionsAction.setConnectionPermissionsFlag(ConnectionPermissionFlag::All);
                 clusterOptionsAction.publish(baseName + clusterOptionsActionName);
                 clusterOptionsAction.setSerializationName(clusterOptionsActionName);
             }
-
-
 
             {
                 QString actionName = QString("SelectedDataset") + QString::number(index + 1);
@@ -125,14 +122,10 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
 
             {
                 const QString actionName = QString("UseIntersectionSelection") + QString::number(index + 1);
-
                 useIntersectionSelectionAction.setConnectionPermissionsFlag( ConnectionPermissionFlag::All);
-
                 useIntersectionSelectionAction.publish(baseName + actionName);
                 useIntersectionSelectionAction.setSerializationName(actionName);
             }
-
-
         }
         QObject::connect(&currentDataset, &Dataset<Clusters>::changed, [this](const mv::Dataset<mv::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
         QObject::connect(&intersectionDataset, &Dataset<Clusters>::changed, [this](const mv::Dataset<mv::DatasetImpl>& dataset) -> void {this->datasetNameStringAction.setText(dataset->getGuiName()); });
@@ -140,6 +133,8 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
         
        // setCheckable(true);
     }
+
+    // TODO: clean up old code
  //   datasetPickerAction.setFilterFunction([](const Dataset<DatasetImpl>& dataset) -> bool {
  //       return dataset->getDataType() == ClusterType;
 	//});
@@ -179,11 +174,7 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
 
 	//currentDataset = datasetPickerAction.getCurrentDataset();
 
-    const auto clusterDatasetFilter =
-        [](const Dataset<DatasetImpl>& dataset) -> bool
-        {
-            return dataset->getDataType() == ClusterType;
-        };
+    const auto clusterDatasetFilter = [](const Dataset<DatasetImpl>& dataset) -> bool{return dataset->getDataType() == ClusterType;};
 
     datasetPickerAction.setFilterFunction(clusterDatasetFilter);
     intersectionDatasetPickerAction.setFilterFunction(clusterDatasetFilter);
@@ -219,14 +210,11 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
     connect(&datasetNameStringAction, &StringAction::stringChanged, [this](const QString&)->void {this->emitDataChanged(); });
     connect(&datasetSelectedAction, &ToggleAction::changed, [this]()->void {this->emitDataChanged(); });
 
-    
-    
     setFlags(Qt::ItemIsUserCheckable  | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
     if(datasetSelectedAction.isChecked())
 		setData(Qt::Checked, Qt::CheckStateRole);
     else
         setData(Qt::Unchecked, Qt::CheckStateRole);
-    
 }
 
 QStandardItem* LoadedDatasetsAction::Data::clone() const
@@ -238,8 +226,6 @@ QStandardItem* LoadedDatasetsAction::Data::clone() const
     }
     return nullptr;
 }
-
-
 
 QVariant LoadedDatasetsAction::Data::data(int role) const
 {
@@ -276,7 +262,6 @@ void LoadedDatasetsAction::Data::setData(const QVariant& value, int role)
 
         QStandardItem::setData(value, role);
     }
-	
 }
 
 QVariantMap LoadedDatasetsAction::toVariantMap() const
@@ -341,7 +326,7 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
                 data(i)->datasetPickerAction.fromParentVariantMap(subMap);
                 data(i)->clusterOptionsAction.fromParentVariantMap(subMap);
                 data(i)->datasetNameStringAction.fromParentVariantMap(subMap);
-               // _data[i]->datasetPickerAction.fromParentVariantMap(subMap);
+                //_data[i]->datasetPickerAction.fromParentVariantMap(subMap);
                 //_data[i]->clusterOptionsAction.fromParentVariantMap(subMap);
                 //_data[i]->datasetNameStringAction.fromParentVariantMap(subMap);
 
@@ -354,14 +339,12 @@ void LoadedDatasetsAction::fromVariantMap(const QVariantMap& variantMap)
                     data(i)->useIntersectionSelectionAction.fromParentVariantMap(subMap);
                 }
                 else
-                    {
+                {
                     data(i)->useIntersectionSelectionAction.setChecked(false);
                 }
             }
         }
     }
-
-    
 }
 
 LoadedDatasetsAction::LoadedDatasetsAction(ClusterDifferentialExpressionPlugin* plugin)
@@ -401,7 +384,6 @@ mv::gui::OptionsAction& LoadedDatasetsAction::getClusterSelectionAction(const st
     return data(index)->clusterOptionsAction;
     //return _data.at(index)->clusterOptionsAction;
 }
-
 
 mv::Dataset<Clusters>& LoadedDatasetsAction::getDataset(std::size_t index) const
 {
@@ -468,8 +450,6 @@ bool LoadedDatasetsAction::isIntersectionSelectionEnabled(std::size_t index) con
     return data(index)->useIntersectionSelectionAction.isChecked();
 }
 
-
-
 qsizetype LoadedDatasetsAction::size() const
 {
     return _model.rowCount();
@@ -495,13 +475,13 @@ void LoadedDatasetsAction::addDataset()
     emit datasetAdded(currentSize);
 }
 
-
 LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* currentDatasetAction, const std::int32_t& widgetFlags) :
     WidgetActionWidget(parent, currentDatasetAction)
 {
     
     if (true/*widgetFlags & PopupLayout*/)
     {
+        // TODO: remove the code for old layout
      //   setFixedWidth(600);
      //   auto layout = new QGridLayout();
 
@@ -589,6 +569,7 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 layout->addWidget(action->data(index)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), index + offset, column++);
 
+                // TODO: remove the code for default intersection seleection
                /* layout->addWidget(new QLabel(QStringLiteral("∩"), this), index + offset, column++);
 
                 layout->addWidget(action->data(index)->overlapDatasetPickerAction.createWidget(this), index + offset, column++);
@@ -632,7 +613,7 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 connect(&action->data(index)->useIntersectionSelectionAction, &ToggleAction::toggled, this, [action, updateIntersectionVisibility](bool enabled)
                 {updateIntersectionVisibility(enabled);
-                emit action->datasetOrClusterSelectionChanged();
+                 emit action->datasetOrClusterSelectionChanged();
                  });
 
                 connect(&action->data(index)->datasetNameStringAction, &StringAction::stringChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged(); });
@@ -656,11 +637,10 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
         setLayout(layout);
             
-    } else {
-
+    } else 
+    {
         setFixedWidth(800);
         auto layout = new QHBoxLayout();
-
 
         QComboBox* datasetSelectionComboBox = new QComboBox(this);
         datasetSelectionComboBox->setModel(&currentDatasetAction->model());
