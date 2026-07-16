@@ -565,7 +565,7 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 layout->addWidget(action->data(index)->datasetPickerAction.createWidget(this), index + offset, column++);
 
-                layout->addWidget(action->data(index)->clusterOptionsAction.createLabelWidget(this), index + offset, column++);
+                //layout->addWidget(action->data(index)->clusterOptionsAction.createLabelWidget(this), index + offset, column++);
 
                 layout->addWidget(action->data(index)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), index + offset, column++);
 
@@ -590,15 +590,15 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 layout->addWidget(intersectionDatasetWidget, index + offset, column++);
 
-                QWidget* intersectionClusterLabelWidget = action->data(index)->intersectionClusterOptionsAction.createLabelWidget(this);
+                //QWidget* intersectionClusterLabelWidget = action->data(index)->intersectionClusterOptionsAction.createLabelWidget(this);
 
-                layout->addWidget(intersectionClusterLabelWidget, index + offset, column++);
+                //layout->addWidget(intersectionClusterLabelWidget, index + offset, column++);
 
                 QWidget* intersectionClusterWidget = action->data(index)->intersectionClusterOptionsAction.createWidget(this, OptionsAction::ComboBox);
 
                 layout->addWidget(intersectionClusterWidget, index + offset, column++);
 
-                const QList<QWidget*> intersectionWidgets = { intersectionSeparator, intersectionDatasetWidget, intersectionClusterLabelWidget, intersectionClusterWidget};
+                const QList<QWidget*> intersectionWidgets = { intersectionSeparator, intersectionDatasetWidget, intersectionClusterWidget};
 
                 const auto updateIntersectionVisibility = [intersectionWidgets](bool enabled)
                     {
@@ -654,7 +654,7 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
             {
                 layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), 12);
                 layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), 12);
-                layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), 12);
+                //layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), 12);
                 layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), 12);
             }
             
