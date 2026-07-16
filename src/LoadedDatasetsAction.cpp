@@ -29,6 +29,7 @@ namespace localNamespace
         QStringList clusterNames;
 
         mv::Dataset<Clusters> clusterDataset = dataset;
+
         if (clusterDataset.isValid())
         {
             const auto& clusters = clusterDataset->getClusters();
@@ -37,6 +38,7 @@ namespace localNamespace
         }
 
         QStringList initialSelection;
+
         if (!clusterNames.isEmpty())
             initialSelection.append(clusterNames.first());
 

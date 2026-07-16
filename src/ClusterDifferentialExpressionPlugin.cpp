@@ -1295,12 +1295,21 @@ void ClusterDifferentialExpressionPlugin::writeToCSV()
 
         const QString selectedClusters = _loadedDatasetsAction.getClusterSelection(i).join("+");
 
-        const QString intersectingClusters = _loadedDatasetsAction.getIntersectionClusterSelection(i).join("+");
-
         const QString oldColumnName = QString("Dataset %1_Intersecting with:_Mean").arg(i + 1);
 
-        const QString newColumnName = QString("%1_Intersecting_with_%2_Mean").arg(selectedClusters, intersectingClusters);
+        QString newColumnName;
 
+        if (_loadedDatasetsAction.isIntersectionSelectionEnabled(i))
+        {
+            const QString intersectingClusters = _loadedDatasetsAction.getIntersectionClusterSelection(i).join("+");
+
+            newColumnName = QString("%1_Intersecting_with_%2_Mean").arg(selectedClusters, intersectingClusters);
+        }
+        else
+        {
+            newColumnName = QString("%1_Mean").arg(selectedClusters);
+        }
+        
         csvString.replace(oldColumnName, newColumnName);
     }
 
