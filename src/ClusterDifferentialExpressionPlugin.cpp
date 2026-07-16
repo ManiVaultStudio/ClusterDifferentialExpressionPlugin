@@ -1286,6 +1286,24 @@ void ClusterDifferentialExpressionPlugin::writeToCSV()
     QString csvString = _tableItemModel->createCSVString(',');
     if (csvString.isEmpty())
         return;
+
+    // rename the mean columns in the exported csv file to include the selection name
+    for (qsizetype i = 0; i < _loadedDatasetsAction.size(); ++i)
+    {
+        if (!_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
+            continue;
+
+        const QString selectedClusters = _loadedDatasetsAction.getClusterSelection(i).join("+");
+
+        const QString intersectingClusters = _loadedDatasetsAction.getIntersectionClusterSelection(i).join("+");
+
+        const QString oldColumnName = QString("Dataset %1_Intersecting with:_Mean").arg(i + 1);
+
+        const QString newColumnName = QString("%1_Intersecting_with_%2_Mean").arg(selectedClusters, intersectingClusters);
+
+        csvString.replace(oldColumnName, newColumnName);
+    }
+
     QFile file(fileName);
     if (!file.open(QFile::WriteOnly | QFile::Truncate))
         return;
