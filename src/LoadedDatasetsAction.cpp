@@ -46,14 +46,6 @@ namespace localNamespace
     }
 }
 
-// TODO: clean up
-//LoadedDatasetsAction::Data:: Data(LoadedDatasetsAction* parent, int index)
-//	:QStandardItem()
-//    ,datasetPickerAction(parent, "Dataset")
-//    ,clusterOptionsAction(parent, "Selected Clusters")
-//	,datasetNameStringAction(parent, "Dataset")
-//	,datasetSelectedAction(parent, "Active Dataset",true)
-//{
 LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
     : QStandardItem()
     , datasetPickerAction(parent, "Cluster Dataset 1")
@@ -134,54 +126,14 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
        // setCheckable(true);
     }
 
-    // TODO: clean up old code
- //   datasetPickerAction.setFilterFunction([](const Dataset<DatasetImpl>& dataset) -> bool {
- //       return dataset->getDataType() == ClusterType;
-	//});
-
- //   connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<mv::DatasetImpl> pickedDataset) -> void {
- //       currentDataset = pickedDataset;
- //       });
-
-
- //   
- //   connect(&currentDataset, &Dataset<Clusters>::changed,  [this](Dataset<mv::DatasetImpl> dataset) -> void {
-
-
- //       if (datasetPickerAction.getCurrentDataset() != dataset)
- //           datasetPickerAction.setCurrentDataset(dataset);
- //       //else
- //       {
- //           Dataset<Clusters> clusterDataset = dataset;
-
- //           QStringList clusterNames;
- //           if (clusterDataset.isValid())
- //           {
- //               auto& clusters = clusterDataset->getClusters();
- //               for (auto cluster : clusters)
- //               {
- //                   clusterNames.append(cluster.getName());
- //               }
- //           }
- //           QStringList firstItemSelectedList;
- //           firstItemSelectedList.append(clusterNames.first());
- //           clusterOptionsAction.initialize(clusterNames, firstItemSelectedList);
-
- //       
- //       }
- //       });
-
-
-	//currentDataset = datasetPickerAction.getCurrentDataset();
-
     const auto clusterDatasetFilter = [](const Dataset<DatasetImpl>& dataset) -> bool{return dataset->getDataType() == ClusterType;};
 
     datasetPickerAction.setFilterFunction(clusterDatasetFilter);
     intersectionDatasetPickerAction.setFilterFunction(clusterDatasetFilter);
 
-    connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<DatasetImpl> pickedDataset) { currentDataset = pickedDataset;});
+    connect(&datasetPickerAction, &DatasetPickerAction::datasetPicked, [this](Dataset<DatasetImpl> pickedDataset) {currentDataset = pickedDataset;});
 
-    connect(&intersectionDatasetPickerAction, &DatasetPickerAction::datasetPicked,[this](Dataset<DatasetImpl> pickedDataset) { intersectionDataset = pickedDataset; });
+    connect(&intersectionDatasetPickerAction, &DatasetPickerAction::datasetPicked,[this](Dataset<DatasetImpl> pickedDataset) {intersectionDataset = pickedDataset; });
 
     connect(&currentDataset, &Dataset<Clusters>::changed, [this](Dataset<DatasetImpl> dataset)
         {
@@ -191,7 +143,7 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
             localNamespace::initializeClusterOptions(dataset, clusterOptionsAction);
 
             // Preserve old behaviour by using the first dataset as the
-            // intersection dataset until another one is explicitly selected.
+            // intersection dataset until another one is explicitly selected
             if (!intersectionDataset.isValid() && dataset.isValid())
                 intersectionDataset = dataset;
         });
@@ -211,6 +163,7 @@ LoadedDatasetsAction::Data::Data(LoadedDatasetsAction* parent, int index)
     connect(&datasetSelectedAction, &ToggleAction::changed, [this]()->void {this->emitDataChanged(); });
 
     setFlags(Qt::ItemIsUserCheckable  | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+
     if(datasetSelectedAction.isChecked())
 		setData(Qt::Checked, Qt::CheckStateRole);
     else
@@ -271,7 +224,7 @@ QVariantMap LoadedDatasetsAction::toVariantMap() const
     qsizetype nrOfDatasets = _model.rowCount(); // _data.size();
 
     //variantMap["LoadedDatasetsActionVersion"] = 1;
-    variantMap["LoadedDatasetsActionVersion"] = 2;
+    variantMap["LoadedDatasetsActionVersion"] = 2; // added intersection dataset
     variantMap["NrOfDatasets"] = nrOfDatasets;
     
     for(qsizetype i =0; i < nrOfDatasets; ++i)
@@ -481,59 +434,6 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
     
     if (true/*widgetFlags & PopupLayout*/)
     {
-        // TODO: remove the code for old layout
-     //   setFixedWidth(600);
-     //   auto layout = new QGridLayout();
-
-     //  
-     //   
-     //   
-     //   QWidget* addButton = currentDatasetAction->_addDatasetTriggerAction.createWidget(this, TriggerAction::Icon);
-     //   addButton->setFixedWidth(addButton->height());
-     //   layout->addWidget(addButton,0,1);
-     //   
-     //   
-     //   const int offset = 1;
-     //   connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[this,layout,offset,currentDatasetAction]()->void
-     //   {
-     //           int i = currentDatasetAction->size()-1;
-     //           int column = 0;
-     //           
-     //           QWidget* w = currentDatasetAction->data(i)->datasetSelectedAction.createWidget(this, ToggleAction::CheckBox);
-     //   		w->setFixedWidth(16);
-     //           layout->addWidget(w, i + offset, column++);
-     //           layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), i + offset, column++);
-     //           layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
-     //           layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
-     //           layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
-
-
-     //           connect(&(currentDatasetAction->data(i)->datasetNameStringAction), &StringAction::stringChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
-     //           connect(&(currentDatasetAction->data(i)->datasetPickerAction), &DatasetPickerAction::currentTextChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
-     //           connect(&(currentDatasetAction->data(i)->clusterOptionsAction), &OptionsAction::selectedOptionsChanged, [currentDatasetAction]() {emit currentDatasetAction->datasetOrClusterSelectionChanged(); });
-     //    
-     //   });
-
-     //  
-    	//for (qsizetype i = 0; i < currentDatasetAction->size(); ++i)
-     //   {
-     //       int column = 0;
-     //       QWidget* w = currentDatasetAction->data(i)->datasetSelectedAction.createWidget(this, ToggleAction::CheckBox);
-     //       w->setFixedWidth(16);
-     //       layout->addWidget(w, i + offset, column++);
-     //       layout->addWidget(currentDatasetAction->data(i)->datasetNameStringAction.createWidget(this), i + offset, column++);
-     //       layout->addWidget(currentDatasetAction->data(i)->datasetPickerAction.createWidget(this), i + offset, column++);
-     //       layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createLabelWidget(this), i + offset, column++);
-     //       layout->addWidget(currentDatasetAction->data(i)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), i + 1, column++);
-     //   }
-
-
-     //   
-     //   setLayout(layout);
-     //   //setPopupLayout(layout);
-
-
-
         //setFixedWidth(800);
         setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
@@ -544,7 +444,7 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
         layout->setVerticalSpacing(2);
         layout->setColumnStretch(0, 0);
 
-        QWidget* addButton = currentDatasetAction->_addDatasetTriggerAction.createWidget( this, TriggerAction::Icon);
+        QWidget* addButton = currentDatasetAction->_addDatasetTriggerAction.createWidget(this, TriggerAction::Icon);
 
         addButton->setFixedWidth(addButton->height());
         layout->addWidget(addButton, 0, 1);
@@ -569,15 +469,6 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 layout->addWidget(action->data(index)->clusterOptionsAction.createWidget(this, OptionsAction::ComboBox), index + offset, column++);
 
-                // TODO: remove the code for default intersection seleection
-               /* layout->addWidget(new QLabel(QStringLiteral("∩"), this), index + offset, column++);
-
-                layout->addWidget(action->data(index)->overlapDatasetPickerAction.createWidget(this), index + offset, column++);
-
-                layout->addWidget(action->data(index)->overlapClusterOptionsAction.createLabelWidget(this), index + offset, column++);
-
-                layout->addWidget(action->data(index)->overlapClusterOptionsAction.createWidget(this, OptionsAction::ComboBox), index + offset, column++);*/
-
                 QWidget* intersectionToggleWidget = action->data(index)->useIntersectionSelectionAction.createWidget(this, ToggleAction::CheckBox);
 
                 layout->addWidget(intersectionToggleWidget, index + offset, column++);
@@ -598,7 +489,7 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
 
                 layout->addWidget(intersectionClusterWidget, index + offset, column++);
 
-                const QList<QWidget*> intersectionWidgets = { intersectionSeparator, intersectionDatasetWidget, intersectionClusterWidget};
+                const QList<QWidget*> intersectionWidgets = {intersectionSeparator, intersectionDatasetWidget, intersectionClusterWidget};
 
                 const auto updateIntersectionVisibility = [intersectionWidgets](bool enabled)
                     {
@@ -612,19 +503,20 @@ LoadedDatasetsAction::Widget::Widget(QWidget* parent, LoadedDatasetsAction* curr
                 updateIntersectionVisibility(action->data(index)->useIntersectionSelectionAction.isChecked());
 
                 connect(&action->data(index)->useIntersectionSelectionAction, &ToggleAction::toggled, this, [action, updateIntersectionVisibility](bool enabled)
-                {updateIntersectionVisibility(enabled);
-                 emit action->datasetOrClusterSelectionChanged();
-                 });
+                    {
+                        updateIntersectionVisibility(enabled);
+                        emit action->datasetOrClusterSelectionChanged();
+                    });
 
-                connect(&action->data(index)->datasetNameStringAction, &StringAction::stringChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged(); });
+                connect(&action->data(index)->datasetNameStringAction, &StringAction::stringChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();});
 
-                connect(&action->data(index)->datasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();   });
+                connect(&action->data(index)->datasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();});
 
-                connect(&action->data(index)->clusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();    });
+                connect(&action->data(index)->clusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();});
 
-                connect(&action->data(index)->intersectionDatasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();    });
+                connect(&action->data(index)->intersectionDatasetPickerAction, &DatasetPickerAction::currentTextChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();});
 
-                connect(&action->data(index)->intersectionClusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();  });
+                connect(&action->data(index)->intersectionClusterOptionsAction, &OptionsAction::selectedOptionsChanged, action, [action]() {emit action->datasetOrClusterSelectionChanged();});
             };
 
         connect(currentDatasetAction, &LoadedDatasetsAction::datasetAdded, this,[currentDatasetAction, addDatasetRow](int index)

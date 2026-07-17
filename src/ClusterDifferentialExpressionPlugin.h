@@ -119,7 +119,7 @@ private:
     mv::Dataset<Points> get_DE_Statistics_Dataset(mv::Dataset<Clusters> clusterDataset);
     // Compute mean for selected clusters in one dataset
     std::vector<double> computeMeanExpressionsForSelectedClusters(mv::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters);
-    // Compute mean for selected clusters in two datasets, only for intersecting clusters
+    // Compute mean for intersecting clusters in two datasets
     std::vector<double> computeMeanExpressionsForIntersectingClusters(mv::Dataset<Clusters> clusterDataset1, const QSet<unsigned>& selectedClusters1,
         mv::Dataset<Clusters> clusterDataset2, const QSet<unsigned>& selectedClusters2);
     bool matchDimensionNames();

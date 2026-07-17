@@ -116,8 +116,6 @@ namespace local
         return static_cast<float>(floor(n * pow(10., d) + 0.5) / pow(10., d));
     }
 
-
-    
     bool clusterDatset_has_computed_DE_Statistics(mv::Dataset<Clusters> clusterDataset)
     {
         if(clusterDataset.isValid())
@@ -140,7 +138,6 @@ namespace local
     {
         return clusterDataset->getParent<Points>().isValid();
     }
-
 
     std::ptrdiff_t get_DE_Statistics_Index(mv::Dataset<Clusters> clusterDataset)
     {
@@ -290,29 +287,6 @@ namespace local
             parts[i].replace(0, 1, parts[i][0].toUpper());
 
         return parts.join("");
-    }
-
-    mv::Dataset<Points> getParentPointDataset(mv::Dataset<Clusters> clusterDataset)
-    {
-        if (!clusterDataset.isValid())
-            return {};
-
-        mv::Dataset<Points> points = clusterDataset->getParent<Points>();
-
-        if (points.isValid())
-            return points;
-
-        const DataHierarchyItems ancestors = clusterDataset->getDataHierarchyItem().getAncestors();
-
-        for (const auto& ancestor : ancestors)
-        {
-            points = ancestor->getDataset<Points>();
-
-            if (points.isValid())
-                return points;
-        }
-
-        return {};
     }
 
 }
@@ -841,32 +815,6 @@ void ClusterDifferentialExpressionPlugin::update_pairwiseDiffExpResultsAction(qs
     assert(nameToCheck.isEmpty() || (nameToCheck == dimensionName));
 
     std::vector<std::vector<double>> meanExpressionValues(NrOfDatasets);
-    
-    // TODO: remove the following old code for only intersecting clusters
-    //for (qsizetype i = 0; i < NrOfDatasets; ++i)
-    //{
-    //    if (_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
-    //    {
-    //       /* QStringList clusterStrings = _loadedDatasetsAction.getClusterOptions(i);
-    //        QStringList clusterSelectionStrings = _loadedDatasetsAction.getClusterSelection(i);
-    //        meanExpressionValues[i] = computeMeanExpressionsForSelectedClusters(getDataset(i), local::getClusterIndices(clusterStrings, clusterSelectionStrings));*/
-
-    //        const QStringList clusterOptions1 = _loadedDatasetsAction.getClusterOptions(i);
-
-    //        const QStringList clusterSelection1 = _loadedDatasetsAction.getClusterSelection(i);
-
-    //        const QStringList clusterOptions2 = _loadedDatasetsAction.getOverlapClusterOptions(i);
-
-    //        const QStringList clusterSelection2 = _loadedDatasetsAction.getOverlapClusterSelection(i);
-
-    //        meanExpressionValues[i] = computeMeanExpressionsForOverlappingClusters(getDataset(i), local::getClusterIndices(clusterOptions1,clusterSelection1),
-    //                _loadedDatasetsAction.getOverlapDataset(i), local::getClusterIndices(clusterOptions2, clusterSelection2));
-
-    //        auto DE_StatisticsDataset = get_DE_Statistics_Dataset(_loadedDatasetsAction.getDataset(i));
-    //        if (DE_StatisticsDataset.isValid())
-    //            _DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset->getId());
-    //    }
-    //}
 
     for (qsizetype i = 0; i < NrOfDatasets; ++i)
     {
@@ -1054,7 +1002,7 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
 
     connect(&_loadedDatasetsAction.getIntersectionClusterSelectionAction(index), &OptionsAction::selectedOptionsChanged, this, &ClusterDifferentialExpressionPlugin::clusterSelectionChanged);
 
-    connect(&_loadedDatasetsAction.getUseIntersectionSelectionAction(index), &ToggleAction::toggled, this, [this](bool) {clusterSelectionChanged(QStringList()); });
+    connect(&_loadedDatasetsAction.getUseIntersectionSelectionAction(index), &ToggleAction::toggled, this, [this](bool) {clusterSelectionChanged(QStringList());});
 
     _meanExpressionDatasetGuidAction.resize(_loadedDatasetsAction.size(), nullptr);
     std::vector<float> meanExpressionData(1, 0);
@@ -1113,31 +1061,6 @@ void ClusterDifferentialExpressionPlugin::datasetAdded(int index)
         clusterHeaderWidgetLayout->addWidget(datasetNameWidget, 0, 0, Qt::AlignTop);
         _configurableWidgets[QString("TableViewDatasetName") + QString::number(index + 1)] = datasetNameWidget;
 
-        //TODO: remove the following code for only one cluster
-        /*QWidget* widget = _loadedDatasetsAction.getClusterSelectionWidget(index, clusterHeaderWidget, 1);
-        _configurableWidgets[QString("TableViewClusterSelection") + QString::number(index + 1)] = widget;
-        clusterHeaderWidgetLayout->addWidget(widget, 1, 0, Qt::AlignTop);
-        clusterHeaderWidgetLayout->addWidget(new QLabel("Mean", clusterHeaderWidget), 2, 0, Qt::AlignLeft);*/
-
-        //TODO: remove the following code for default overlapping
-        //QWidget* cluster1Widget = _loadedDatasetsAction.getClusterSelectionWidget(index, clusterHeaderWidget, 1);
-
-        //_configurableWidgets[QString("TableViewClusterSelection") + QString::number(index + 1)] = cluster1Widget;
-
-        //clusterHeaderWidgetLayout->addWidget(cluster1Widget, 1, 0, Qt::AlignTop);
-
-        //clusterHeaderWidgetLayout->addWidget(new QLabel(QStringLiteral("∩"), clusterHeaderWidget), 2, 0, Qt::AlignCenter);
-
-        //QWidget* cluster2Widget = _loadedDatasetsAction.getOverlapClusterSelectionWidget(index, clusterHeaderWidget, 1);
-
-        //_configurableWidgets[QString("TableViewOverlapClusterSelection") + QString::number(index + 1)] = cluster2Widget;
-
-        //clusterHeaderWidgetLayout->addWidget(cluster2Widget, 3, 0, Qt::AlignTop);
-
-        //clusterHeaderWidgetLayout->addWidget(new QLabel("Mean", clusterHeaderWidget), 4, 0, Qt::AlignLeft);
-
-
-        // test code for optional intersection
         QWidget* cluster1Widget = _loadedDatasetsAction.getClusterSelectionWidget(index, clusterHeaderWidget, 1);
 
         _configurableWidgets[QString("TableViewClusterSelection") + QString::number(index + 1)] = cluster1Widget;
@@ -1532,8 +1455,6 @@ std::ptrdiff_t ClusterDifferentialExpressionPlugin::get_DE_Statistics_Index(mv::
                 }
             });
         
-
-        
         mv::Dataset<Points> newDataset = mv::data().createDataset("Points", child_DE_Statistics_DatasetName, clusterDataset);
 
         events().notifyDatasetAdded(newDataset);
@@ -1656,7 +1577,7 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
         return meanExpressions;
 
     // Point indices are comparable only when both cluster datasets
-    // belong to the same underlying point dataset.
+    // belong to the same underlying point dataset
     if (points1.getDatasetId() != points2.getDatasetId())
         return meanExpressions;
 
@@ -1666,7 +1587,7 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
     QSet<unsigned> selectedPointIndices1;
     QSet<unsigned> selectedPointIndices2;
 
-    // Union of the selected clusters in the first cluster dataset.
+    // Union of the selected clusters in the first cluster dataset
     for (const auto clusterIndex : selectedClusters1)
     {
         if (clusterIndex >= static_cast<unsigned>(clusters1.size()))
@@ -1680,7 +1601,7 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
         }
     }
 
-    // Union of the selected clusters in the second cluster dataset.
+    // Union of the selected clusters in the second cluster dataset
     for (const auto clusterIndex : selectedClusters2)
     {
         if (clusterIndex >= static_cast<unsigned>(clusters2.size()))
@@ -1694,7 +1615,7 @@ std::vector<double> ClusterDifferentialExpressionPlugin::computeMeanExpressionsF
         }
     }
 
-    // Keep only points contained in both selections.
+    // Keep only points contained in both selections
     selectedPointIndices1.intersect(selectedPointIndices2);
 
     const std::ptrdiff_t numDimensions = points1->getNumDimensions();
@@ -1746,45 +1667,9 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         return;
     }
 
-    // TODO: remove old code without overlapping clusters
-   /* _tableItemModel->setStatus(QTableItemModel::Status::Updating);
-
     const qsizetype NrOfDatasets = _loadedDatasetsAction.size();
     assert(NrOfDatasets >= 2);
 
-    qsizetype NrOfSelectedDatasets = 0;
-    for(qsizetype i=0; i < NrOfDatasets; ++i)
-    {
-        if (_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
-        {
-            NrOfSelectedDatasets++;
-            if (_loadedDatasetsAction.getClusterSelection(i).size() == 0)
-                return;
-        }
-    }*/
-
-    const qsizetype NrOfDatasets = _loadedDatasetsAction.size();
-    assert(NrOfDatasets >= 2);
-
-    // TODO: remove code for default overlapping clusters
-    /*qsizetype NrOfSelectedDatasets = 0;
-
-    for (qsizetype i = 0; i < NrOfDatasets; ++i)
-    {
-        if (!_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
-        {
-            continue;
-        }
-
-        ++NrOfSelectedDatasets;
-
-        if (!getDataset(i).isValid() ||!_loadedDatasetsAction.getOverlapDataset(i).isValid() ||_loadedDatasetsAction.getClusterSelection(i).isEmpty() || _loadedDatasetsAction.getOverlapClusterSelection(i).isEmpty())
-        {
-            return;
-        }
-    }*/
-
-    // test code for enable/disable overlapping clusters
     qsizetype NrOfSelectedDatasets = 0;
 
     for (qsizetype i = 0; i < NrOfDatasets; ++i)
@@ -1860,35 +1745,10 @@ void ClusterDifferentialExpressionPlugin::computeDE()
         _postInfoVariantAction.setVariant(emptColumn);
     }
     */
-    
 
     std::vector<std::vector<double>> meanExpressionValues(NrOfDatasets);
+
 	//#pragma omp parallel for schedule(dynamic,1)
-    //for (qsizetype i = 0; i < NrOfDatasets; ++i)
-    //{
-    //    if(_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
-    //    {
-    //        /*QStringList clusterStrings = _loadedDatasetsAction.getClusterOptions(i);
-    //        QStringList clusterSelectionStrings = _loadedDatasetsAction.getClusterSelection(i);
-    //        meanExpressionValues[i] = computeMeanExpressionsForSelectedClusters(getDataset(i), local::getClusterIndices(clusterStrings, clusterSelectionStrings));*/
-
-    //        const QStringList clusterOptions1 = _loadedDatasetsAction.getClusterOptions(i);
-
-    //        const QStringList clusterSelection1 = _loadedDatasetsAction.getClusterSelection(i);
-
-    //        const QStringList clusterOptions2 = _loadedDatasetsAction.getOverlapClusterOptions(i);
-
-    //        const QStringList clusterSelection2 = _loadedDatasetsAction.getOverlapClusterSelection(i);
-
-    //        meanExpressionValues[i] = computeMeanExpressionsForOverlappingClusters( getDataset(i), local::getClusterIndices( clusterOptions1, clusterSelection1),
-    //            _loadedDatasetsAction.getOverlapDataset(i), local::getClusterIndices( clusterOptions2, clusterSelection2));
-
-    //        auto DE_StatisticsDataset = get_DE_Statistics_Dataset(_loadedDatasetsAction.getDataset(i));
-    //        if (DE_StatisticsDataset.isValid())
-    //            _DE_StatisticsDatasetGuidAction[i].data()->setString(DE_StatisticsDataset.getDatasetId());
-    //    }
-    // }
-
     for (qsizetype i = 0; i < NrOfDatasets; ++i)
     {
         if (!_loadedDatasetsAction.data(i)->datasetSelectedAction.isChecked())
@@ -2021,9 +1881,8 @@ void ClusterDifferentialExpressionPlugin::computeDE()
             if(NrOfSelectedDatasets ==2)
 				mean_DE = mean[0] - mean[1]; // no fabs since we want to preserve the sign
         }
-        
 
-     
+
         dataVector[ID] = dimensionName;
         std::size_t columnNr = 1;
         for (auto info = preInfoMap.cbegin(); info != preInfoMap.cend(); ++info, ++columnNr)
@@ -2122,8 +1981,6 @@ void ClusterDifferentialExpressionPlugin::computeDE()
     }
     
 
-   
-  
     if (_tableView && _tableView->horizontalHeader())
     {
         _tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
