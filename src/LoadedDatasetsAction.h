@@ -27,7 +27,6 @@ protected:
 
         explicit Data(LoadedDatasetsAction* parent, int index = -1);
 
-        
         virtual QStandardItem* clone() const;
         virtual QVariant data(int role = Qt::UserRole + 1) const override;
         virtual void 	setData(const QVariant& value, int role = Qt::UserRole + 1) override;
@@ -37,6 +36,13 @@ protected:
         mv::Dataset<Clusters>   currentDataset;
         StringAction              datasetNameStringAction;
         ToggleAction              datasetSelectedAction;
+
+        // extra cluster intersection dataset and options
+        DatasetPickerAction        intersectionDatasetPickerAction;
+        OptionsAction              intersectionClusterOptionsAction;
+        mv::Dataset<Clusters>      intersectionDataset;
+
+        ToggleAction useIntersectionSelectionAction;// to enable or disable the intersection dataset
     };
 
     class Widget : public WidgetActionWidget {
@@ -83,8 +89,21 @@ public:
 
     Data* data(qsizetype index) const;
 
-
     QStandardItemModel& model();
+
+    // extra cluster dataset and options
+    mv::gui::OptionsAction& getIntersectionClusterSelectionAction(const std::size_t index);
+
+    mv::Dataset<Clusters>& getIntersectionDataset(std::size_t index) const;
+
+    QStringList getIntersectionClusterOptions(std::size_t index) const;
+    QStringList getIntersectionClusterSelection(std::size_t index) const;
+
+    QWidget* getIntersectionClusterSelectionWidget(std::size_t index, QWidget* parent,const std::int32_t& flags);
+
+    mv::gui::ToggleAction& getUseIntersectionSelectionAction(const std::size_t index);
+
+    bool isIntersectionSelectionEnabled(std::size_t index) const;
 
 public slots:
     void addDataset();

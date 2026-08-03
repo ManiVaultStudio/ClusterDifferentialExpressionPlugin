@@ -100,7 +100,6 @@ private:
 protected slots:
     void selectedRowChanged(int index);
 
-
     void newCommandsReceived(const QVariant& commands);
 
     void datasetAdded(int index);
@@ -118,7 +117,11 @@ private:
     
     std::ptrdiff_t get_DE_Statistics_Index(mv::Dataset<Clusters> clusterDataset);
     mv::Dataset<Points> get_DE_Statistics_Dataset(mv::Dataset<Clusters> clusterDataset);
+    // Compute mean for selected clusters in one dataset
     std::vector<double> computeMeanExpressionsForSelectedClusters(mv::Dataset<Clusters> clusterDataset, const QSet<unsigned>& selected_clusters);
+    // Compute mean for intersecting clusters in two datasets
+    std::vector<double> computeMeanExpressionsForIntersectingClusters(mv::Dataset<Clusters> clusterDataset1, const QSet<unsigned>& selectedClusters1,
+        mv::Dataset<Clusters> clusterDataset2, const QSet<unsigned>& selectedClusters2);
     bool matchDimensionNames();
     //void updateData(int index);
 
@@ -127,24 +130,21 @@ public slots:
     void computeDE();
 
 
-
 private:
-    const QString                       _originalName;
-    TableView* _tableView;
-    QPointer<ButtonProgressBar>                 _buttonProgressBar;
-    mv::gui::DropWidget*          _dropWidget;    /** Widget allowing users to drop in data */
-    ProgressManager                 _progressManager;       /** for handling multi-threaded progress updates either to a progress bar or progress dialog */
+    const QString                        _originalName;
+    TableView*                           _tableView;
+    QPointer<ButtonProgressBar>          _buttonProgressBar;
+    mv::gui::DropWidget*                 _dropWidget;/** Widget allowing users to drop in data */
+    ProgressManager                      _progressManager;/** for handling multi-threaded progress updates either to a progress bar or progress dialog */
 
+    mv::gui::HorizontalToolbarAction     _primaryToolbarAction;
 
-    mv::gui::HorizontalToolbarAction                     _primaryToolbarAction;
-   
+    std::vector<std::pair<QString, QVector<qsizetype>>> _matchingDimensionNames;
 
-   std::vector<std::pair<QString, QVector<qsizetype>>> _matchingDimensionNames;
+    bool                                 _identicalDimensions;
 
-    bool                            _identicalDimensions;
-  
-    QSharedPointer<QTableItemModel>   _tableItemModel;
-    QPointer<cde::SortFilterProxyModel>      _sortFilterProxyModel;
+    QSharedPointer<QTableItemModel>      _tableItemModel;
+    QPointer<cde::SortFilterProxyModel>  _sortFilterProxyModel;
 
     //actions
     LoadedDatasetsAction                 _loadedDatasetsAction;
@@ -159,24 +159,21 @@ private:
     TriggerAction                        _saveToCsvAction;
 
     // Viewer Configuration Options
-    VariantAction                       _preInfoVariantAction;
-    VariantAction                       _postInfoVariantAction;
+    VariantAction                        _preInfoVariantAction;
+    VariantAction                        _postInfoVariantAction;
     StringAction                         _infoTextAction;
-    //OptionsAction                        _selectedDatasetsAction;
-    QVector<WidgetAction*>              _serializedActions;
+    //OptionsAction                      _selectedDatasetsAction;
+    QVector<WidgetAction*>               _serializedActions;
 
-    VariantAction                       _commandAction;
+    VariantAction                        _commandAction;
 
-    QVector<QPointer<QWidget>>          _datasetTableViewHeader;
-    QMap<QString, QWidget*>             _configurableWidgets;
-    QByteArray                          _headerState;
-    
-    VariantAction                       _pairwiseDiffExpResultsAction;
+    QVector<QPointer<QWidget>>           _datasetTableViewHeader;
+    QMap<QString, QWidget*>              _configurableWidgets;
+    QByteArray                           _headerState;
 
-    
-    
+    VariantAction                        _pairwiseDiffExpResultsAction;
+
 };
-    
 
 
 class ClusterDifferentialExpressionFactory : public ViewPluginFactory
@@ -193,7 +190,6 @@ public:
     ClusterDifferentialExpressionPlugin* produce() override;
 
     mv::DataTypes supportedDataTypes() const override;
-
 
 	mv::gui::PluginTriggerActions getPluginTriggerActions(const mv::Datasets & datasets) const override;
 };
