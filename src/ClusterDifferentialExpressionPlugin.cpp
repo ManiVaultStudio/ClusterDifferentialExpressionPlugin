@@ -1150,7 +1150,7 @@ void ClusterDifferentialExpressionPlugin::writeToCSV()
     else
     {
         // store the directory name
-        settings.setValue(directoryPathKey, QFileInfo(fileName).absolutePath());
+        setSetting(registryEntry, QFileInfo(fileName).absolutePath());
     }
 
     QString csvString = _tableItemModel->createCSVString(',');
