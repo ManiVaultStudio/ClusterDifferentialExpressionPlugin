@@ -10,7 +10,6 @@
 #include "ButtonProgressBar.h"
 #include "TableView.h"
 
-// HDPS includes
 #include "PointData/PointData.h"
 #include "ClusterData/ClusterData.h"
 #include "event/Event.h"
@@ -18,8 +17,6 @@
 #include "DataHierarchyItem.h"
 #include <actions/PluginTriggerAction.h>
 #include <actions/WidgetAction.h>
-
-// QT includes
 
 #include <QMimeData>
 #include <QFileDialog>
@@ -31,8 +28,6 @@
 #include <set>
 #include <algorithm>
 #include <cmath>
-
-
 
 #if defined(__cpp_lib_parallel_algorithm) && __has_include(<tbb/tbb.h>)
 # define TBB_SUPPRESS_DEPRECATED_MESSAGES 1
@@ -1138,11 +1133,11 @@ void ClusterDifferentialExpressionPlugin::writeToCSV()
 {
     if (_tableItemModel.isNull())
         return;
-    // Let the user chose the save path
-    QSettings settings(QLatin1String{ "HDPS" }, QLatin1String{ "Plugins/" } + getKind());
-    const QLatin1String directoryPathKey("directoryPath");
-    const auto directoryPath = settings.value(directoryPathKey).toString() + "/";
 
+	// Let the user choose the save path
+	QString registryEntry = "directoryPath";
+	const auto directoryPath = getSetting(registryEntry, "").toString();
+	
     QString fileName = QFileDialog::getSaveFileName(
         nullptr, tr("Save data set"), directoryPath + "ClusterDifferentialExpression.csv", tr("CSV file (*.csv);;All Files (*)"));
 
@@ -1155,7 +1150,7 @@ void ClusterDifferentialExpressionPlugin::writeToCSV()
     else
     {
         // store the directory name
-        settings.setValue(directoryPathKey, QFileInfo(fileName).absolutePath());
+        setSetting(registryEntry, QFileInfo(fileName).absolutePath());
     }
 
     QString csvString = _tableItemModel->createCSVString(',');

@@ -3,8 +3,6 @@
 #include "SettingsAction.h"
 #include "ProgressManager.h"
 
-
-// HDPS includes
 #include <ViewPlugin.h>
 #include <Dataset.h>
 #include "widgets/DropWidget.h"
